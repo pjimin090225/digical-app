@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- 한글이 깨지지 않게 하는 설정 -->
+  <meta charset="UTF-8">
+  <!-- 휴대폰 화면 폭에 맞추는 설정 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>디지컬</title>
+
+  <style>
+    /* ==========================================================
+       🎨 디자인 변수 (팀원 B가 숫자·색만 바꾸면 전체가 바뀝니다)
+       - 간격은 8의 배수(8pt 그리드)
+       - 글자와 배경의 명암 대비는 4.5:1 이상 유지
+       ========================================================== */
+    :root {
+      --font-base: 20px;     /* 기본 글자 크기 */
+      --font-big: 26px;      /* 제목 */
+      --font-huge: 34px;     /* 질문 화면의 큰 글자 */
+      --line: 1.6;           /* 줄 간격 (글자 크기의 1.6배) */
+      --gap: 8px;            /* 기본 간격 단위 */
+      --radius: 16px;        /* 모서리 둥글기 */
+      --btn-h: 64px;         /* 큰 버튼 높이 (48px 이상) */
+
+      --bg: #FFFDF7;         /* 배경 */
+      --card: #FFFFFF;       /* 카드 배경 */
+      --text: #1A1A1A;       /* 글자 */
+      --sub: #4A4A4A;        /* 보조 글자 */
+      --border: #1A1A1A;     /* 테두리 */
+      --accent: #FFD23F;     /* 강조 노랑 (시각 신호 색) */
+      --primary: #2F5F8F;    /* 주요 버튼 파랑 */
+      --primary-text: #FFFFFF;
+      --off: #D9D9D9;        /* 꺼진 칸 */
+      --warn-bg: #FFF1C2;    /* 안내 띠 배경 */
+      --rec: #C62828;        /* 녹화 중 빨강 */
+    }
+
+    * { box-sizing: border-box; }
+    /* [중요 수정] hidden(숨김)이 붙은 것은 어떤 모양 규칙보다 우선해서 숨김.
+       이게 없어서 '소리 화면'이 사진·영상 모드에서도 카메라를 덮고 있었음 */
+    [hidden] { display: none !important; }
+    body {
+      margin: 0 auto;
+      padding: calc(var(--gap) * 2);
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      font-size: var(--font-base);
+      line-height: var(--line);
+      max-width: 560px;          /* 큰 화면에서도 휴대폰 폭으로 */
+    }
+    h1, h2 { font-size: var(--font-big); margin: var(--gap) 0; }
+    .sub { color: var(--sub); margin: 0 0 calc(var(--gap) * 2); }
+
+    /* ----- 버튼 ----- */
+    button { font: inherit; color: var(--text); cursor: pointer; }
+    .big {
+      display: block; width: 100%;
+      min-height: var(--btn-h);
+      margin: calc(var(--gap) * 1.5) 0;
+      padding: var(--gap) calc(var(--gap) * 2);
+      font-size: 22px; font-weight: 700;
+      border: 3px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--accent);
+    }
+    .big.primary { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+    .big.ghost { background: transparent; }
+    .big:active { transform: scale(0.98); }
+
+    /* ----- 카드 (설명 상자) ----- */
+    .card {
+      background: var(--card);
+      border: 2px solid #CFCFCF;
+      border-radius: var(--radius);
+      padding: calc(var(--gap) * 2);
+      margin: calc(var(--gap) * 2) 0;
+    }
+    .result { min-height: 24px; color: var(--sub); font-size: 18px; white-space: pre-line; }
+    .note { font-size: 16px; color: var(--sub); margin-top: var(--gap); }
+    .tip { background: var(--warn-bg); border-radius: var(--radius); padding: calc(var(--gap) * 1.5) calc(var(--gap) * 2); font-size: 18px; }
+
+    /* ----- 앱 안 브라우저 안내 띠 ----- */
+    #banner {
+      background: var(--warn-bg); border: 3px solid var(--border); border-radius: var(--radius);
+      padding: calc(var(--gap) * 2); margin-bottom: calc(var(--gap) * 2); font-size: 18px;
+    }
+    #banner .big { margin-bottom: 0; }
+
+    /* ----- 질문 화면 ----- */
+    .progress { color: var(--sub); font-size: 18px; }
+    .q-icon { font-size: 64px; text-align: center; margin: calc(var(--gap) * 2) 0 0; }
+    .q-text { font-size: var(--font-huge); font-weight: 800; text-align: center; line-height: 1.35; margin: var(--gap) 0 calc(var(--gap) * 3); }
+    .q-mid { font-size: var(--font-big); font-weight: 800; text-align: center; margin: calc(var(--gap) * 2) 0 0; }
+
+    /* ----- 감각 조절 줄 ----- */
+    .sense-row { border-top: 2px solid #E5E5E5; padding: calc(var(--gap) * 2) 0; }
+    .sense-head { display: flex; justify-content: space-between; align-items: center; gap: var(--gap); }
+    .sense-name { font-weight: 800; }
+    .toggle {
+      min-width: 96px; min-height: 48px;
+      border: 3px solid var(--border); border-radius: 999px;
+      background: var(--off); font-weight: 700;
+    }
+    .toggle[aria-pressed="true"] { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+    .dots { display: flex; gap: var(--gap); margin-top: var(--gap); }
+    .dot {
+      flex: 1; min-height: 52px;
+      border: 3px solid var(--border); border-radius: 12px;
+      background: var(--card); font-weight: 800;
+    }
+    .dot.on { background: var(--accent); }
+    .dots.disabled { opacity: 0.35; pointer-events: none; }
+    .ends { display: flex; justify-content: space-between; font-size: 16px; color: var(--sub); }
+
+    /* ----- 프리셋 ----- */
+    .presets { display: flex; gap: var(--gap); }
+    .presets button {
+      flex: 1; min-height: 72px;
+      border: 3px solid var(--border); border-radius: var(--radius);
+      background: var(--card); font-weight: 700; font-size: 18px;
+    }
+
+    /* ----- 감각 신호 원 ----- */
+    .feel-area { display: flex; justify-content: center; padding: calc(var(--gap) * 2) 0; }
+    .feel-box {
+      width: 120px; height: 120px; border-radius: 50%;
+      background: var(--accent); opacity: 0.35;
+      --s: 0.5;   /* 세기(0~1): 자바스크립트가 바꿈 */
+    }
+    .feel-box.pulse { animation: pulse 0.3s ease-in-out 1; }   /* 짧게 한 번 (1초 3번 이하 지킴) */
+    .feel-box.heart { animation: heart 0.7s ease-in-out 1; }   /* 진동 대신 두근거림 */
+    @keyframes pulse {
+      0%   { transform: scale(1); opacity: 0.35; }
+      50%  { transform: scale(calc(1 + var(--s) * 0.6)); opacity: calc(0.4 + var(--s) * 0.6); }
+      100% { transform: scale(1); opacity: 0.35; }
+    }
+    @keyframes heart {
+      0%, 40%, 80% { transform: scale(1); }
+      20%, 60%     { transform: scale(1.15); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .feel-box.pulse, .feel-box.heart { animation: none; opacity: 1; }
+    }
+
+    /* ----- 카메라 화면 ----- */
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--gap); }
+    .back {
+      min-height: 48px; padding: 0 calc(var(--gap) * 2);
+      border: 2px solid var(--border); border-radius: 999px; background: var(--card); font-weight: 700;
+    }
+    .stage {
+      position: relative; width: 100%;
+      aspect-ratio: 3 / 4; max-height: 58vh;
+      background: #111; border-radius: var(--radius); overflow: hidden;
+    }
+    .stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .guide {
+      position: absolute; inset: 10%;
+      border: 4px dashed rgba(255, 255, 255, 0.9); border-radius: 12px;
+      display: flex; align-items: flex-start; justify-content: center;
+      pointer-events: none;
+    }
+    .guide span { background: rgba(0, 0, 0, 0.55); color: #FFF; font-size: 16px; padding: 2px 10px; border-radius: 999px; margin-top: 8px; }
+    .rec-badge {
+      position: absolute; top: 12px; left: 12px;
+      background: var(--rec); color: #FFF; font-weight: 800; padding: 4px 12px; border-radius: 999px;
+    }
+    .sound-view {
+      position: absolute; inset: 0; background: #111; color: #FFF;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--gap) * 2);
+    }
+    .sound-view canvas { width: 92%; height: 30%; }
+    .sound-view .feel-box { width: 140px; height: 140px; }
+    .beat-info { font-size: 18px; text-align: center; white-space: pre-line; }
+    .cam-msg { color: var(--rec); font-size: 18px; white-space: pre-line; }
+
+    .modebar { display: flex; gap: var(--gap); margin: calc(var(--gap) * 2) 0 var(--gap); }
+    .modebar button {
+      flex: 1; min-height: 56px;
+      border: 3px solid var(--border); border-radius: 999px;
+      background: var(--card); font-size: 20px; font-weight: 800;
+    }
+    .modebar button[aria-pressed="true"] { background: var(--text); color: #FFF; }
+
+    .shutter-wrap { display: flex; flex-direction: column; align-items: center; }
+    .shutter {
+      width: 88px; height: 88px; border-radius: 50%;
+      border: 6px solid var(--border); background: var(--accent);
+      font-size: 32px;
+      touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    }
+    .shutter.recording { background: var(--rec); color: #FFF; }
+    .shutter-label { font-weight: 700; margin-top: var(--gap); text-align: center; }
+    .hint { text-align: center; color: var(--sub); font-size: 18px; margin: var(--gap) 0; }
+
+    .thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
+    .thumbs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+    .one-photo { width: 100%; border-radius: var(--radius); display: block; }
+
+    /* 반응 민감도 버튼 */
+    .seg { display: flex; gap: var(--gap); align-items: center; margin: var(--gap) 0; }
+    .seg .seg-title { font-weight: 800; font-size: 18px; }
+    .seg button {
+      flex: 1; min-height: 48px;
+      border: 3px solid var(--border); border-radius: 999px;
+      background: var(--card); font-weight: 700; font-size: 17px;
+    }
+    .seg button[aria-pressed="true"] { background: var(--accent); }
+
+    footer { margin-top: calc(var(--gap) * 4); font-size: 15px; color: var(--sub); text-align: center; }
+    footer a { color: var(--primary); }
+  </style>
+</head>
+<body>
+
+  <!-- ===================== 앱 안 브라우저 안내 띠 ===================== -->
+  <div id="banner" hidden></div>
+
+  <!-- ===================== ① 첫 화면 ===================== -->
+  <section id="home" class="screen">
+    <h1>🎨 디지컬</h1>
+    <p class="sub">작품을 내 감각에 맞게 느껴요.</p>
+    <div id="homeBody"></div>
+  </section>
+
+  <!-- ===================== ② 감각 준비 확인 ===================== -->
+  <section id="ready" class="screen" hidden>
+    <h2>🔔 감각 준비 확인</h2>
+    <div id="readyBody"></div>
+  </section>
+
+  <!-- ===================== ③ 질문 화면 ===================== -->
+  <section id="ask" class="screen" hidden>
+    <div class="progress" id="askProgress"></div>
+    <div class="q-icon" id="askIcon"></div>
+    <div class="q-text" id="askText"></div>
+    <div id="askOptions"></div>
+    <button class="big ghost" id="btnBack">← 이전 질문</button>
+  </section>
+
+  <!-- ===================== ④ 추천 화면 ===================== -->
+  <section id="recommend" class="screen" hidden>
+    <h2>✨ 이렇게 추천해요</h2>
+    <p class="sub" id="recTitle"></p>
+    <div class="card" id="recSummary"></div>
+    <div class="feel-area"><div class="feel-box" id="feelBox1"></div></div>
+    <button class="big" id="btnFeel1">✨ 이 설정으로 느껴보기</button>
+    <div class="result" id="feelMsg1"></div>
+    <button class="big primary" id="btnUseRec">👍 이대로 쓸게요</button>
+    <button class="big ghost" id="btnToDetail">⚙️ 자세히 바꾸기</button>
+  </section>
+
+  <!-- ===================== ⑤ 자세히 맞추기 ===================== -->
+  <section id="detail" class="screen" hidden>
+    <h2>⚙️ 내 감각 맞추기</h2>
+    <p class="sub">바꾼 뒤 [느껴보기]로 확인하세요.</p>
+    <div class="presets">
+      <button data-preset="2">🌙<br>조용하게</button>
+      <button data-preset="3">🌤<br>보통</button>
+      <button data-preset="4">☀️<br>풍부하게</button>
+    </div>
+    <div id="controls"></div>
+    <div class="feel-area"><div class="feel-box" id="feelBox2"></div></div>
+    <button class="big" id="btnFeel2">✨ 이 설정으로 느껴보기</button>
+    <div class="result" id="feelMsg2"></div>
+    <button class="big primary" id="btnSaveDetail">💾 저장하기</button>
+    <button class="big ghost" id="btnRedo">🔄 질문부터 다시 하기</button>
+    <button class="big ghost" id="btnDetailHome">← 처음으로</button>
+  </section>
+
+  <!-- ===================== ⑥ 카메라 화면 (모드 바) ===================== -->
+  <section id="camera" class="screen" hidden>
+    <div class="topbar">
+      <button class="back" id="btnCamHome">← 처음으로</button>
+    </div>
+
+    <div class="stage">
+      <video id="video" playsinline muted autoplay></video>
+      <div class="guide" id="guide"><span>작품을 네모 안에</span></div>
+      <div class="rec-badge" id="recBadge" hidden>● 담는 중 <span id="recTime">0</span>초</div>
+      <div class="sound-view" id="soundView" hidden>
+        <canvas id="viz" width="600" height="200"></canvas>
+        <div class="feel-box" id="beatCircle"></div>
+        <div class="beat-info" id="beatInfo">버튼을 누르면 듣기 시작해요</div>
+      </div>
+    </div>
+
+    <div class="cam-msg" id="camMsg"></div>
+    <button class="big" id="btnCamRetry" hidden>🔄 카메라 다시 켜기</button>
+    <button class="big" id="btnCapFallback" hidden>📷 폰 카메라로 직접 찍기</button>
+
+    <div class="modebar" id="modebar">
+      <button data-mode="photo">📷 사진</button>
+      <button data-mode="video">🎬 영상</button>
+      <button data-mode="sound">🎵 소리</button>
+    </div>
+    <p class="hint" id="camHint"></p>
+    <div class="seg" id="sensBar" hidden></div>
+
+    <div class="shutter-wrap">
+      <button class="shutter" id="shutter" aria-label="찍기"><span id="shutterIcon">📷</span></button>
+      <div class="shutter-label" id="shutterLabel">찍기</div>
+    </div>
+
+    <button class="big ghost" id="btnAlbum">🖼 찍어 둔 사진</button>
+    <p class="note">사진·영상·소리는 지금 단계에서는 이 폰 안에서만 쓰고, 어디에도 저장하지 않아요.</p>
+
+    <!-- 숨겨 둔 파일 고르기 (버튼이 대신 눌러 줌) -->
+    <input type="file" id="fileCapture" accept="image/*" capture="environment" hidden>
+    <input type="file" id="filePick" accept="image/*" hidden>
+  </section>
+
+  <!-- ===================== ⑦ 받은 것 확인 화면 ===================== -->
+  <section id="confirm" class="screen" hidden>
+    <h2 id="confirmTitle"></h2>
+    <div id="confirmMedia"></div>
+    <div class="card" id="confirmInfo"></div>
+    <div class="card" id="confirmAI"></div>
+    <button class="big primary" id="btnConfirmYes">✨ 네, 느껴볼래요</button>
+    <button class="big ghost" id="btnRetake">📷 다시 찍기</button>
+  </section>
+
+  <!-- ===================== ⑧ 아직 만들지 않은 화면 ===================== -->
+  <section id="soon" class="screen" hidden>
+    <h2 id="soonTitle"></h2>
+    <div class="card" id="soonBody"></div>
+    <button class="big ghost" id="btnSoonHome">← 처음으로</button>
+  </section>
+
+  <footer>
+    2단계(수정 1): 감각 준비 확인 · 카메라 모드 바 · 개발 중<br>
+    <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
+  </footer>
+
+  <script>
+    // ==========================================================
+    // 0) 기본 도구
+    // ==========================================================
+    const $ = (id) => document.getElementById(id);
+    const copy = (obj) => JSON.parse(JSON.stringify(obj));   // 사본 만들기
+    let currentScreen = "home";
+
+    // 화면 바꾸기: 원하는 화면 하나만 보이게 함
+    // 카메라 화면을 떠날 때는 카메라·마이크를 꼭 끔 (배터리·사생활 보호)
+    function go(id) {
+      if (currentScreen === "camera" && id !== "camera") leaveCamera();
+      document.querySelectorAll(".screen").forEach((s) => { s.hidden = (s.id !== id); });
+      const entering = (id === "camera" && currentScreen !== "camera");
+      currentScreen = id;
+      window.scrollTo(0, 0);
+      if (entering) enterCamera();
+    }
+
+    // ==========================================================
+    // 1) 저장하기 / 불러오기 (휴대폰 브라우저 안에만 저장)
+    // ==========================================================
+    const KEY_PROFILE = "digical.profile.v1";   // 내 감각 설정
+    const KEY_CHECK = "digical.check.v1";       // 감각 준비 확인 결과
+    const KEY_MODE = "digical.mode.v1";         // 마지막에 쓴 카메라 모드
+    let storageOK = true;
+
+    function load(key) {
+      try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : null; }
+      catch (e) { storageOK = false; return null; }
+    }
+    function save(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); storageOK = true; }
+      catch (e) { storageOK = false; }
+    }
+
+    let profile = load(KEY_PROFILE);   // 없으면 null = 처음 온 사람
+    let check = load(KEY_CHECK);       // { sound: "ok"|"no", vibe: "ok"|"no"|"none" }
+    let draft = null;                  // 고치는 중인 사본
+
+    // ==========================================================
+    // 2) 앱 안 브라우저(카카오톡 등) 감지 → Chrome으로 열기 안내
+    //    웹은 기기 설정을 바꿀 수 없어서, '알아채고 안내'하는 방식
+    // ==========================================================
+    const UA = navigator.userAgent;
+    const IS_ANDROID = /Android/.test(UA);
+    const IS_IOS = /iPhone|iPad|iPod/.test(UA);
+    const IS_KAKAO = /KAKAOTALK/i.test(UA);
+    const IN_APP = IS_KAKAO || /NAVER|Instagram|FBAN|FBAV|Line\/|; wv\)/.test(UA);
+    const IN_FRAME = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+
+    function renderBanner() {
+      if (!IN_APP && !IN_FRAME) return;
+      const b = $("banner");
+      b.hidden = false;
+      if (IS_IOS && !IN_FRAME) {
+        b.innerHTML = "⚠️ <b>앱 안에서 열려 있어요.</b><br>목소리와 감각이 제대로 나오려면<br>오른쪽 아래 <b>⋯</b> 또는 공유 버튼 → <b>'Safari로 열기'</b>를 눌러 주세요.";
+        return;
+      }
+      b.innerHTML = "⚠️ <b>앱 안에서 열려 있어요.</b><br>진동과 목소리가 나오려면 바깥 브라우저(Chrome·삼성 인터넷)로 열어 주세요." +
+        '<button class="big primary" id="btnOpenOutside">바깥 브라우저로 열기</button>';
+      $("btnOpenOutside").onclick = openOutside;
+    }
+
+    function openOutside() {
+      const url = location.href;
+      if (IN_FRAME) { window.open(url, "_blank"); return; }                 // 미리보기 화면 안 → 새 창
+      if (IS_KAKAO) {                                                      // 카카오톡 → 바깥 브라우저
+        location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(url);
+        return;
+      }
+      if (IS_ANDROID) {                                                    // 다른 안드로이드 앱 → Chrome
+        location.href = "intent://" + location.host + location.pathname + location.search +
+          "#Intent;scheme=https;package=com.android.chrome;end";
+      }
+    }
+
+    // ==========================================================
+    // 3) 감각 준비 확인: 소리가 들리는지, 진동이 느껴지는지 사용자에게 직접 물어봄
+    //    안 되면 → 해결 방법 안내 → 그래도 안 되면 다른 감각으로 자동 대체
+    // ==========================================================
+    const canVibrate = ("vibrate" in navigator);
+    let readyNext = "ask";     // 확인이 끝나면 갈 곳
+    let readyStep = "sound";
+    let readyTemp = {};
+
+    function startReady(next) {
+      readyNext = next;
+      readyTemp = { sound: null, vibe: null };
+      readyStep = "sound";
+      renderReady();
+      go("ready");
+    }
+
+    function renderReady() {
+      let h = "";
+      if (readyStep === "sound") {
+        h = '<div class="tip">🔔 시작 전에: <b>무음·방해 금지</b>를 끄고 <b>볼륨</b>을 올려 주세요.</div>' +
+          '<div class="card"><b>1. 소리</b><br>버튼을 누르고 소리가 들리는지 확인해요.</div>' +
+          '<button class="big" data-r="playSound">🔊 소리 내 보기</button>' +
+          '<div id="rq" hidden><p class="q-mid">소리가 들렸나요?</p>' +
+          '<button class="big primary" data-r="soundYes">네, 들려요</button>' +
+          '<button class="big ghost" data-r="soundNo">아니요</button></div>';
+      } else if (readyStep === "soundFail") {
+        h = '<div class="card"><b>이렇게 해 보세요</b><br>' +
+          "· 휴대폰 옆 <b>볼륨 버튼(+)</b>을 여러 번 눌러요<br>" +
+          "· 화면 위를 쓸어내려 🔕(무음)이면 <b>🔔(소리)</b>로 바꿔요<br>" +
+          "· 블루투스 이어폰이 연결돼 있으면 끊어요</div>" +
+          '<button class="big" data-r="soundRetry">🔊 다시 해 보기</button>' +
+          '<button class="big ghost" data-r="soundGiveUp">그래도 안 들려요 → 화면으로 대신하기</button>';
+      } else if (readyStep === "vibe") {
+        if (!canVibrate) {
+          h = '<div class="card"><b>2. 진동</b><br>이 폰(브라우저)은 웹에서 진동을 낼 수 없어요.<br>' +
+            "대신 <b>화면이 두근거리며</b> 알려 드려요.</div>" +
+            '<div class="feel-area"><div class="feel-box" id="readyBox"></div></div>' +
+            '<button class="big" data-r="heartDemo">💓 두근거림 보기</button>' +
+            '<button class="big primary" data-r="vibeNone">다음</button>';
+        } else {
+          h = '<div class="card"><b>2. 진동</b><br>버튼을 누르고 손에 진동이 느껴지는지 확인해요.</div>' +
+            '<button class="big" data-r="playVibe">📳 진동 해 보기 (1초)</button>' +
+            '<div id="rq" hidden><p class="q-mid">진동이 느껴졌나요?</p>' +
+            '<button class="big primary" data-r="vibeYes">네, 느껴져요</button>' +
+            '<button class="big ghost" data-r="vibeNo">아니요</button></div>';
+        }
+      } else if (readyStep === "vibeFail") {
+        h = '<div class="card"><b>이렇게 해 보세요</b><br>' +
+          "· 화면 위를 쓸어내려 <b>⛔ 방해 금지</b>를 꺼요<br>" +
+          "· 🔕(무음)이면 <b>🔔(소리)</b>로 바꿔요<br>" +
+          "· 설정 → 소리 및 진동 → <b>진동 세기</b> 막대를 끝까지 올려요</div>" +
+          '<button class="big" data-r="vibeRetry">📳 다시 해 보기</button>' +
+          '<button class="big ghost" data-r="vibeGiveUp">그래도 안 느껴져요 → 화면 두근거림으로 대신하기</button>';
+      } else {
+        h = '<div class="card"><b>준비 끝!</b><br>' +
+          "👂 소리: " + (readyTemp.sound === "ok" ? "들려요" : "화면으로 대신 알려 드려요") + "<br>" +
+          "✋ 진동: " + (readyTemp.vibe === "ok" ? "느껴져요" : "화면 두근거림으로 대신해요") + "</div>" +
+          '<button class="big primary" data-r="done">계속하기</button>';
+      }
+      $("readyBody").innerHTML = h;
+    }
+
+    $("readyBody").onclick = (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const r = b.dataset.r;
+      if (r === "playSound" || r === "soundRetry") {
+        if (r === "soundRetry") { readyStep = "sound"; renderReady(); }
+        playTone(4);
+        const q = $("rq"); if (q) q.hidden = false;
+      }
+      if (r === "soundYes") { readyTemp.sound = "ok"; readyStep = "vibe"; renderReady(); }
+      if (r === "soundNo") { readyStep = "soundFail"; renderReady(); }
+      if (r === "soundGiveUp") { readyTemp.sound = "no"; readyStep = "vibe"; renderReady(); }
+
+      if (r === "playVibe" || r === "vibeRetry") {
+        if (r === "vibeRetry") { readyStep = "vibe"; renderReady(); }
+        navigator.vibrate(1000);
+        const q = $("rq"); if (q) q.hidden = false;
+      }
+      if (r === "heartDemo") animate($("readyBox"), "heart");
+      if (r === "vibeYes") { readyTemp.vibe = "ok"; readyStep = "done"; renderReady(); }
+      if (r === "vibeNo") { readyStep = "vibeFail"; renderReady(); }
+      if (r === "vibeGiveUp") { readyTemp.vibe = "no"; readyStep = "done"; renderReady(); }
+      if (r === "vibeNone") { readyTemp.vibe = "none"; readyStep = "done"; renderReady(); }
+
+      if (r === "done") {
+        check = copy(readyTemp);
+        save(KEY_CHECK, check);
+        if (readyNext === "ask") startAsk();
+        else if (readyNext === "camera") go("camera");
+        else { renderHome(); go("home"); }
+      }
+    };
+
+    // 확인 결과를 반영한 '실제로 쓸 수 있는가'
+    const vibeUsable = () => canVibrate && !(check && (check.vibe === "no" || check.vibe === "none"));
+    const soundUsable = () => !(check && check.sound === "no");
+
+    // ==========================================================
+    // 4) 질문 목록 — 진단이 아니라 "무엇이 편한가"를 물음
+    // ==========================================================
+    const QUESTIONS = [
+      { id: "screen", icon: "👀", text: "화면을 오래 보는 게\n힘든가요?" },
+      { id: "sound",  icon: "👂", text: "소리를 듣는 게\n힘든가요?" },
+      { id: "vibe",   icon: "📳", text: "휴대폰 진동이\n싫은가요?" },
+      { id: "long",   icon: "📖", text: "긴 설명은\n어렵나요?" },
+      { id: "busy",   icon: "🌀", text: "여러 가지가 한꺼번에 나오면\n정신없나요?" }
+    ];
+    const OPTIONS = [
+      { label: "네", value: "yes" },
+      { label: "아니요", value: "no" },
+      { label: "잘 모르겠어요", value: "unsure" }
+    ];
+    let answers = {};
+    let askIndex = 0;
+
+    function startAsk() {
+      answers = {};
+      askIndex = 0;
+      renderQuestion();
+      go("ask");
+    }
+
+    function renderQuestion() {
+      const q = QUESTIONS[askIndex];
+      $("askProgress").textContent = (askIndex + 1) + " / " + QUESTIONS.length;
+      $("askIcon").textContent = q.icon;
+      $("askText").innerText = q.text;
+      const box = $("askOptions");
+      box.innerHTML = "";
+      OPTIONS.forEach((opt) => {
+        const b = document.createElement("button");
+        b.className = "big" + (answers[q.id] === opt.value ? " primary" : "");
+        b.textContent = opt.label;
+        b.onclick = () => {
+          answers[q.id] = opt.value;
+          if (askIndex < QUESTIONS.length - 1) { askIndex++; renderQuestion(); }
+          else { showRecommendation(); }
+        };
+        box.appendChild(b);
+      });
+      $("btnBack").hidden = (askIndex === 0);
+    }
+    $("btnBack").onclick = () => { if (askIndex > 0) { askIndex--; renderQuestion(); } };
+
+    // ==========================================================
+    // 5) 답 → 추천 설정 (세기 level은 1~5)
+    // ==========================================================
+    const clamp = (v) => Math.max(1, Math.min(5, v));
+
+    function makeRecommendation(a) {
+      const base = (a.busy === "yes") ? 2 : 3;
+      const p = {
+        visual: { on: true, level: base },       // 👁 화면(색·빛·움직임)
+        sound:  { on: true, level: base },       // 👂 소리
+        touch:  { on: true, level: base },       // ✋ 진동
+        voice:  { auto: false, speed: 3 },       // 🗣 음성 해설
+        explain: "normal"                        // 📖 해설 길이
+      };
+      if (a.screen === "yes") {
+        p.visual.level = clamp(base - 1);
+        p.sound.level = clamp(base + 1);
+        p.touch.level = clamp(base + 1);
+        p.voice.auto = true;
+      }
+      // 소리 듣기가 힘들거나, 준비 확인에서 소리가 안 들렸으면 → 화면·진동 중심
+      if (a.sound === "yes" || !soundUsable()) {
+        p.sound.on = false;
+        p.voice.auto = false;
+        p.visual.level = clamp(p.visual.level + 1);
+        p.touch.level = clamp(p.touch.level + 1);
+      }
+      if (a.vibe === "yes") p.touch.on = false;
+      if (a.long === "yes") { p.explain = "short"; p.voice.speed = 2; }
+      if (!p.visual.on && !p.sound.on && !p.touch.on) p.visual.on = true;
+      return p;
+    }
+
+    const NAMES = { visual: "👁 화면", sound: "👂 소리", touch: "✋ 진동" };
+    const dots = (n) => "●".repeat(n) + "○".repeat(5 - n);
+
+    function mainSenses(p) {
+      const list = ["visual", "sound", "touch"]
+        .filter((k) => p[k].on)
+        .sort((x, y) => p[y].level - p[x].level)
+        .slice(0, 2)
+        .map((k) => NAMES[k].split(" ")[1]);
+      return list.join(" + ") + " 중심이에요";
+    }
+
+    function summaryHTML(p) {
+      let html = "";
+      ["visual", "sound", "touch"].forEach((k) => {
+        let extra = "";
+        if (k === "touch" && p.touch.on && !vibeUsable()) extra = " (화면 두근거림으로)";
+        html += "<div>" + NAMES[k] + ": " + (p[k].on ? dots(p[k].level) + extra : "꺼짐") + "</div>";
+      });
+      html += "<div>🗣 음성 해설: " +
+        (!p.sound.on ? "꺼짐 (소리가 꺼져 있어요)" : (p.voice.auto ? "자동으로 읽어 줘요" : "누를 때만 읽어요")) + "</div>";
+      html += "<div>📖 설명: " + (p.explain === "short" ? "짧게" : "보통") + "</div>";
+      return html;
+    }
+
+    function showRecommendation() {
+      draft = makeRecommendation(answers);
+      $("recTitle").textContent = mainSenses(draft);
+      $("recSummary").innerHTML = summaryHTML(draft);
+      $("feelMsg1").textContent = "";
+      go("recommend");
+    }
+    $("btnUseRec").onclick = () => { profile = copy(draft); save(KEY_PROFILE, profile); renderHome(); go("home"); };
+    $("btnToDetail").onclick = () => openDetail();
+    $("btnFeel1").onclick = () => feel(draft, "feelBox1", "feelMsg1");
+
+    // ==========================================================
+    // 6) 감각 출력 (시각·청각·촉각·음성)
+    // ==========================================================
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+    // 첫 터치에 소리 기능을 미리 깨워 둠 (첫 소리 뭉개짐 방지)
+    document.addEventListener("pointerdown", () => { getAudio(); }, { once: true });
+
+    // 세기(1~5) → 실제 출력값 (임시 표. 다음 단계에서 스티븐스 법칙으로 바꿈)
+    const GAIN = [0, 0.05, 0.12, 0.22, 0.35, 0.5];
+    const VIBE = [null, [120], [200], [200, 100, 200],
+                  [300, 100, 300, 100, 300], [400, 100, 400, 100, 400, 100, 400]];
+    const SPEED = [0, 0.6, 0.75, 0.9, 1.0, 1.15];
+
+    function playTone(level) {
+      const ctx = getAudio();
+      if (!ctx) return false;
+      const t = ctx.currentTime + 0.05;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = 523.25;                 // 높은 '도'
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(GAIN[level], t + 0.03);
+      gain.gain.linearRampToValueAtTime(0, t + 0.45);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.5);
+      return true;
+    }
+
+    function animate(box, cls) {
+      if (!box) return;
+      box.classList.remove("pulse", "heart");
+      void box.offsetWidth;                          // 애니메이션을 처음부터 다시 시작
+      box.classList.add(cls);
+    }
+
+    function speakSample(speed) {
+      if (!("speechSynthesis" in window)) return "🗣 이 브라우저는 읽기 기능이 없어요";
+      const u = new SpeechSynthesisUtterance("안녕하세요. 이렇게 읽어 드릴게요.");
+      u.lang = "ko-KR";
+      u.rate = SPEED[speed];
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+      return "🗣 목소리로 읽었어요 (지금은 연습용 기본 목소리)";
+    }
+
+    function feel(p, boxId, msgId) {
+      const box = $(boxId);
+      const msg = [];
+      // ✋ 촉각 먼저 (버튼을 누른 그 순간이 가장 확실)
+      if (p.touch.on) {
+        if (vibeUsable()) {
+          const ok = navigator.vibrate(VIBE[p.touch.level]);
+          msg.push(ok ? "✋ 진동이 울렸어요" : "✋ 브라우저가 진동을 막았어요 (진동 점검을 열어 보세요)");
+        } else {
+          setTimeout(() => animate(box, "heart"), p.visual.on ? 350 : 0);
+          msg.push("✋ 진동 대신 화면이 두근거려요");
+        }
+      }
+      if (p.visual.on) {
+        box.style.setProperty("--s", (p.visual.level / 5).toString());
+        animate(box, "pulse");
+        msg.push("👁 화면이 빛났어요");
+      }
+      if (p.sound.on) {
+        msg.push(playTone(p.sound.level) ? "👂 소리가 났어요" : "👂 이 브라우저는 소리를 못 내요");
+        if (p.voice.auto) msg.push(speakSample(p.voice.speed));
+        else msg.push("🗣 자동으로 읽기는 꺼져 있어요");
+      }
+      if (msg.length === 0) msg.push("켜진 감각이 없어요. 하나 이상 켜 주세요.");
+      $(msgId).textContent = msg.join("\n");
+    }
+
+    // ==========================================================
+    // 7) 자세히 맞추기 화면
+    // ==========================================================
+    function openDetail() {
+      if (!draft) draft = copy(profile || makeRecommendation({}));
+      renderControls();
+      $("feelMsg2").textContent = "";
+      go("detail");
+    }
+
+    function levelButtons(key, value, disabled, leftLabel, rightLabel) {
+      let html = '<div class="dots' + (disabled ? " disabled" : "") + '">';
+      for (let i = 1; i <= 5; i++) {
+        html += '<button class="dot' + (i <= value ? " on" : "") + '" data-act="level" data-key="' + key +
+                '" data-v="' + i + '" aria-label="' + i + '단계">' + i + "</button>";
+      }
+      html += "</div>";
+      html += '<div class="ends"><span>' + leftLabel + "</span><span>" + rightLabel + "</span></div>";
+      return html;
+    }
+
+    function renderControls() {
+      const p = draft;
+      let html = "";
+      ["visual", "sound", "touch"].forEach((k) => {
+        html += '<div class="sense-row"><div class="sense-head">' +
+          '<span class="sense-name">' + NAMES[k] + "</span>" +
+          '<button class="toggle" data-act="toggle" data-key="' + k + '" aria-pressed="' + p[k].on + '">' +
+          (p[k].on ? "켜짐" : "꺼짐") + "</button></div>" +
+          levelButtons(k, p[k].level, !p[k].on, "약하게", "강하게");
+        if (k === "touch" && !vibeUsable()) {
+          html += '<div class="note">이 폰에서는 진동 대신 화면이 두근거려요.</div>';
+        }
+        html += "</div>";
+      });
+      const voiceDisabled = !p.sound.on;
+      html += '<div class="sense-row"><div class="sense-head">' +
+        '<span class="sense-name">🗣 자동으로 읽기</span>' +
+        '<button class="toggle" data-act="voiceauto" aria-pressed="' + (p.voice.auto && !voiceDisabled) + '"' +
+        (voiceDisabled ? " disabled" : "") + ">" + (p.voice.auto && !voiceDisabled ? "켜짐" : "꺼짐") + "</button></div>" +
+        levelButtons("speed", p.voice.speed, voiceDisabled, "천천히", "빠르게") +
+        (voiceDisabled
+          ? '<div class="note">소리가 꺼져 있어 음성도 나오지 않아요.</div>'
+          : '<button class="big ghost" data-act="voicetest">🗣 목소리 들어보기</button><div class="result" id="voiceMsg"></div>') +
+        "</div>";
+      html += '<div class="sense-row"><div class="sense-name">📖 설명 길이</div><div class="dots">' +
+        '<button class="dot' + (p.explain === "short" ? " on" : "") + '" data-act="explain" data-v="short">짧게</button>' +
+        '<button class="dot' + (p.explain === "normal" ? " on" : "") + '" data-act="explain" data-v="normal">보통</button>' +
+        "</div></div>";
+      $("controls").innerHTML = html;
+    }
+
+    $("controls").onclick = (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const act = b.dataset.act, key = b.dataset.key, v = Number(b.dataset.v);
+      if (act === "toggle") draft[key].on = !draft[key].on;
+      if (act === "level") { if (key === "speed") draft.voice.speed = v; else draft[key].level = v; }
+      if (act === "voiceauto") draft.voice.auto = !draft.voice.auto;
+      if (act === "explain") draft.explain = b.dataset.v;
+      if (act === "voicetest") { $("voiceMsg").textContent = speakSample(draft.voice.speed); return; }
+      renderControls();
+    };
+
+    document.querySelectorAll("[data-preset]").forEach((b) => {
+      b.onclick = () => {
+        const lv = Number(b.dataset.preset);
+        ["visual", "sound", "touch"].forEach((k) => { draft[k].level = lv; });
+        renderControls();
+      };
+    });
+
+    $("btnFeel2").onclick = () => feel(draft, "feelBox2", "feelMsg2");
+    $("btnSaveDetail").onclick = () => {
+      if (!draft.visual.on && !draft.sound.on && !draft.touch.on) {
+        $("feelMsg2").textContent = "⚠️ 감각을 하나 이상 켜 주세요.";
+        return;
+      }
+      profile = copy(draft);
+      save(KEY_PROFILE, profile);
+      renderHome();
+      go("home");
+    };
+    $("btnRedo").onclick = () => { draft = null; startAsk(); };
+    $("btnDetailHome").onclick = () => { draft = null; renderHome(); go("home"); };
+
+    // ==========================================================
+    // 8) 카메라 화면: 모드 바 (📷 사진 · 🎬 영상 · 🎵 소리)
+    // ==========================================================
+    let mode = load(KEY_MODE) || "photo";   // 마지막에 쓴 모드를 기억
+    let camStream = null;                   // 카메라 영상 흐름
+    let camStarting = null;                 // 카메라를 켜는 중이면 기억 → 두 번 동시에 켜지 않게
+    const MODE_INFO = {
+      photo: { hint: "작품을 네모 안에 넣고 버튼을 눌러 주세요", icon: "📷", label: "찍기" },
+      video: { hint: "누르고 있거나, 한 번 눌러 시작·다시 눌러 멈춰요 (3~30초)", icon: "🎬", label: "담기" },
+      sound: { hint: "버튼을 누르면 주변 소리를 듣기 시작해요", icon: "🎵", label: "듣기 시작" }
+    };
+
+    function enterCamera() {
+      if (!profile) profile = makeRecommendation({});
+      $("camMsg").textContent = "";
+      applyMode();
+    }
+
+    function leaveCamera() {
+      clearTimeout(hideTimer);
+      if (rec) cancelRecording();
+      stopMic();
+      stopCamera();
+      listening = false;
+    }
+
+    // [수정] 권한을 묻는 창이 뜰 때도 잠깐 '숨김' 상태가 됩니다.
+    // 그래서 1.5초 넘게 숨겨져 있을 때만(진짜로 다른 앱으로 갔을 때만) 카메라·마이크를 끕니다.
+    let hideTimer = null;
+    document.addEventListener("visibilitychange", () => {
+      if (currentScreen !== "camera") return;
+      clearTimeout(hideTimer);
+      if (document.hidden) {
+        hideTimer = setTimeout(() => { if (document.hidden) leaveCamera(); }, 1500);
+      } else if (!camStream && !camStarting && mode !== "sound") {
+        applyMode();
+      }
+    });
+
+    function applyMode() {
+      document.querySelectorAll("#modebar button").forEach((b) => {
+        b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
+      });
+      const info = MODE_INFO[mode];
+      $("camHint").textContent = info.hint;
+      $("shutterIcon").textContent = info.icon;
+      $("shutterLabel").textContent = info.label;
+      $("shutter").classList.remove("recording");
+      $("recBadge").hidden = true;
+
+      const isSound = (mode === "sound");
+      const isVideo = (mode === "video");
+      $("soundView").hidden = !isSound;
+      $("guide").hidden = isSound;
+      $("sensBar").hidden = !isSound;
+      $("btnAlbum").hidden = isSound;
+
+      // [수정] 영상 모드에서는 폰 카메라·찍어 둔 파일도 '영상'을 고르게 함
+      $("btnAlbum").textContent = isVideo ? "🖼 찍어 둔 영상" : "🖼 찍어 둔 사진";
+      $("filePick").accept = isVideo ? "video/*" : "image/*";
+      $("fileCapture").accept = isVideo ? "video/*" : "image/*";
+      $("btnCapFallback").textContent = isVideo ? "🎬 폰 카메라로 직접 찍기" : "📷 폰 카메라로 직접 찍기";
+
+      if (isSound) {
+        $("btnCapFallback").hidden = true;
+        $("btnCamRetry").hidden = true;
+        stopCamera();
+        renderSens();
+        $("beatInfo").textContent = "버튼을 누르면 듣기 시작해요\n소리는 녹음하지 않고 분석만 해요";
+      } else {
+        if (!isVideo) stopMic();
+        // [수정] 카메라를 다 켠 '다음에' 마이크를 켬 (동시에 켜면 일부 폰에서 실패)
+        startCamera().then((ok) => { if (ok && mode === "video") startMic(); });
+      }
+    }
+
+    $("modebar").onclick = (e) => {
+      const b = e.target.closest("button");
+      if (!b || b.dataset.mode === mode) return;
+      if (rec) cancelRecording();
+      if (listening) stopListening(false);
+      mode = b.dataset.mode;
+      save(KEY_MODE, mode);
+      applyMode();
+    };
+
+    function startCamera() {
+      if (camStream) return Promise.resolve(true);
+      if (camStarting) return camStarting;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        camFail("이 브라우저는 카메라 화면을 열 수 없어요.", "");
+        return Promise.resolve(false);
+      }
+      camStarting = (async () => {
+        try {
+          const s = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 960 } },
+            audio: false
+          });
+          // 기다리는 사이 다른 화면·모드로 바뀌었으면 바로 끔
+          if (currentScreen !== "camera" || mode === "sound") { s.getTracks().forEach((t) => t.stop()); return false; }
+          camStream = s;
+          const v = $("video");
+          v.muted = true;
+          v.setAttribute("playsinline", "");
+          v.srcObject = s;
+          try { await v.play(); } catch (e) { /* 일부 폰은 play가 실패해도 화면은 나옴 */ }
+          $("camMsg").textContent = "";
+          $("btnCapFallback").hidden = true;
+          $("btnCamRetry").hidden = true;
+          // 2초 뒤에도 화면 크기가 0이면 카메라 화면이 안 나오는 것
+          setTimeout(() => { if (camStream && !v.videoWidth) camFail("카메라 화면이 나오지 않아요.", "no-frame"); }, 2000);
+          return true;
+        } catch (e) {
+          camFail("카메라를 쓸 수 없어요.\n주소창 옆 🔒(또는 ⓘ) → 권한에서 '카메라 허용'을 확인해 주세요.", e.name);
+          return false;
+        } finally {
+          camStarting = null;
+        }
+      })();
+      return camStarting;
+    }
+    function camFail(msg, code) {
+      $("camMsg").textContent = msg + "\n아래 버튼으로 다시 켜거나, 폰 카메라를 직접 열 수 있어요." +
+        (code ? "\n(오류 코드: " + code + ")" : "");
+      $("btnCamRetry").hidden = false;
+      $("btnCapFallback").hidden = false;
+    }
+    function stopCamera() {
+      if (camStream) { camStream.getTracks().forEach((t) => t.stop()); camStream = null; }
+      $("video").srcObject = null;
+    }
+    $("btnCamRetry").onclick = () => { stopCamera(); $("camMsg").textContent = ""; applyMode(); };
+
+    // 카메라 화면을 사진 한 장으로 (긴 쪽을 max 픽셀로 줄여서 → AI로 보낼 때 빨라짐)
+    function grabFrame(max) {
+      const v = $("video");
+      if (!camStream || !v.videoWidth) return null;
+      const s = Math.min(1, max / Math.max(v.videoWidth, v.videoHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.round(v.videoWidth * s);
+      c.height = Math.round(v.videoHeight * s);
+      c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+      return c.toDataURL("image/jpeg", 0.8);
+    }
+
+    // ----- [새로 추가] 장면 고르기: '장면이 바뀐 순간'만 남기기 -----
+    // 사진을 16×16 흑백으로 아주 작게 줄여 '지문'을 만들고,
+    // 앞 장면의 지문과 많이 다르면 '새 장면'으로 봄
+    const sigCanvas = document.createElement("canvas");
+    sigCanvas.width = 16; sigCanvas.height = 16;
+    function signature(source) {
+      const g = sigCanvas.getContext("2d", { willReadFrequently: true });
+      g.drawImage(source, 0, 0, 16, 16);
+      const d = g.getImageData(0, 0, 16, 16).data;
+      const out = new Array(256);
+      for (let i = 0; i < 256; i++) out[i] = (d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2]) / 3;
+      return out;
+    }
+    function sigDiff(a, b) {
+      let s = 0;
+      for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]);
+      return s / a.length;                     // 0(똑같음) ~ 255(완전히 다름)
+    }
+    function evenly(arr, n) {
+      const out = [];
+      for (let i = 0; i < n; i++) out.push(arr[Math.floor(i * arr.length / n)]);
+      return out;
+    }
+    // 후보들(0.5초마다 찍은 장면) 중에서 고르기
+    // - 앞 장면과 많이 다르면(14 이상) 새 장면으로 저장
+    // - 장면이 안 바뀌어도 3초마다 한 장은 저장 (천천히 변하는 장면 대비)
+    // - 최대 8장, 최소 3장
+    function pickScenes(cands) {
+      if (!cands.length) return [];
+      let sel = [cands[0]];
+      for (const c of cands.slice(1)) {
+        const last = sel[sel.length - 1];
+        if (sigDiff(c.sig, last.sig) > 14 || c.t - last.t >= 3) sel.push(c);
+      }
+      if (sel.length > 8) sel = evenly(sel, 8);
+      if (sel.length < 3) sel = evenly(cands, Math.min(3, cands.length));
+      return sel.map((c) => c.img);
+    }
+
+    // ----- 파일(찍어 둔 사진·영상 / 폰 카메라) 처리 -----
+    function fileToImage(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const s = Math.min(1, 768 / Math.max(img.width, img.height));
+          const c = document.createElement("canvas");
+          c.width = Math.round(img.width * s);
+          c.height = Math.round(img.height * s);
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          resolve(c.toDataURL("image/jpeg", 0.8));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+        img.src = url;
+      });
+    }
+    function waitEvent(el, name) {
+      return new Promise((resolve, reject) => {
+        el.addEventListener(name, resolve, { once: true });
+        el.addEventListener("error", reject, { once: true });
+      });
+    }
+    // [새로 추가] 영상 파일 → 장면 사진 + 소리 요약
+    async function videoFileToScenes(file, source) {
+      const url = URL.createObjectURL(file);
+      const v = document.createElement("video");
+      v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = url;
+      await waitEvent(v, "loadeddata");
+      const dur = v.duration;
+      if (!isFinite(dur) || dur < 3) {
+        URL.revokeObjectURL(url);
+        $("camMsg").textContent = "3초 이상인 영상을 골라 주세요.";
+        return null;
+      }
+      const use = Math.min(dur, 30);              // 앞 30초까지만 사용
+      const s = Math.min(1, 512 / Math.max(v.videoWidth, v.videoHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.round(v.videoWidth * s);
+      c.height = Math.round(v.videoHeight * s);
+      const g = c.getContext("2d");
+      const cands = [];
+      const n = Math.min(24, Math.ceil(use * 2));  // 0.5초 간격 정도로 후보
+      for (let i = 0; i < n; i++) {
+        const t = (i + 0.5) * use / n;
+        v.currentTime = t;
+        await waitEvent(v, "seeked");
+        g.drawImage(v, 0, 0, c.width, c.height);
+        cands.push({ img: c.toDataURL("image/jpeg", 0.8), sig: signature(v), t: t });
+      }
+      URL.revokeObjectURL(url);
+      let audio = null;
+      try { audio = await analyzeAudioFile(file, use); } catch (e) { audio = null; }
+      return {
+        type: "video", images: pickScenes(cands), dur: use, audio: audio, source: source,
+        cands: cands.length, longNote: dur > 30 ? "(긴 영상이라 앞 30초만 사용했어요)" : ""
+      };
+    }
+
+    async function onFile(input, source) {
+      const file = input.files && input.files[0];
+      input.value = "";                      // 같은 파일을 다시 골라도 작동하게
+      if (!file) return;
+      const t0 = performance.now();
+      try {
+        if (file.type.startsWith("video/")) {
+          $("camMsg").textContent = "영상을 살펴보는 중이에요…";
+          const d = await videoFileToScenes(file, source);
+          if (!d) return;
+          $("camMsg").textContent = "";
+          showConfirm(d);
+        } else {
+          const img = await fileToImage(file);
+          showConfirm({ type: "photo", images: [img], source: source, prepMs: performance.now() - t0 });
+        }
+      } catch (e) {
+        $("camMsg").textContent = "파일을 열 수 없어요. 다른 파일을 골라 주세요.";
+      }
+    }
+    $("btnAlbum").onclick = () => $("filePick").click();
+    $("btnCapFallback").onclick = () => $("fileCapture").click();
+    $("filePick").onchange = (e) => onFile(e.target, mode === "video" ? "찍어 둔 영상" : "찍어 둔 사진");
+    $("fileCapture").onchange = (e) => onFile(e.target, "폰 카메라");
+
+    // ----- 셔터: 모드마다 다르게 작동 -----
+    const shutter = $("shutter");
+    shutter.onclick = () => {
+      if (mode === "photo") takePhoto();
+      if (mode === "sound") { if (listening) stopListening(true); else startListening(); }
+      // 영상은 아래 '누르기/떼기'로 처리
+    };
+
+    function takePhoto() {
+      const t0 = performance.now();
+      const img = grabFrame(768);
+      if (!img) { $("camMsg").textContent = "카메라가 아직 준비되지 않았어요. 잠시 후 다시 눌러 주세요."; return; }
+      showConfirm({ type: "photo", images: [img], source: "앱 카메라", prepMs: performance.now() - t0 });
+    }
+
+    // ==========================================================
+    // 9) 🎬 영상: 누르고 있기(떼면 멈춤) 또는 한 번 누르기(다시 누르면 멈춤)
+    //    영상 전체를 보내지 않고, 0.5초마다 후보 장면을 찍은 뒤 '장면이 바뀐 순간'만 고름
+    //    소리는 폰에서 실시간 분석
+    // ==========================================================
+    let rec = null;
+    let downAt = 0;
+
+    shutter.onpointerdown = (e) => {
+      if (mode !== "video") return;
+      e.preventDefault();
+      if (!rec) { downAt = performance.now(); startRecording(); }
+      else if (!rec.hold) { stopRecording(); }           // 한 번 누르기 방식 → 다시 누르면 멈춤
+    };
+    function onRelease() {
+      if (mode !== "video" || !rec) return;
+      if (performance.now() - downAt >= 600) { rec.hold = true; stopRecording(); }   // 길게 누르기 → 떼면 멈춤
+      else { $("shutterLabel").textContent = "다시 누르면 멈춰요"; }
+    }
+    shutter.onpointerup = onRelease;
+    shutter.onpointercancel = onRelease;
+    shutter.oncontextmenu = (e) => e.preventDefault();
+
+    function addCandidate() {
+      if (!rec) return;
+      const img = grabFrame(512);
+      if (img) rec.cands.push({ img: img, sig: signature($("video")), t: (performance.now() - rec.start) / 1000 });
+    }
+
+    async function startRecording() {
+      const camOK = camStream || await startCamera();
+      if (!camOK) return;
+      rec = { start: performance.now(), cands: [], hold: false };
+      addCandidate();
+      rec.tick = setInterval(addCandidate, 500);
+      rec.auto = setTimeout(() => stopRecording(), 30000);     // 30초가 되면 자동으로 멈춤
+      rec.timer = setInterval(() => {
+        if (rec) $("recTime").textContent = Math.floor((performance.now() - rec.start) / 1000);
+      }, 200);
+      $("recBadge").hidden = false;
+      $("recTime").textContent = "0";
+      shutter.classList.add("recording");
+      $("shutterIcon").textContent = "■";
+      $("shutterLabel").textContent = "담는 중…";
+      if (await startMic()) startAnalysis();   // 녹화 중에도 박자에 맞춰 감각 출력
+    }
+
+    function clearRec() {
+      clearInterval(rec.tick); clearTimeout(rec.auto); clearInterval(rec.timer);
+      $("recBadge").hidden = true;
+      shutter.classList.remove("recording");
+      $("shutterIcon").textContent = MODE_INFO.video.icon;
+      $("shutterLabel").textContent = MODE_INFO.video.label;
+    }
+    function cancelRecording() { if (rec) { clearRec(); rec = null; stopAnalysis(); } }
+
+    function stopRecording() {
+      if (!rec) return;
+      const dur = (performance.now() - rec.start) / 1000;
+      clearRec();
+      const summary = audioSummary();
+      stopAnalysis();
+      const cands = rec.cands;
+      rec = null;
+      if (dur < 3) { $("camMsg").textContent = "3초 이상 담아 주세요."; return; }
+      showConfirm({ type: "video", images: pickScenes(cands), dur: dur, audio: summary,
+                    source: "앱 카메라", cands: cands.length, longNote: "" });
+    }
+
+    // ==========================================================
+    // 10) 🎵 소리 분석 엔진 (영상·소리 모드가 함께 씀)
+    //     [수정] 저음만 보던 방식 → '스펙트럼 변화량(spectral flux)' 방식
+    //       - 약 21ms 조각마다 FFT로 주파수별 세기를 구하고
+    //       - 바로 전 조각보다 '새로 커진 양'을 모든 주파수(~5000Hz)에서 더함
+    //       - 그 값이 최근 평균보다 확 튀면 = 새 소리가 시작된 순간(박자·음표·박수)
+    //       - 폰 마이크는 저음을 잘 못 잡아서, 저음만 보면 둔했음
+    //     - 1초에 3번 넘게 번쩍이지 않도록 박자 사이 최소 0.333초 (광과민성 예방)
+    //     - 소리는 녹음·저장하지 않음 (숫자로 분석만)
+    // ==========================================================
+    let micStream = null, micSource = null, analyser = null, anaRaf = null, ana = null;
+    let listening = false;
+
+    // 반응 민감도: 숫자가 작을수록 작은 변화에도 반응
+    const KEY_SENS = "digical.sens.v1";
+    const SENS = [
+      { label: "예민하게", k: 0.8 },
+      { label: "보통", k: 1.2 },
+      { label: "차분하게", k: 2.0 }
+    ];
+    let sensK = load(KEY_SENS) || 1.2;
+    function renderSens() {
+      $("sensBar").innerHTML = '<span class="seg-title">반응</span>' +
+        SENS.map((s) => '<button data-k="' + s.k + '" aria-pressed="' + (s.k === sensK) + '">' + s.label + "</button>").join("");
+    }
+    $("sensBar").onclick = (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      sensK = Number(b.dataset.k);
+      save(KEY_SENS, sensK);
+      renderSens();
+    };
+
+    async function startMic() {
+      if (micStream) return true;
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+        });
+        if (currentScreen !== "camera") { s.getTracks().forEach((t) => t.stop()); return false; }
+        micStream = s;
+        const ctx = getAudio();
+        micSource = ctx.createMediaStreamSource(micStream);
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 1024;               // 1024개 샘플 = 약 21ms (35ms 기준 안)
+        analyser.smoothingTimeConstant = 0;    // 지난 값과 섞지 않음 (빠른 반응)
+        micSource.connect(analyser);           // 스피커로는 연결하지 않음 (울림 방지)
+        return true;
+      } catch (e) {
+        $("camMsg").textContent = "마이크를 쓸 수 없어요.\n주소창 옆 🔒(또는 ⓘ) → 권한에서 '마이크 허용'을 확인해 주세요." +
+          "\n(오류 코드: " + e.name + ")";
+        return false;
+      }
+    }
+    function stopMic() {
+      stopAnalysis();
+      if (micSource) { try { micSource.disconnect(); } catch (e) {} micSource = null; }
+      if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
+      analyser = null;
+    }
+
+    const mean = (a) => a.reduce((x, y) => x + y, 0) / (a.length || 1);
+    const stdev = (a, m) => Math.sqrt(a.reduce((x, y) => x + (y - m) * (y - m), 0) / (a.length || 1));
+
+    function startAnalysis() {
+      if (!analyser) return;
+      stopAnalysis();
+      const ctx = getAudio();
+      const bins = new Uint8Array(analyser.frequencyBinCount);
+      const prev = new Uint8Array(bins.length);
+      const binHz = ctx.sampleRate / analyser.fftSize;            // 칸 하나가 몇 Hz인지
+      const top = Math.min(bins.length - 1, Math.round(5000 / binHz));
+      ana = {
+        hist: [], lastBeat: 0, beats: 0, beatTimes: [], startedAt: performance.now(),
+        sumVol: 0, n: 0, sumCent: 0, nc: 0, latencies: [],
+        windowMs: analyser.fftSize / ctx.sampleRate * 1000
+      };
+      const loop = () => {
+        if (!ana || !analyser) return;
+        const tFrame = performance.now();
+        analyser.getByteFrequencyData(bins);
+
+        // 새로 커진 양(spectral flux)
+        let flux = 0;
+        for (let i = 1; i <= top; i++) { const d = bins[i] - prev[i]; if (d > 0) flux += d; }
+        flux /= top;
+        prev.set(bins);
+
+        // 전체 크기와 '소리 밝기'(높은 소리가 많을수록 큼)
+        let total = 0, weighted = 0;
+        for (let i = 0; i < bins.length; i++) { total += bins[i]; weighted += bins[i] * i; }
+        ana.sumVol += total / bins.length; ana.n++;
+        if (total > 0) { ana.sumCent += (weighted / total) * binHz; ana.nc++; }
+
+        // 최근 약 0.7초의 평균 + (민감도 × 흔들림 정도)보다 크면 박자
+        ana.hist.push(flux);
+        if (ana.hist.length > 43) ana.hist.shift();
+        const m = mean(ana.hist), sd = stdev(ana.hist, m);
+        if (ana.hist.length > 10 && flux > m + sensK * sd && flux > 2 && tFrame - ana.lastBeat > 333) {
+          ana.lastBeat = tFrame;
+          ana.beats++;
+          ana.beatTimes.push(tFrame);
+          onBeat(Math.min(1, (flux - m) / (4 * sd + 0.001)));
+          ana.latencies.push(performance.now() - tFrame);       // 분석 → 출력 명령까지 걸린 시간
+        }
+        if (mode === "sound") drawViz(bins);
+        anaRaf = requestAnimationFrame(loop);
+      };
+      anaRaf = requestAnimationFrame(loop);
+    }
+    function stopAnalysis() {
+      if (anaRaf) cancelAnimationFrame(anaRaf);
+      anaRaf = null;
+    }
+
+    // 박자 순간에 내 감각 설정대로 출력
+    function onBeat(strength) {
+      const p = profile;
+      const circle = (mode === "sound") ? $("beatCircle") : null;
+      if (p.touch.on) {
+        if (vibeUsable()) navigator.vibrate(50 + p.touch.level * 25);   // 짧고 또렷하게
+        else if (circle) animate(circle, "heart");
+      }
+      if (p.visual.on && circle) {
+        circle.style.setProperty("--s", ((p.visual.level / 5) * (0.6 + strength * 0.4)).toString());
+        animate(circle, "pulse");
+      }
+      if (mode === "sound" && ana) $("beatInfo").textContent = "듣는 중… 박자 " + ana.beats + "번";
+    }
+
+    function drawViz(bins) {
+      const c = $("viz"), g = c.getContext("2d");
+      g.clearRect(0, 0, c.width, c.height);
+      const n = 48, w = c.width / n;
+      g.fillStyle = "#FFD23F";
+      for (let i = 0; i < n; i++) {
+        const h = (bins[i + 1] / 255) * c.height;
+        g.fillRect(i * w + 1, c.height - h, w - 2, h);
+      }
+    }
+
+    // 박자 간격 → 빠르기(BPM)
+    function bpmFrom(times) {
+      const gaps = [];
+      for (let i = 1; i < times.length; i++) gaps.push(times[i] - times[i - 1]);
+      gaps.sort((a, b) => a - b);
+      return gaps.length >= 3 ? Math.round(60000 / gaps[Math.floor(gaps.length / 2)]) : null;
+    }
+
+    // 들은 소리를 숫자로 요약 (나중에 AI 해설 재료가 됨)
+    function audioSummary() {
+      if (!ana || ana.n === 0) return null;
+      const vol = ana.sumVol / ana.n;
+      const cent = ana.nc ? ana.sumCent / ana.nc : 0;
+      return {
+        sec: (performance.now() - ana.startedAt) / 1000,
+        beats: ana.beats, bpm: bpmFrom(ana.beatTimes),
+        loud: vol < 20 ? "조용함" : vol < 50 ? "보통" : "큼",
+        bright: cent < 1000 ? "낮은 소리 위주" : cent < 2500 ? "중간 소리 위주" : "높은 소리 위주",
+        windowMs: ana.windowMs,
+        latencyMs: ana.latencies.length ? mean(ana.latencies) : null
+      };
+    }
+
+    // [새로 추가] 영상 파일 속 소리 분석 (같은 원리를 파일에 적용)
+    async function analyzeAudioFile(file, useSec) {
+      const ctx = getAudio();
+      const buf = await ctx.decodeAudioData(await file.arrayBuffer());
+      const data = buf.getChannelData(0);
+      const sr = buf.sampleRate, N = 1024;
+      const frames = Math.floor(Math.min(data.length, useSec * sr) / N);
+      const energies = [];
+      for (let f = 0; f < frames; f++) {
+        let e = 0;
+        for (let i = f * N; i < (f + 1) * N; i++) e += data[i] * data[i];
+        energies.push(Math.sqrt(e / N));
+      }
+      const beats = [], hist = [];
+      let last = -1e9;
+      for (let f = 1; f < frames; f++) {
+        const flux = Math.max(0, energies[f] - energies[f - 1]);
+        hist.push(flux);
+        if (hist.length > 43) hist.shift();
+        const m = mean(hist), sd = stdev(hist, m);
+        const t = f * N / sr * 1000;
+        if (hist.length > 10 && flux > m + 1.5 * sd && flux > 0.005 && t - last > 333) { beats.push(t); last = t; }
+      }
+      const vol = mean(energies);
+      return {
+        sec: useSec, beats: beats.length, bpm: bpmFrom(beats),
+        loud: vol < 0.02 ? "조용함" : vol < 0.08 ? "보통" : "큼",
+        bright: "높낮이는 파일에서 분석 안 함",
+        windowMs: N / sr * 1000, latencyMs: null
+      };
+    }
+
+    function summaryText(s) {
+      if (!s) return "소리 정보가 없어요.";
+      return "들은 시간: " + s.sec.toFixed(1) + "초\n" +
+        "박자: " + s.beats + "번" + (s.bpm ? " (빠르기 약 " + s.bpm + " BPM)" : "") + "\n" +
+        "크기: " + s.loud + " · " + s.bright + "\n" +
+        "분석 창: " + s.windowMs.toFixed(1) + "ms (목표 35ms 이내)\n" +
+        "박자 감지 → 출력 명령: " + (s.latencyMs !== null ? s.latencyMs.toFixed(2) + "ms" : "해당 없음 (파일 분석)");
+    }
+
+    async function startListening() {
+      const ok = await startMic();
+      if (!ok) return;
+      listening = true;
+      startAnalysis();
+      shutter.classList.add("recording");
+      $("shutterIcon").textContent = "■";
+      $("shutterLabel").textContent = "그만 듣기";
+      $("beatInfo").textContent = "듣는 중… 박자 0번";
+    }
+    function stopListening(showResult) {
+      const s = audioSummary();
+      stopAnalysis();
+      stopMic();
+      listening = false;
+      shutter.classList.remove("recording");
+      $("shutterIcon").textContent = MODE_INFO.sound.icon;
+      $("shutterLabel").textContent = MODE_INFO.sound.label;
+      if (showResult) $("beatInfo").textContent = summaryText(s);
+    }
+
+    // ==========================================================
+    // 11) 받은 것 확인 화면 (AI 연결 전: 연습용 가짜 응답)
+    // ==========================================================
+    function showConfirm(d) {
+      const kb = Math.round(d.images.reduce((a, s) => a + s.length * 0.75, 0) / 1024);
+      if (d.type === "photo") {
+        $("confirmTitle").textContent = "📷 사진을 받았어요";
+        $("confirmMedia").innerHTML = '<img class="one-photo" alt="찍은 사진" src="' + d.images[0] + '">';
+        $("confirmInfo").innerHTML = "가져온 곳: " + d.source + "<br>보낼 크기: 약 " + kb + "KB" +
+          "<br>사진 준비 시간: " + d.prepMs.toFixed(0) + "ms";
+        $("confirmAI").innerHTML = "<b>🧪 연습용 가짜 응답</b> (AI 연결 전)<br>" +
+          "\"이건 <b>그림</b>이에요. 밤하늘을 그린 그림 같아요. 느껴볼까요?\"<br>" +
+          '<span class="note">AI를 연결하면 실제로 사진을 보고 답해요.</span>';
+      } else {
+        $("confirmTitle").textContent = "🎬 영상을 받았어요";
+        $("confirmMedia").innerHTML = '<div class="thumbs">' +
+          d.images.map((s, i) => '<img alt="장면 ' + (i + 1) + '" src="' + s + '">').join("") + "</div>";
+        $("confirmInfo").innerHTML = "가져온 곳: " + d.source + "<br>담은 시간: " + d.dur.toFixed(1) + "초 " + d.longNote +
+          "<br>후보 " + d.cands + "장 중 <b>장면이 바뀐 순간 " + d.images.length + "장</b>을 골랐어요" +
+          "<br>보낼 크기: 약 " + kb + "KB<br><br><b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>");
+        $("confirmAI").innerHTML = "<b>🧪 연습용 가짜 응답</b> (AI 연결 전)<br>" +
+          "\"이건 <b>영상</b>이에요. 장면 " + d.images.length + "개를 담았어요. 느껴볼까요?\"<br>" +
+          '<span class="note">AI를 연결하면 장면 사진과 소리 정보를 함께 보고 답해요.</span>';
+      }
+      go("confirm");
+    }
+    $("btnConfirmYes").onclick = () => showSoon("✨ 감상 화면",
+      "<p>장면 탭 진행과 손으로 더듬어 보기는 <b>다음 단계</b>에서 AI와 함께 연결해요.</p>");
+    $("btnRetake").onclick = () => go("camera");
+
+    // ==========================================================
+    // 12) 첫 화면
+    // ==========================================================
+    function renderHome() {
+      const body = $("homeBody");
+      if (!profile) {
+        body.innerHTML =
+          '<div class="card"><b>처음이시네요!</b><br>소리·진동을 확인하고, 질문 5개에 답하면 나에게 맞는 감각을 찾아 드려요. 1~2분이면 끝나요.</div>' +
+          '<button class="big primary" id="btnStart">시작하기</button>';
+        $("btnStart").onclick = () => startReady("ask");
+      } else {
+        body.innerHTML =
+          '<div class="tip">🔔 무음·방해 금지를 끄고 볼륨을 올려 주세요.</div>' +
+          '<button class="big primary" id="btnMeet">🎨 작품 만나기</button>' +
+          '<div class="card"><b>내 감각</b>: ' + mainSenses(profile) + "<br>" + summaryHTML(profile) + "</div>" +
+          '<button class="big ghost" id="btnMySense">⚙️ 내 감각 바꾸기</button>' +
+          '<button class="big ghost" id="btnReady">🔔 소리·진동 다시 확인</button>' +
+          '<button class="big ghost" id="btnGallery">📚 내 갤러리</button>' +
+          (storageOK ? "" : '<div class="note">⚠️ 이 브라우저에서는 설정이 저장되지 않아요 (시크릿 모드 등).</div>');
+        $("btnMeet").onclick = () => { if (!check) startReady("camera"); else go("camera"); };
+        $("btnMySense").onclick = () => { draft = copy(profile); openDetail(); };
+        $("btnReady").onclick = () => startReady("home");
+        $("btnGallery").onclick = () => showSoon("📚 내 갤러리", "<p>감상한 작품 기록은 <b>나중 단계</b>에서 만들어요.</p>");
+      }
+    }
+
+    function showSoon(title, html) {
+      $("soonTitle").textContent = title;
+      $("soonBody").innerHTML = html;
+      go("soon");
+    }
+    $("btnSoonHome").onclick = () => { renderHome(); go("home"); };
+    $("btnCamHome").onclick = () => { renderHome(); go("home"); };
+
+    // 시작!
+    renderBanner();
+    renderHome();
+    go("home");
+  </script>
+</body>
+</html>
