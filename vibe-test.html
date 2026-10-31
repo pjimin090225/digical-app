@@ -25,9 +25,17 @@
     .bad { color: #B3261E; font-weight: 700; }
     a { color: #2F5F8F; }
   </style>
+  <script>
+    window.addEventListener("error", function (e) {
+      var d = document.createElement("div");
+      d.style.cssText = "background:#FDE2E1;border:3px solid #B3261E;border-radius:12px;padding:12px;margin:8px 0;font-size:16px";
+      d.textContent = "⚠️ 오류: " + e.message + " (줄 " + e.lineno + ")";
+      (document.body || document.documentElement).insertBefore(d, (document.body || document.documentElement).firstChild);
+    });
+  </script>
 </head>
 <body>
-  <h1>📳 진동 점검</h1>
+  <h1>📳 진동 점검 <small style="font-size:16px;color:#4A4A4A">v2</small></h1>
   <p>진동이 왜 안 되는지 찾는 페이지예요. 위에서부터 차례로 눌러 주세요.</p>
 
   <!-- 1) 자동으로 알아낸 정보 -->
