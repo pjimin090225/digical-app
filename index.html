@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- 한글이 깨지지 않게 하는 설정 -->
+  <meta charset="UTF-8">
+  <!-- 휴대폰 화면 폭에 맞추는 설정 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>디지컬</title>
+
+  <style>
+    /* ==========================================================
+       🎨 디자인 변수 (팀원 B가 숫자·색만 바꾸면 전체가 바뀝니다)
+       - 간격은 8의 배수(8pt 그리드)
+       - 글자와 배경의 명암 대비는 4.5:1 이상 유지
+       ========================================================== */
+    :root {
+      --font-base: 20px;     /* 기본 글자 크기 */
+      --font-big: 26px;      /* 제목 */
+      --font-huge: 34px;     /* 질문 화면의 큰 글자 */
+      --line: 1.6;           /* 줄 간격 (글자 크기의 1.6배) */
+      --gap: 8px;            /* 기본 간격 단위 */
+      --radius: 16px;        /* 모서리 둥글기 */
+      --btn-h: 64px;         /* 큰 버튼 높이 (48px 이상) */
+
+      --bg: #FFFDF7;         /* 배경 */
+      --card: #FFFFFF;       /* 카드 배경 */
+      --text: #1A1A1A;       /* 글자 */
+      --sub: #4A4A4A;        /* 보조 글자 */
+      --border: #1A1A1A;     /* 테두리 */
+      --accent: #FFD23F;     /* 강조 노랑 (시각 신호 색) */
+      --primary: #2F5F8F;    /* 주요 버튼 파랑 */
+      --primary-text: #FFFFFF;
+      --off: #D9D9D9;        /* 꺼진 칸 */
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: calc(var(--gap) * 2);
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      font-size: var(--font-base);
+      line-height: var(--line);
+      max-width: 560px;          /* 큰 화면에서도 휴대폰 폭으로 */
+      margin-inline: auto;
+    }
+    h1 { font-size: var(--font-big); margin: var(--gap) 0; }
+    h2 { font-size: var(--font-big); margin: var(--gap) 0; }
+    .sub { color: var(--sub); margin: 0 0 calc(var(--gap) * 2); }
+
+    /* ----- 버튼 ----- */
+    button {
+      font: inherit;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .big {
+      display: block;
+      width: 100%;
+      min-height: var(--btn-h);
+      margin: calc(var(--gap) * 1.5) 0;
+      padding: var(--gap) calc(var(--gap) * 2);
+      font-size: 22px;
+      font-weight: 700;
+      border: 3px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--accent);
+    }
+    .big.primary { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+    .big.ghost { background: transparent; }
+    .big:active { transform: scale(0.98); }
+
+    /* ----- 카드 (설명 상자) ----- */
+    .card {
+      background: var(--card);
+      border: 2px solid #CFCFCF;
+      border-radius: var(--radius);
+      padding: calc(var(--gap) * 2);
+      margin: calc(var(--gap) * 2) 0;
+    }
+    .result { min-height: 24px; color: var(--sub); font-size: 18px; white-space: pre-line; }
+
+    /* ----- 질문 화면 ----- */
+    .progress { color: var(--sub); font-size: 18px; }
+    .q-icon { font-size: 64px; text-align: center; margin: calc(var(--gap) * 2) 0 0; }
+    .q-text { font-size: var(--font-huge); font-weight: 800; text-align: center; line-height: 1.35; margin: var(--gap) 0 calc(var(--gap) * 3); }
+
+    /* ----- 감각 조절 줄 ----- */
+    .sense-row { border-top: 2px solid #E5E5E5; padding: calc(var(--gap) * 2) 0; }
+    .sense-head { display: flex; justify-content: space-between; align-items: center; gap: var(--gap); }
+    .sense-name { font-weight: 800; }
+    .toggle {
+      min-width: 96px; min-height: 48px;
+      border: 3px solid var(--border); border-radius: 999px;
+      background: var(--off); font-weight: 700;
+    }
+    .toggle[aria-pressed="true"] { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+    .dots { display: flex; gap: var(--gap); margin-top: var(--gap); }
+    .dot {
+      flex: 1; min-height: 52px;
+      border: 3px solid var(--border); border-radius: 12px;
+      background: var(--card); font-weight: 800;
+    }
+    .dot.on { background: var(--accent); }
+    .dots.disabled { opacity: 0.35; pointer-events: none; }
+    .ends { display: flex; justify-content: space-between; font-size: 16px; color: var(--sub); }
+    .note { font-size: 16px; color: var(--sub); margin-top: var(--gap); }
+
+    /* ----- 프리셋(조용하게/보통/풍부하게) ----- */
+    .presets { display: flex; gap: var(--gap); }
+    .presets button {
+      flex: 1; min-height: 72px;
+      border: 3px solid var(--border); border-radius: var(--radius);
+      background: var(--card); font-weight: 700; font-size: 18px;
+    }
+
+    /* ----- 느껴보기 원 (시각 신호) ----- */
+    .feel-area { display: flex; justify-content: center; padding: calc(var(--gap) * 2) 0; }
+    .feel-box {
+      width: 120px; height: 120px; border-radius: 50%;
+      background: var(--accent); opacity: 0.35;
+      --s: 0.5;   /* 세기(0~1): 자바스크립트가 바꿈 */
+    }
+    .feel-box.pulse { animation: pulse 0.6s ease-in-out 1; }      /* 한 번만 (광과민성 예방) */
+    .feel-box.heart { animation: heart 0.7s ease-in-out 1; }      /* 진동 대신 두근거림 */
+    @keyframes pulse {
+      0%   { transform: scale(1); opacity: 0.35; }
+      50%  { transform: scale(calc(1 + var(--s) * 0.6)); opacity: calc(0.4 + var(--s) * 0.6); }
+      100% { transform: scale(1); opacity: 0.35; }
+    }
+    @keyframes heart {
+      0%, 40%, 80% { transform: scale(1); }
+      20%, 60%     { transform: scale(1.15); }
+    }
+    /* 움직임 줄이기 설정을 켠 사람에게는 애니메이션 대신 색만 */
+    @media (prefers-reduced-motion: reduce) {
+      .feel-box.pulse, .feel-box.heart { animation: none; opacity: 1; }
+    }
+
+    .mode-preview { display: flex; gap: var(--gap); justify-content: center; font-size: 22px; font-weight: 700; }
+    footer { margin-top: calc(var(--gap) * 4); font-size: 15px; color: var(--sub); text-align: center; }
+    footer a { color: var(--primary); }
+  </style>
+</head>
+<body>
+
+  <!-- ===================== ① 첫 화면 ===================== -->
+  <section id="home" class="screen">
+    <h1>🎨 디지컬</h1>
+    <p class="sub">작품을 내 감각에 맞게 느껴요.</p>
+    <div id="homeBody"></div>
+  </section>
+
+  <!-- ===================== ② 질문 화면 (한 번에 하나씩) ===================== -->
+  <section id="ask" class="screen" hidden>
+    <div class="progress" id="askProgress"></div>
+    <div class="q-icon" id="askIcon"></div>
+    <div class="q-text" id="askText"></div>
+    <div id="askOptions"></div>
+    <button class="big ghost" id="btnBack">← 이전 질문</button>
+  </section>
+
+  <!-- ===================== ③ 추천 화면 ===================== -->
+  <section id="recommend" class="screen" hidden>
+    <h2>✨ 이렇게 추천해요</h2>
+    <p class="sub" id="recTitle"></p>
+    <div class="card" id="recSummary"></div>
+    <div class="feel-area"><div class="feel-box" id="feelBox1"></div></div>
+    <button class="big" id="btnFeel1">✨ 이 설정으로 느껴보기</button>
+    <div class="result" id="feelMsg1"></div>
+    <button class="big primary" id="btnUseRec">👍 이대로 쓸게요</button>
+    <button class="big ghost" id="btnToDetail">⚙️ 자세히 바꾸기</button>
+  </section>
+
+  <!-- ===================== ④ 자세히 맞추기 (2층) ===================== -->
+  <section id="detail" class="screen" hidden>
+    <h2>⚙️ 내 감각 맞추기</h2>
+    <p class="sub">바꾼 뒤 [느껴보기]로 확인하세요.</p>
+    <div class="presets">
+      <button data-preset="2">🌙<br>조용하게</button>
+      <button data-preset="3">🌤<br>보통</button>
+      <button data-preset="4">☀️<br>풍부하게</button>
+    </div>
+    <div id="controls"></div>
+    <div class="feel-area"><div class="feel-box" id="feelBox2"></div></div>
+    <button class="big" id="btnFeel2">✨ 이 설정으로 느껴보기</button>
+    <div class="result" id="feelMsg2"></div>
+    <button class="big primary" id="btnSaveDetail">💾 저장하기</button>
+    <button class="big ghost" id="btnRedo">🔄 질문부터 다시 하기</button>
+    <button class="big ghost" id="btnDetailHome">← 처음으로</button>
+  </section>
+
+  <!-- ===================== ⑤ 아직 만들지 않은 화면 ===================== -->
+  <section id="soon" class="screen" hidden>
+    <h2 id="soonTitle"></h2>
+    <div class="card" id="soonBody"></div>
+    <button class="big ghost" id="btnSoonHome">← 처음으로</button>
+  </section>
+
+  <footer>
+    1단계: 내 감각 프로필 · 개발 중<br>
+    <a href="check.html">기기 점검 페이지</a>
+  </footer>
+
+  <script>
+    // ==========================================================
+    // 0) 기본 도구
+    // ==========================================================
+    const $ = (id) => document.getElementById(id);
+
+    // 화면 바꾸기: 원하는 화면 하나만 보이게 함
+    function go(id) {
+      document.querySelectorAll(".screen").forEach((s) => { s.hidden = (s.id !== id); });
+      window.scrollTo(0, 0);
+    }
+
+    // 깊은 복사: 설정을 고치다가 '저장'을 안 누르면 원래 설정이 그대로 남게 하려고 사본을 만듦
+    const copy = (obj) => JSON.parse(JSON.stringify(obj));
+
+    // ==========================================================
+    // 1) 저장하기 / 불러오기 (휴대폰 브라우저 안에만 저장)
+    //    - 서버로 아무것도 보내지 않음 → 개인정보 수집 없음
+    //    - 시크릿 모드 등에서는 저장이 안 될 수 있어서 try/catch로 감쌈
+    // ==========================================================
+    const KEY = "digical.profile.v1";
+    let storageOK = true;
+
+    function loadProfile() {
+      try {
+        const saved = localStorage.getItem(KEY);
+        return saved ? JSON.parse(saved) : null;
+      } catch (e) { storageOK = false; return null; }
+    }
+    function saveProfile(p) {
+      try { localStorage.setItem(KEY, JSON.stringify(p)); storageOK = true; }
+      catch (e) { storageOK = false; }
+    }
+
+    let profile = loadProfile();   // 지금 쓰는 설정 (없으면 null = 처음 온 사람)
+    let draft = null;              // 고치는 중인 사본
+
+    // ==========================================================
+    // 2) 질문 목록 — 진단("장애가 있나요?")이 아니라 "무엇이 편한가"를 물음
+    // ==========================================================
+    const QUESTIONS = [
+      { id: "screen", icon: "👀", text: "화면을 오래 보는 게\n힘든가요?" },
+      { id: "sound",  icon: "👂", text: "소리를 듣는 게\n힘든가요?" },
+      { id: "vibe",   icon: "📳", text: "휴대폰 진동이\n싫은가요?" },
+      { id: "long",   icon: "📖", text: "긴 설명은\n어렵나요?" },
+      { id: "busy",   icon: "🌀", text: "여러 가지가 한꺼번에 나오면\n정신없나요?" }
+    ];
+    // 모든 질문의 답 3가지 (같은 모양이라 외우기 쉬움)
+    const OPTIONS = [
+      { label: "네", value: "yes" },
+      { label: "아니요", value: "no" },
+      { label: "잘 모르겠어요", value: "unsure" }
+    ];
+
+    let answers = {};
+    let askIndex = 0;
+
+    function startAsk() {
+      answers = {};
+      askIndex = 0;
+      renderQuestion();
+      go("ask");
+    }
+
+    function renderQuestion() {
+      const q = QUESTIONS[askIndex];
+      $("askProgress").textContent = (askIndex + 1) + " / " + QUESTIONS.length;
+      $("askIcon").textContent = q.icon;
+      $("askText").innerText = q.text;
+
+      const box = $("askOptions");
+      box.innerHTML = "";
+      OPTIONS.forEach((opt) => {
+        const b = document.createElement("button");
+        b.className = "big" + (answers[q.id] === opt.value ? " primary" : "");
+        b.textContent = opt.label;
+        b.onclick = () => {
+          answers[q.id] = opt.value;
+          if (askIndex < QUESTIONS.length - 1) { askIndex++; renderQuestion(); }
+          else { showRecommendation(); }
+        };
+        box.appendChild(b);
+      });
+      $("btnBack").hidden = (askIndex === 0);
+    }
+    $("btnBack").onclick = () => { if (askIndex > 0) { askIndex--; renderQuestion(); } };
+
+    // ==========================================================
+    // 3) 답 → 추천 설정 만들기
+    //    level(세기)은 1~5. 나중 단계에서 스티븐스 법칙으로
+    //    '느끼는 세기'로 바꾸고 합계 상한을 적용할 예정
+    // ==========================================================
+    const clamp = (v) => Math.max(1, Math.min(5, v));   // 1~5 사이로 묶기
+
+    function makeRecommendation(a) {
+      const base = (a.busy === "yes") ? 2 : 3;   // 정신없으면 전체를 조금 약하게
+      const p = {
+        visual: { on: true, level: base },       // 👁 화면(색·빛·움직임)
+        sound:  { on: true, level: base },       // 👂 소리
+        touch:  { on: true, level: base },       // ✋ 진동
+        voice:  { auto: false, speed: 3 },       // 🗣 음성 해설 (자동 재생 여부, 빠르기)
+        explain: "normal"                        // 📖 해설 길이: short(짧게) / normal(보통)
+      };
+
+      if (a.screen === "yes") {                  // 화면 보기가 힘들면 → 소리·진동·음성 중심
+        p.visual.level = clamp(base - 1);
+        p.sound.level = clamp(base + 1);
+        p.touch.level = clamp(base + 1);
+        p.voice.auto = true;
+      }
+      if (a.sound === "yes") {                   // 소리 듣기가 힘들면 → 화면·진동 중심
+        p.sound.on = false;
+        p.voice.auto = false;
+        p.visual.level = clamp(p.visual.level + 1);
+        p.touch.level = clamp(p.touch.level + 1);
+      }
+      if (a.vibe === "yes") p.touch.on = false;  // 진동이 싫으면 끄기
+      if (a.long === "yes") {                    // 긴 설명이 어려우면 → 짧게, 천천히
+        p.explain = "short";
+        p.voice.speed = 2;
+      }
+      // 모든 감각이 꺼지면 감상할 수 없으므로 화면은 켜 둠
+      if (!p.visual.on && !p.sound.on && !p.touch.on) p.visual.on = true;
+      return p;
+    }
+
+    // 설정을 사람이 읽기 쉬운 말로 바꾸기
+    const NAMES = { visual: "👁 화면", sound: "👂 소리", touch: "✋ 진동" };
+    const dots = (n) => "●".repeat(n) + "○".repeat(5 - n);
+
+    function mainSenses(p) {
+      // 켜진 감각을 세기 순서로 정렬해서 위 2개를 '중심'으로 말함
+      const list = ["visual", "sound", "touch"]
+        .filter((k) => p[k].on)
+        .sort((x, y) => p[y].level - p[x].level)
+        .slice(0, 2)
+        .map((k) => NAMES[k].split(" ")[1]);
+      return list.join(" + ") + " 중심이에요";
+    }
+
+    function summaryHTML(p) {
+      let html = "";
+      ["visual", "sound", "touch"].forEach((k) => {
+        html += "<div>" + NAMES[k] + ": " + (p[k].on ? dots(p[k].level) : "꺼짐") + "</div>";
+      });
+      html += "<div>🗣 음성 해설: " +
+        (!p.sound.on ? "꺼짐 (소리가 꺼져 있어요)" : (p.voice.auto ? "자동으로 읽어 줘요" : "누를 때만 읽어요")) + "</div>";
+      html += "<div>📖 설명: " + (p.explain === "short" ? "짧게" : "보통") + "</div>";
+      return html;
+    }
+
+    function showRecommendation() {
+      draft = makeRecommendation(answers);
+      $("recTitle").textContent = mainSenses(draft);
+      $("recSummary").innerHTML = summaryHTML(draft);
+      $("feelMsg1").textContent = "";
+      go("recommend");
+    }
+    $("btnUseRec").onclick = () => { profile = copy(draft); saveProfile(profile); renderHome(); go("home"); };
+    $("btnToDetail").onclick = () => { openDetail(); };
+    $("btnFeel1").onclick = () => feel(draft, "feelBox1", "feelMsg1");
+
+    // ==========================================================
+    // 4) 느껴보기: 지금 설정으로 시각·청각·촉각을 한 번 내보기
+    // ==========================================================
+    const canVibrate = ("vibrate" in navigator);     // 아이폰 사파리는 false
+    let audioCtx = null;
+
+    function getAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+
+    // 세기(1~5) → 실제 출력값 (임시 표. 다음 단계에서 스티븐스 법칙으로 바꿈)
+    const GAIN = [0, 0.05, 0.12, 0.22, 0.35, 0.5];                 // 소리 크기
+    const VIBE = [null, [60], [100], [100, 80, 100],               // 진동: 길이(ms)와 횟수로 세기 표현
+                  [150, 80, 150, 80, 150], [200, 80, 200, 80, 200, 80, 200]];
+    const SPEED = [0, 0.6, 0.75, 0.9, 1.0, 1.15];                  // 음성 빠르기
+
+    function playTone(level) {
+      const ctx = getAudio();
+      if (!ctx) return false;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = 523.25;                 // 높은 '도'
+      gain.gain.setValueAtTime(0, t);               // 0에서 시작해 부드럽게 커졌다 작아짐 (딱 소리 방지)
+      gain.gain.linearRampToValueAtTime(GAIN[level], t + 0.03);
+      gain.gain.linearRampToValueAtTime(0, t + 0.45);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.5);
+      return true;
+    }
+
+    function animate(box, cls) {
+      box.classList.remove("pulse", "heart");
+      void box.offsetWidth;                          // 애니메이션을 처음부터 다시 시작시키는 요령
+      box.classList.add(cls);
+    }
+
+    function feel(p, boxId, msgId) {
+      const box = $(boxId);
+      const msg = [];
+
+      // 👁 시각: 원이 한 번 커졌다 작아짐 (세기에 따라 크기·진하기)
+      if (p.visual.on) {
+        box.style.setProperty("--s", (p.visual.level / 5).toString());
+        animate(box, "pulse");
+        msg.push("👁 화면이 빛났어요");
+      }
+      // 👂 청각
+      if (p.sound.on) {
+        msg.push(playTone(p.sound.level) ? "👂 소리가 났어요" : "👂 이 브라우저는 소리를 못 내요");
+      }
+      // ✋ 촉각: 진동이 안 되는 폰은 '두근거림' 화면으로 대신
+      if (p.touch.on) {
+        if (canVibrate) {
+          navigator.vibrate(VIBE[p.touch.level]);
+          msg.push("✋ 진동이 울렸어요");
+        } else {
+          setTimeout(() => animate(box, "heart"), p.visual.on ? 650 : 0);
+          msg.push("✋ 이 폰은 진동 대신 화면이 두근거려요");
+        }
+      }
+      // 🗣 음성: 자동 읽기가 켜져 있을 때만 (지금은 폰 기본 목소리, 나중에 GPT 음성으로 바꿈)
+      if (p.sound.on && p.voice.auto && "speechSynthesis" in window) {
+        const u = new SpeechSynthesisUtterance("안녕하세요. 이렇게 읽어 드릴게요.");
+        u.lang = "ko-KR";
+        u.rate = SPEED[p.voice.speed];
+        speechSynthesis.cancel();
+        setTimeout(() => speechSynthesis.speak(u), 600);   // 효과음과 겹치지 않게 조금 뒤에
+        msg.push("🗣 목소리로 읽었어요 (지금은 연습용 기본 목소리)");
+      }
+      if (msg.length === 0) msg.push("켜진 감각이 없어요. 하나 이상 켜 주세요.");
+      $(msgId).textContent = msg.join("\n");
+    }
+
+    // ==========================================================
+    // 5) 자세히 맞추기 화면 (2층)
+    // ==========================================================
+    function openDetail() {
+      if (!draft) draft = copy(profile || makeRecommendation({}));
+      renderControls();
+      $("feelMsg2").textContent = "";
+      go("detail");
+    }
+
+    function levelButtons(key, value, disabled, leftLabel, rightLabel) {
+      let html = '<div class="dots' + (disabled ? " disabled" : "") + '">';
+      for (let i = 1; i <= 5; i++) {
+        html += '<button class="dot' + (i <= value ? " on" : "") + '" data-act="level" data-key="' + key +
+                '" data-v="' + i + '" aria-label="' + i + '단계">' + i + "</button>";
+      }
+      html += "</div>";
+      html += '<div class="ends"><span>' + leftLabel + "</span><span>" + rightLabel + "</span></div>";
+      return html;
+    }
+
+    function renderControls() {
+      const p = draft;
+      let html = "";
+
+      // 👁 👂 ✋ 세 감각: 켜기/끄기 + 세기 5칸
+      ["visual", "sound", "touch"].forEach((k) => {
+        html += '<div class="sense-row"><div class="sense-head">' +
+          '<span class="sense-name">' + NAMES[k] + "</span>" +
+          '<button class="toggle" data-act="toggle" data-key="' + k + '" aria-pressed="' + p[k].on + '">' +
+          (p[k].on ? "켜짐" : "꺼짐") + "</button></div>" +
+          levelButtons(k, p[k].level, !p[k].on, "약하게", "강하게");
+        if (k === "touch" && !canVibrate) {
+          html += '<div class="note">이 폰은 웹에서 진동을 낼 수 없어요. 대신 화면이 두근거려요.</div>';
+        }
+        html += "</div>";
+      });
+
+      // 🗣 음성 해설
+      const voiceDisabled = !p.sound.on;
+      html += '<div class="sense-row"><div class="sense-head">' +
+        '<span class="sense-name">🗣 자동으로 읽기</span>' +
+        '<button class="toggle" data-act="voiceauto" aria-pressed="' + (p.voice.auto && !voiceDisabled) + '"' +
+        (voiceDisabled ? " disabled" : "") + ">" + (p.voice.auto && !voiceDisabled ? "켜짐" : "꺼짐") + "</button></div>" +
+        levelButtons("speed", p.voice.speed, voiceDisabled, "천천히", "빠르게") +
+        (voiceDisabled ? '<div class="note">소리가 꺼져 있어 음성도 나오지 않아요.</div>' : "") +
+        "</div>";
+
+      // 📖 설명 길이
+      html += '<div class="sense-row"><div class="sense-name">📖 설명 길이</div><div class="dots">' +
+        '<button class="dot' + (p.explain === "short" ? " on" : "") + '" data-act="explain" data-v="short">짧게</button>' +
+        '<button class="dot' + (p.explain === "normal" ? " on" : "") + '" data-act="explain" data-v="normal">보통</button>' +
+        "</div></div>";
+
+      $("controls").innerHTML = html;
+    }
+
+    // 버튼 하나하나에 일을 붙이지 않고, 상자 전체에서 '무엇이 눌렸는지'를 보고 처리
+    $("controls").onclick = (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const act = b.dataset.act, key = b.dataset.key, v = Number(b.dataset.v);
+      if (act === "toggle") draft[key].on = !draft[key].on;
+      if (act === "level") { if (key === "speed") draft.voice.speed = v; else draft[key].level = v; }
+      if (act === "voiceauto") draft.voice.auto = !draft.voice.auto;
+      if (act === "explain") draft.explain = b.dataset.v;
+      renderControls();
+    };
+
+    // 프리셋: 켜진 감각의 세기를 한 번에 맞춤
+    document.querySelectorAll("[data-preset]").forEach((b) => {
+      b.onclick = () => {
+        const lv = Number(b.dataset.preset);
+        ["visual", "sound", "touch"].forEach((k) => { draft[k].level = lv; });
+        renderControls();
+      };
+    });
+
+    $("btnFeel2").onclick = () => feel(draft, "feelBox2", "feelMsg2");
+    $("btnSaveDetail").onclick = () => {
+      if (!draft.visual.on && !draft.sound.on && !draft.touch.on) {
+        $("feelMsg2").textContent = "⚠️ 감각을 하나 이상 켜 주세요.";
+        return;
+      }
+      profile = copy(draft);
+      saveProfile(profile);
+      renderHome();
+      go("home");
+    };
+    $("btnRedo").onclick = () => { draft = null; startAsk(); };
+    $("btnDetailHome").onclick = () => { draft = null; renderHome(); go("home"); };
+
+    // ==========================================================
+    // 6) 첫 화면
+    // ==========================================================
+    function renderHome() {
+      const body = $("homeBody");
+      if (!profile) {
+        // 처음 온 사람
+        body.innerHTML =
+          '<div class="card"><b>처음이시네요!</b><br>질문 5개에 답하면 나에게 맞는 감각을 찾아 드려요. 1분이면 끝나요.</div>' +
+          '<button class="big primary" id="btnStart">시작하기</button>';
+        $("btnStart").onclick = startAsk;
+      } else {
+        // 설정이 있는 사람
+        body.innerHTML =
+          '<button class="big primary" id="btnMeet">🎨 작품 만나기</button>' +
+          '<div class="card"><b>내 감각</b>: ' + mainSenses(profile) + "<br>" + summaryHTML(profile) + "</div>" +
+          '<button class="big ghost" id="btnMySense">⚙️ 내 감각 바꾸기</button>' +
+          '<button class="big ghost" id="btnGallery">📚 내 갤러리</button>' +
+          (storageOK ? "" : '<div class="note">⚠️ 이 브라우저에서는 설정이 저장되지 않아요 (시크릿 모드 등). 다시 열면 처음부터 해야 해요.</div>');
+        $("btnMeet").onclick = () => showSoon("🎨 작품 만나기",
+          '<div class="mode-preview"><span>📷 사진</span><span>🎬 영상</span><span>🎵 소리</span></div>' +
+          '<p>카메라 화면과 모드 바, 그리고 「🖼 찍어 둔 사진」은 <b>다음 단계</b>에서 만들어요.</p>');
+        $("btnMySense").onclick = () => { draft = copy(profile); openDetail(); };
+        $("btnGallery").onclick = () => showSoon("📚 내 갤러리", "<p>감상한 작품 기록은 <b>나중 단계</b>에서 만들어요.</p>");
+      }
+    }
+
+    function showSoon(title, html) {
+      $("soonTitle").textContent = title;
+      $("soonBody").innerHTML = html;
+      go("soon");
+    }
+    $("btnSoonHome").onclick = () => go("home");
+
+    // 시작!
+    renderHome();
+    go("home");
+  </script>
+</body>
+</html>

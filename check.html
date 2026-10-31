@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- 한글이 깨지지 않게 하는 설정 -->
+  <meta charset="UTF-8">
+  <!-- 휴대폰 화면 폭에 맞추는 설정 (이게 없으면 글씨가 아주 작게 보임) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>디지컬 기기 점검</title>
+
+  <style>
+    /* 화면 전체 모양: 큰 글씨, 높은 대비 (인지적 약자를 고려한 기본값) */
+    body {
+      font-family: system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #fffdf7;
+      color: #1a1a1a;
+      font-size: 20px;
+      line-height: 1.5;
+    }
+    h1 { font-size: 26px; margin: 8px 0 4px; }
+    .sub { margin: 0 0 16px; color: #444; font-size: 17px; }
+
+    /* 버튼: 손가락으로 누르기 쉽게 크게 */
+    button {
+      display: block;
+      width: 100%;
+      min-height: 64px;
+      margin: 12px 0 4px;
+      font-size: 21px;
+      font-weight: 700;
+      border: 3px solid #1a1a1a;
+      border-radius: 14px;
+      background: #ffe08a;
+      color: #1a1a1a;
+    }
+    button:active { transform: scale(0.98); }
+    #btnAll { background: #1a1a1a; color: #fff; margin-top: 28px; }
+
+    /* 결과가 표시되는 상자 */
+    .result {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 17px;
+      white-space: pre-line; /* 줄바꿈(\n)을 그대로 보여줌 */
+      min-height: 24px;
+    }
+
+    /* 화면 깜빡임(시각 신호) 효과 */
+    body.flash { background: #ffd23f; }
+  </style>
+</head>
+<body>
+
+  <h1>디지컬 기기 점검</h1>
+  <p class="sub">시연할 휴대폰이 어떤 감각 신호를 낼 수 있는지 확인하는 페이지입니다.</p>
+
+  <div class="result" id="device">기기 확인 중...</div>
+
+  <!-- 1) 시각 -->
+  <button id="btnFlash">👁️ 시각: 화면 한 번 깜빡이기</button>
+  <div class="result" id="resFlash"></div>
+
+  <!-- 2) 청각 -->
+  <button id="btnBeep">👂 청각: 삐 소리 (440Hz)</button>
+  <div class="result" id="resBeep"></div>
+
+  <!-- 3) 촉각 -->
+  <button id="btnVibe">✋ 촉각: 진동 0.2초</button>
+  <div class="result" id="resVibe"></div>
+
+  <!-- 4) 읽어주기 -->
+  <button id="btnSpeak">🗣️ 쉬운 해설 읽어주기</button>
+  <div class="result" id="resSpeak"></div>
+
+  <!-- 5) 세 감각 동시에 + 시간 측정 -->
+  <button id="btnAll">⏱️ 세 감각 동시에 + 시간 재기</button>
+  <div class="result" id="resAll"></div>
+
+  <script>
+    // ----- 도우미: 결과 상자에 글자 쓰기 -----
+    function show(id, text) {
+      document.getElementById(id).textContent = text;
+    }
+
+    // ----- 0) 어떤 기기인지 알아보기 -----
+    const ua = navigator.userAgent; // 브라우저가 알려주는 기기 정보 문자열
+    let deviceName = "컴퓨터 또는 기타 기기";
+    if (/iPhone|iPad/.test(ua)) deviceName = "아이폰/아이패드";
+    else if (/Android/.test(ua)) deviceName = "안드로이드 폰";
+    show("device", "이 기기: " + deviceName);
+
+    // ----- 1) 시각: 화면을 0.2초 동안 노란색으로 -----
+    // (주의: 1초에 3번 넘게 깜빡이면 광과민성 발작 위험이 있어서 한 번만 깜빡임)
+    function flashScreen() {
+      document.body.classList.add("flash");
+      setTimeout(() => document.body.classList.remove("flash"), 200);
+    }
+    document.getElementById("btnFlash").onclick = () => {
+      flashScreen();
+      show("resFlash", "✅ 화면이 노랗게 깜빡였으면 성공");
+    };
+
+    // ----- 2) 청각: Web Audio로 440Hz 소리 만들기 -----
+    // Web Audio = 브라우저 안에서 소리를 직접 만드는 기능
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null; // 지원하지 않는 브라우저
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume(); // 잠들어 있으면 깨우기
+      return audioCtx;
+    }
+    function playBeep() {
+      const ctx = getAudio();
+      if (!ctx) return false;
+      const osc = ctx.createOscillator(); // 소리 발생기
+      const gain = ctx.createGain();      // 볼륨 조절기
+      osc.frequency.value = 440;          // 440Hz = '라' 음
+      gain.gain.value = 0.3;              // 볼륨 30%
+      osc.connect(gain);
+      gain.connect(ctx.destination);      // 스피커로 연결
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);    // 0.3초 뒤 멈춤
+      return true;
+    }
+    document.getElementById("btnBeep").onclick = () => {
+      const ok = playBeep();
+      show("resBeep", ok
+        ? "✅ 소리 명령 보냄. 안 들리면 무음 모드와 볼륨을 확인하세요."
+        : "❌ 이 브라우저는 소리 만들기를 지원하지 않음");
+    };
+
+    // ----- 3) 촉각: 진동 -----
+    function vibrateOnce() {
+      if (!("vibrate" in navigator)) return false; // 진동 기능이 없음 (아이폰 사파리 등)
+      return navigator.vibrate(200);              // 200ms = 0.2초
+    }
+    document.getElementById("btnVibe").onclick = () => {
+      const ok = vibrateOnce();
+      show("resVibe", ok
+        ? "✅ 진동 명령 보냄. 손에 떨림이 느껴졌나요?"
+        : "❌ 이 브라우저는 진동을 지원하지 않음");
+    };
+
+    // ----- 4) 읽어주기: 브라우저에 들어 있는 음성 합성 -----
+    document.getElementById("btnSpeak").onclick = () => {
+      if (!("speechSynthesis" in window)) {
+        show("resSpeak", "❌ 읽어주기 기능 없음");
+        return;
+      }
+      const text = "안녕하세요. 이 작품은 물 위에 핀 꽃을 그린 그림이에요. 천천히 함께 볼까요?";
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ko-KR"; // 한국어
+      u.rate = 0.85;    // 조금 느리게 (쉬운 해설용)
+      speechSynthesis.cancel(); // 이전에 읽던 것은 멈춤
+      speechSynthesis.speak(u);
+      const koVoices = speechSynthesis.getVoices().filter(v => v.lang.startsWith("ko"));
+      show("resSpeak", "✅ 읽기 명령 보냄. 한국어 목소리 수: " +
+        (koVoices.length > 0 ? koVoices.length + "개" : "아직 확인 안 됨 (한 번 더 눌러보세요)"));
+    };
+
+    // ----- 5) 세 감각을 동시에 내고, 명령 사이의 시간 차이 재기 -----
+    // performance.now() = 페이지가 열린 뒤 지난 시간을 아주 정밀하게(ms) 알려주는 시계
+    document.getElementById("btnAll").onclick = () => {
+      const t0 = performance.now();
+      flashScreen();
+      const t1 = performance.now();
+      const beepOk = playBeep();
+      const t2 = performance.now();
+      const vibeOk = vibrateOnce();
+      const t3 = performance.now();
+
+      // 브라우저가 추정하는 '소리 명령 → 스피커 출력' 지연 (지원하는 기기만)
+      let audioDelay = "이 기기에서는 측정 불가";
+      const ctx = getAudio();
+      if (ctx && ctx.outputLatency) {
+        audioDelay = (ctx.outputLatency * 1000).toFixed(1) + "ms";
+      } else if (ctx && ctx.baseLatency) {
+        audioDelay = "최소 " + (ctx.baseLatency * 1000).toFixed(1) + "ms (기본값만 확인됨)";
+      }
+
+      const total = (t3 - t0).toFixed(2);
+      show("resAll",
+        "세 명령을 모두 보내는 데 걸린 시간: " + total + "ms\n" +
+        "  · 시각 명령: " + (t1 - t0).toFixed(2) + "ms\n" +
+        "  · 청각 명령: " + (t2 - t1).toFixed(2) + "ms " + (beepOk ? "" : "(실패)") + "\n" +
+        "  · 촉각 명령: " + (t3 - t2).toFixed(2) + "ms " + (vibeOk ? "" : "(실패)") + "\n" +
+        "소리 출력 지연(브라우저 추정): " + audioDelay + "\n\n" +
+        "※ 이 값은 '명령을 보낸 시간'입니다. 실제로 눈·귀·손이 느끼는 시간은 더 늦을 수 있어요."
+      );
+    };
+  </script>
+</body>
+</html>
