@@ -11,6 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const SERVER_VERSION = "4-3";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -45,7 +46,7 @@ function tooMany(ip) {
 // ---------------------------------------------------------------------
 // 1) Original to Text 지시문
 // ---------------------------------------------------------------------
-function textPrompt(type, explain, target) {
+function textPrompt(type, explain, target, cropped) {
   const perScene = explain === "short" ? 1 : 2;
   const what = {
     photo: "사용자가 휴대폰 카메라로 찍은 사진 1장",
@@ -55,7 +56,7 @@ function textPrompt(type, explain, target) {
 
   return [
     "너는 인지적 약자(경계선 지능인 등)를 위한 문화예술 해설가다.",
-    "입력: " + what + ".",
+    "입력: " + what + "." + (cropped ? " 이 사진은 작품 부분만 잘라 낸 것이다. 위치는 이 사진 전체를 기준으로 쓴다." : ""),
     target
       ? "사용자가 고른 대상: '" + target + "'. 이 대상만 해설한다."
       : (type === "photo"
@@ -243,12 +244,32 @@ function senseProblems(d, n) {
     const key = (s) => [s.intensity, s.tempo, s.pitch, s.texture, s.mode].join("|");
     if (sc.every((s) => key(s) === key(sc[0]))) v.push("모든 장면의 값이 똑같아요. 장면마다 느낌에 맞게 다르게 정해 주세요");
   }
+  const w = cleanSense(d.whole);
+  const wkey = [w.mode, w.tempo, w.pitch, w.texture].join("|");
+  sc.forEach((s, i) => {
+    if ([s.mode, s.tempo, s.pitch, s.texture].join("|") === wkey) {
+      v.push("whole이 " + (i + 1) + "번 장면과 똑같아요. whole은 모든 장면을 아우른 종합 분위기로 다시 정해 주세요");
+    }
+  });
   return v;
 }
 
 // ---------------------------------------------------------------------
 // 요청 처리
 // ---------------------------------------------------------------------
+async function findFrame(image) {
+  const r = await callAI([
+    { role: "system", content:
+      "사진 속에서 사람이 감상하려는 작품(그림·포스터·조각·책 표지 등 문화 콘텐츠)이 있는 테두리를 찾는다.\n" +
+      "작품 바깥의 글자, 가격, 버튼, 화면 테두리, 책상, 벽은 빼고 작품 자체만 감싼다.\n" +
+      "좌표는 사진 전체 기준 [왼쪽, 위, 오른쪽, 아래], 0~1000. 작품이 사진을 거의 다 채우면 [0,0,1000,1000].\n" +
+      '출력 JSON만: {"frame":[숫자4개],"what":"작품 종류 한 낱말"}' },
+    { role: "user", content: [{ type: "image_url", image_url: { url: image, detail: "high" } }] }
+  ], 0);
+  const f = r.data.frame;
+  return (Array.isArray(f) && f.length === 4 && f.every((v) => typeof v === "number")) ? f : null;
+}
+
 module.exports = async (req, res) => {
   const t0 = Date.now();
   try {
@@ -262,10 +283,17 @@ module.exports = async (req, res) => {
     const type = ["photo", "video", "sound"].includes(body.type) ? body.type : "photo";
     const explain = body.explain === "short" ? "short" : "normal";
     const target = String(body.target || "").slice(0, 30);
+    const cropped = !!body.cropped;
     const images = (Array.isArray(body.images) ? body.images : [])
       .filter((s) => typeof s === "string" && s.startsWith("data:image/") && s.length < 2000000)
       .slice(0, 8);
     if (type !== "sound" && images.length === 0) return res.status(400).json({ error: "no_image" });
+
+    // ---------- 0) 작품 테두리만 찾기 (앱이 이걸로 사진을 잘라 다시 보냄) ----------
+    if (body.task === "frame") {
+      const frame = await findFrame(images[0]);
+      return res.status(200).json({ ok: true, version: SERVER_VERSION, frame: frame, ms: { total: Date.now() - t0 } });
+    }
 
     // ---------- 1) Original to Text ----------
     const userParts = [{ type: "text", text: (type === "video" ? "장면 사진은 시간 순서예요. " : "") + audioText(body.audio) }];
@@ -274,7 +302,7 @@ module.exports = async (req, res) => {
       image_url: { url: url, detail: type === "photo" ? "high" : "low" }   // 영상 장면은 저해상도로 (빠르고 저렴)
     }));
     const msgs = [
-      { role: "system", content: textPrompt(type, explain, target) },
+      { role: "system", content: textPrompt(type, explain, target, cropped) },
       { role: "user", content: userParts }
     ];
     const tText = Date.now();
@@ -284,7 +312,7 @@ module.exports = async (req, res) => {
     // 대상이 여러 개라 골라야 할 때 → 여기서 멈추고 사용자에게 물어봄
     if (type === "photo" && !target && text.needs_choice && Array.isArray(text.candidates) && text.candidates.length >= 2) {
       return res.status(200).json({
-        ok: true, needs_choice: true, model: first.model,
+        ok: true, needs_choice: true, version: SERVER_VERSION, model: first.model,
         candidates: text.candidates.slice(0, 4).map((c) => ({ name: String(c.name || "").slice(0, 20), box: c.box || null })),
         ms: { text: Date.now() - tText, sense: 0, total: Date.now() - t0 }
       });
@@ -327,6 +355,7 @@ module.exports = async (req, res) => {
     const sScenes = sense.data.scenes || [];
     return res.status(200).json({
       ok: true,
+      version: SERVER_VERSION,
       model: first.model,
       kind: text.kind || "기타",
       is_artwork: !!text.is_artwork,
