@@ -70,7 +70,9 @@ function textPrompt(type, explain, target) {
     "- interpretation: 이 작품(장면)이 주는 느낌이나 이야기를 1~2문장으로 해석한다. 보이는 것을 늘어놓지 말고, '어떤 마음이 드는지', '무엇을 말하는 것 같은지'를 쓴다.",
     "- scenes: 감상하기 좋게 " + RULES.minScenes + "~" + RULES.maxScenes + "개로 나눈다. 각 장면은 '무엇이 있는지 + 어떤 느낌인지'를 함께 쓴다.",
     type === "photo"
-      ? "- 사진이면 각 장면이 사진 어디에 있는지 box에 [왼쪽, 위, 오른쪽, 아래]를 0~1000 좌표로 쓴다."
+      ? "- 위치는 모두 '사진 전체'를 기준으로 [왼쪽, 위, 오른쪽, 아래]를 0~1000으로 쓴다. (사진 왼쪽 위 = 0,0 / 오른쪽 아래 = 1000,1000)\n" +
+        "- frame: 사진 속에서 작품(느낄 대상)이 차지하는 테두리. 화면 속 글자·배경·책상은 빼고 작품만 감싼다.\n" +
+        "- 각 장면의 box는 반드시 frame 안에 있어야 하고, 실제로 그 장면이 보이는 자리를 정확히 감싼다. 예시의 숫자를 따라 하지 않는다."
       : "- box는 null로 둔다.",
     type === "video" ? "- 영상은 '무엇이 일어나는지'를 말한다. '보여요', '보여줘요'를 반복하지 않는다." : "",
     "",
@@ -87,13 +89,14 @@ function textPrompt(type, explain, target) {
     "- 사람이 보이면 누구인지 추측하지 않고, 얼굴 생김새를 자세히 묘사하지 않는다.",
     "",
     "[좋은 예 — 밤하늘 그림]",
-    '{"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"candidates":[],',
+    '{"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"candidates":[],"frame":[작품의 왼쪽,위,오른쪽,아래],',
     ' "summary":"밤하늘이 빙글빙글 도는 그림이에요.",',
     ' "interpretation":"조용한 마을 위로 하늘이 크게 움직여요. 잠 못 드는 밤의 설레는 마음 같아요.",',
-    ' "scenes":[{"name":"하늘","text":"하늘이 소용돌이처럼 돌아요. 바람이 크게 부는 것 같아요.","box":[0,0,1000,550]},',
-    '           {"name":"별","text":"노란 별이 반짝여요. 작은 등불처럼 따뜻해요.","box":[100,50,950,350]},',
-    '           {"name":"마을","text":"마을은 조용히 잠들어 있어요.","box":[200,650,1000,1000]}]}',
+    ' "scenes":[{"name":"하늘","text":"하늘이 소용돌이처럼 돌아요. 바람이 크게 부는 것 같아요.","box":[하늘이 보이는 자리]},',
+    '           {"name":"별","text":"노란 별이 반짝여요. 작은 등불처럼 따뜻해요.","box":[별이 모인 자리]},',
+    '           {"name":"마을","text":"마을은 조용히 잠들어 있어요.","box":[마을이 있는 자리]}]}',
     "",
+    "(위 예의 [ ] 안 글은 설명일 뿐이고, 실제로는 숫자 4개를 쓴다)",
     "[출력] 위와 같은 모양의 JSON만 출력한다. needs_choice가 true면 candidates에 [{\"name\":\"\",\"box\":[..]}]를 2~4개 쓴다."
   ].filter((x) => x !== "").join("\n");
 }
@@ -127,6 +130,7 @@ function sensePrompt() {
     "- 입력의 내용에 맞춰 값을 정한다. 아무 근거 없이 중간값(보통, 중간, 0.5)을 고르지 않는다.",
     "- 장면마다 느낌이 다르면 값도 분명히 다르게 한다. 정말 같을 때만 같게 한다.",
     "- 장면 순서와 개수는 입력과 똑같이.",
+    "- whole은 작품 전체를 처음 봤을 때의 '종합적인 분위기'다. 가장 큰 장면 하나를 베끼지 말고, 모든 장면과 해석을 아울러 정한다.",
     "",
     '[출력] JSON만: {"whole":{...}, "scenes":[{...}, ...]}  (각 {...}는 위 8가지 값을 모두 가짐)'
   ].join("\n");
@@ -267,7 +271,7 @@ module.exports = async (req, res) => {
     const userParts = [{ type: "text", text: (type === "video" ? "장면 사진은 시간 순서예요. " : "") + audioText(body.audio) }];
     images.forEach((url) => userParts.push({
       type: "image_url",
-      image_url: { url: url, detail: type === "photo" ? "auto" : "low" }   // 영상 장면은 저해상도로 (빠르고 저렴)
+      image_url: { url: url, detail: type === "photo" ? "high" : "low" }   // 영상 장면은 저해상도로 (빠르고 저렴)
     }));
     const msgs = [
       { role: "system", content: textPrompt(type, explain, target) },
@@ -327,11 +331,12 @@ module.exports = async (req, res) => {
       kind: text.kind || "기타",
       is_artwork: !!text.is_artwork,
       title_guess: text.title_guess || "",
+      frame: (Array.isArray(text.frame) && text.frame.length === 4 && text.frame.every((v) => typeof v === "number")) ? text.frame : null,
       target: target,
       summary: text.summary || "",
       interpretation: text.interpretation || "",
       whole: cleanSense(sense.data.whole),
-      scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, box: Array.isArray(s.box) ? s.box : null, sense: cleanSense(sScenes[i]) })),
+      scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, box: (Array.isArray(s.box) && s.box.length === 4 && s.box.every((v) => typeof v === "number")) ? s.box : null, sense: cleanSense(sScenes[i]) })),
       check: { passed: violations.length === 0, violations: violations, tries: tries, stats: stats(text),
                sensePassed: sProblems.length === 0, senseProblems: sProblems, senseTries: senseTries },
       ms: { text: textMs, sense: senseMs, total: Date.now() - t0 }
