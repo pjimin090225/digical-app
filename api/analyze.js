@@ -28,6 +28,7 @@ const HARD_WORDS = [
 const TEMPOS = ["느림", "보통", "빠름"];
 const PITCHES = ["낮음", "중간", "높음"];
 const TEXTURES = ["부드러움", "물결", "톡톡", "거침", "묵직함"];
+const MODES = ["밝음", "신남", "차분함", "슬픔", "신비", "긴장"];   // 앱이 이 분위기에 맞는 화음·음계로 연주함
 
 // ---------------------------------------------------------------------
 // 간단한 사용량 제한: 같은 인터넷 주소에서 10분에 60번까지
@@ -113,19 +114,21 @@ function sensePrompt() {
     "- colors: 그 장면을 대표하는 실제 색 1~3개 (#RRGGBB)",
     "- pitch: " + PITCHES.join(" | "),
     "- texture: " + TEXTURES.join(" | ") + "  (진동으로 느낄 촉감)",
+    "- mode: " + MODES.join(" | ") + "  (배경 음악의 분위기. 앱이 이에 맞는 화음과 음계로 연주함)",
     "- why: 왜 이렇게 정했는지 15자 안팎의 짧은 근거",
     "",
     "[정하는 기준 — 사람들이 감각을 연결하는 일반적인 경향(교차감각 대응)]",
     "- 밝고 가볍고 작은 것 → 높은 소리, 밝은 색, 톡톡 / 어둡고 크고 무거운 것 → 낮은 소리, 짙은 색, 묵직함",
     "- 움직임·긴장·흥분 → 빠름, 강하게 / 고요·잠·휴식 → 느림, 약하게, 부드러움",
     "- 흐르고 감기는 것(물, 바람, 소용돌이) → 물결 / 울퉁불퉁·거친 표면·소란 → 거침",
+    "- mode: 기쁘고 환함 → 밝음, 들뜨고 활기참 → 신남, 고요·편안 → 차분함, 외로움·그리움·슬픔 → 슬픔, 꿈·밤·신기함 → 신비, 불안·위험·갈등 → 긴장",
     "",
     "[중요]",
     "- 입력의 내용에 맞춰 값을 정한다. 아무 근거 없이 중간값(보통, 중간, 0.5)을 고르지 않는다.",
     "- 장면마다 느낌이 다르면 값도 분명히 다르게 한다. 정말 같을 때만 같게 한다.",
     "- 장면 순서와 개수는 입력과 똑같이.",
     "",
-    '[출력] JSON만: {"whole":{...}, "scenes":[{...}, ...]}  (각 {...}는 위 7가지 값을 모두 가짐)'
+    '[출력] JSON만: {"whole":{...}, "scenes":[{...}, ...]}  (각 {...}는 위 8가지 값을 모두 가짐)'
   ].join("\n");
 }
 
@@ -224,6 +227,7 @@ function cleanSense(s) {
     colors: (Array.isArray(s.colors) ? s.colors : []).filter((c) => /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 3),
     pitch: PITCHES.includes(s.pitch) ? s.pitch : "중간",
     texture: TEXTURES.includes(s.texture) ? s.texture : "부드러움",
+    mode: MODES.includes(s.mode) ? s.mode : "차분함",
     why: String(s.why || "").slice(0, 40)
   };
 }
@@ -232,7 +236,7 @@ function senseProblems(d, n) {
   const sc = (d.scenes || []).map(cleanSense);
   if (sc.length !== n) v.push("장면 수가 " + n + "개여야 해요");
   if (sc.length >= 2) {
-    const key = (s) => [s.intensity, s.tempo, s.pitch, s.texture].join("|");
+    const key = (s) => [s.intensity, s.tempo, s.pitch, s.texture, s.mode].join("|");
     if (sc.every((s) => key(s) === key(sc[0]))) v.push("모든 장면의 값이 똑같아요. 장면마다 느낌에 맞게 다르게 정해 주세요");
   }
   return v;
