@@ -357,7 +357,7 @@
   </section>
 
   <footer>
-    4단계(수정 1): 분위기 소리 · 겹침 방지 · 목소리 크기 · 길게 누르기<br>
+    4단계(수정 2): 작품만 잘라 보기 · 테두리 · 겹침 · 폰 기본 목소리<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -676,7 +676,7 @@
     const VIBE = [null, [120], [200], [200, 100, 200],
                   [300, 100, 300, 100, 300], [400, 100, 400, 100, 400, 100, 400]];
     const SPEED = [0, 0.85, 0.92, 1.0, 1.1, 1.2];        // [수정] 3칸 = 보통 속도(1.0)
-    const VOICES = [["coral", "목소리 1"], ["nova", "목소리 2"], ["sage", "목소리 3"]];
+    const VOICES = [["coral", "목소리 1"], ["nova", "목소리 2"], ["device", "폰 기본"]];
 
     function playTone(level) {
       const ctx = getAudio();
@@ -1624,6 +1624,8 @@
         if (seq !== analyzeSeq || currentScreen !== "view") return;   // 기다리는 사이 다른 화면으로 갔으면 무시
         stop();
         if (r.needs_choice) { showChoice(d, r); return; }
+        await applyFrame(r, d);
+        if (seq !== analyzeSeq || currentScreen !== "view") return;
         lastResult = r;
         lastResult.clientMs = performance.now() - tStart;
         renderTexts(r);
@@ -1637,6 +1639,41 @@
           (e.detail ? '<p class="note">자세한 내용: ' + esc(e.detail) + "</p>" : "");
         $("btnRetryAI").onclick = () => runAnalyze(d, target);
       }
+    }
+
+    // [새로] AI가 찾은 '작품 테두리(frame)'로 사진을 잘라, 작품만 크게 보여줌
+    //        장면 위치도 잘라낸 그림 기준으로 다시 계산 → 책상·글자 때문에 위치가 흔들리던 문제 줄이기
+    function applyFrame(r, d) {
+      return new Promise((resolve) => {
+        const f = r.frame;
+        const ok = d.type === "photo" && f && f[2] > f[0] && f[3] > f[1] &&
+          (f[2] - f[0]) * (f[3] - f[1]) > 1000 * 1000 * 0.08 &&       // 너무 작으면(8% 미만) 믿지 않음
+          (f[2] - f[0]) * (f[3] - f[1]) < 1000 * 1000 * 0.95;         // 거의 전체면 자를 필요 없음
+        if (!ok) { resolve(); return; }
+        const pad = 15;                                               // 테두리 둘레에 조금 여유
+        const fx = Math.max(0, f[0] - pad), fy = Math.max(0, f[1] - pad);
+        const fw = Math.min(1000, f[2] + pad) - fx, fh = Math.min(1000, f[3] + pad) - fy;
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement("canvas");
+          const sx = img.width * fx / 1000, sy = img.height * fy / 1000;
+          c.width = Math.round(img.width * fw / 1000);
+          c.height = Math.round(img.height * fh / 1000);
+          c.getContext("2d").drawImage(img, sx, sy, c.width, c.height, 0, 0, c.width, c.height);
+          $("artImg").src = c.toDataURL("image/jpeg", 0.85);
+          const conv = (b) => {                                       // 사진 전체 좌표 → 잘라낸 그림 좌표
+            if (!b) return b;
+            const nb = [(b[0] - fx) / fw * 1000, (b[1] - fy) / fh * 1000, (b[2] - fx) / fw * 1000, (b[3] - fy) / fh * 1000]
+              .map((v) => Math.round(Math.max(0, Math.min(1000, v))));
+            return (nb[2] - nb[0] > 20 && nb[3] - nb[1] > 20) ? nb : null;
+          };
+          (r.scenes || []).forEach((s) => { s.photoBox = s.box; s.box = conv(s.box); });
+          r.cropped = true;
+          resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = d.images[0];
+      });
     }
 
     // 대상이 여러 개일 때만: "어느 걸 느껴볼까요?"
@@ -1816,6 +1853,7 @@
     // 배경 화음(패드): 장면이 이어지는 동안 은은하게 깔림
     function startPad(s, I) {
       stopPad();
+      if (speaking) setTimeout(() => duckPad(true), 0);              // 목소리 중에 장면이 바뀌어도 조용히
       const ctx = getAudio();
       if (!ctx) return;
       const m = MODES[s.mode] || MODES["차분함"];
@@ -1864,18 +1902,20 @@
       if (p.lfo) p.lfo.stop(t + 0.45);
       pad = null;
     }
-    // 해설 목소리가 나오는 동안 배경 화음을 작게 (겹침 방지)
+    // [수정] 해설 목소리가 나오는 동안 배경 화음을 '완전히' 멈춤 (예전엔 작게만 해서 겹쳐 들렸음)
+    //        진동·빛은 계속, 목소리가 끝나면 화음이 다시 천천히 돌아옴
     function duckPad(on) {
       if (!pad) return;
       const t = getAudio().currentTime;
       pad.master.gain.cancelScheduledValues(t);
       pad.master.gain.setValueAtTime(pad.master.gain.value, t);
-      pad.master.gain.linearRampToValueAtTime(on ? pad.level * 0.2 : pad.level, t + 0.3);
+      pad.master.gain.linearRampToValueAtTime(on ? 0 : pad.level, t + (on ? 0.25 : 1.0));
     }
+    function setSpeaking(on) { speaking = on; duckPad(on); }
 
     // 박자마다 멜로디 한 음 (음계를 오르내림)
     function pluck(s, I, period) {
-      if (!pad || voiceSrc) return;                                  // 목소리가 나오는 중이면 멜로디는 쉼
+      if (!pad || speaking) return;                                  // 목소리가 나오는 중이면 멜로디는 쉼
       const ctx = getAudio();
       const t = ctx.currentTime + 0.01;
       const sc = pad.scale;
@@ -1995,13 +2035,13 @@
     $("devBox").addEventListener("toggle", () => { const s = $("syncNow"); if (s) s.textContent = syncText(); });
 
     // ----- 🗣 GPT 음성 (항상 나오지 않음: '자동으로 읽기'가 켜진 사람만 자동, 나머지는 버튼) -----
-    let voiceSrc = null, voiceSeq = 0;
+    let voiceSrc = null, voiceSeq = 0, speaking = false;
     const ttsCache = new Map();          // 같은 글·같은 목소리는 다시 만들지 않음 (비용·시간 절약)
     function stopVoice() {
       voiceSeq++;                        // 아직 준비 중인 목소리가 나중에 도착하면 버리도록 표시
       if (voiceSrc) { try { voiceSrc.onended = null; voiceSrc.stop(); } catch (e) {} voiceSrc = null; }
       if ("speechSynthesis" in window) speechSynthesis.cancel();
-      duckPad(false);
+      setSpeaking(false);
     }
     function speakIfAuto(text, emotion) {
       if (profile.sound.on && soundUsable() && profile.voice.auto) speakAI(text, emotion, "voiceInfo");
@@ -2013,6 +2053,7 @@
       const mySeq = voiceSeq;
       if (info) info.textContent = "🗣 목소리를 준비하고 있어요…";
       const voice = profile.voice.name || "coral";
+      if (voice === "device") { speakDevice(text, info, mySeq); return; }
       const key = voice + "|" + profile.voice.speed + "|" + text;
       try {
         let buf = ttsCache.get(key);
@@ -2039,21 +2080,37 @@
         const src = ctx.createBufferSource();
         src.buffer = audio;
         src.connect(norm); norm.connect(ctx.destination);
-        src.onended = () => { if (voiceSrc === src) { voiceSrc = null; duckPad(false); } };
+        src.onended = () => { if (voiceSrc === src) { voiceSrc = null; setSpeaking(false); } };
         voiceSrc = src;
-        duckPad(true);                                  // 목소리 나오는 동안 배경 화음은 작게
+        setSpeaking(true);                              // 목소리 나오는 동안 배경 화음은 멈춤
         src.start();
         if (info) info.textContent = "🗣 AI 음성이에요";
       } catch (e) {
         if (mySeq !== voiceSeq) return;
-        if ("speechSynthesis" in window) {
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = "ko-KR";
-          u.rate = SPEED[profile.voice.speed];
-          speechSynthesis.speak(u);
-          if (info) info.textContent = "🗣 AI 음성을 못 불러와서 기본 목소리로 읽었어요";
-        }
+        speakDevice(text, info, mySeq);
+        if (info) info.textContent = "🗣 AI 음성을 못 불러와서 폰 기본 목소리로 읽었어요";
       }
+    }
+
+    // [새로] 폰 기본 목소리 (갤럭시는 삼성 음성, 아이폰은 Siri 음성 등 — 기기마다 다름)
+    function pickKoreanVoice() {
+      const vs = ("speechSynthesis" in window) ? speechSynthesis.getVoices().filter((v) => /^ko/i.test(v.lang)) : [];
+      // 기기 안에 들어 있는(인터넷 없이 되는) 목소리를 먼저, 그다음 이름에 Samsung/Google이 있는 것
+      return vs.find((v) => v.localService && /samsung/i.test(v.name)) || vs.find((v) => v.localService) ||
+             vs.find((v) => /google/i.test(v.name)) || vs[0] || null;
+    }
+    function speakDevice(text, info, mySeq) {
+      if (!("speechSynthesis" in window)) { if (info) info.textContent = "🗣 이 브라우저는 폰 기본 목소리가 없어요"; return; }
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ko-KR";
+      const v = pickKoreanVoice();
+      if (v) u.voice = v;
+      u.rate = SPEED[profile.voice.speed];
+      u.onstart = () => { if (mySeq === voiceSeq) setSpeaking(true); };
+      u.onend = u.onerror = () => { if (mySeq === voiceSeq) setSpeaking(false); };
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+      if (info) info.textContent = "🗣 폰 기본 목소리예요" + (v ? " (" + v.name + ")" : "");
     }
 
     // ----- 🎵 소리 모드: 들은 소리의 분위기를 AI에게 묻기 -----
