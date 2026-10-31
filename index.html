@@ -211,7 +211,10 @@
     .big:disabled { opacity: 0.4; }
     /* 감상 화면: 사진 위에 빛(glow)·장면 테두리(hl)·만지는 곳 이름(touch-label)을 겹침 */
     .art { position: relative; border-radius: var(--radius); overflow: hidden; background: #111; touch-action: auto; user-select: none; -webkit-user-select: none; }
-    .art img { display: block; width: 100%; height: auto; max-height: 60vh; object-fit: contain; }
+    .art { -webkit-touch-callout: none; }
+    /* [수정] 사진을 길게 눌러도 '이미지 저장' 메뉴가 뜨지 않게: 사진 자체는 터치를 받지 않고 바깥 상자가 받음 */
+    .art img { display: block; width: 100%; height: auto; max-height: 60vh; object-fit: contain;
+               pointer-events: none; -webkit-user-drag: none; -webkit-touch-callout: none; }
     .art.touching { touch-action: none; outline: 4px solid var(--accent); }
     .glow { position: absolute; opacity: 0; pointer-events: none; mix-blend-mode: screen; }
     .hl { position: absolute; border: 4px solid #FFF; border-radius: 12px; box-shadow: 0 0 0 3px #1A1A1A, 0 0 24px rgba(255,255,255,0.6); pointer-events: none; transition: all 0.25s ease; }
@@ -331,7 +334,7 @@
       <button class="back" id="btnViewRetake">📷 다시 찍기</button>
     </div>
     <div class="art" id="art">
-      <img id="artImg" alt="찍은 작품">
+      <img id="artImg" alt="찍은 작품" draggable="false">
       <div class="glow" id="glow"></div>
       <div class="hl" id="hl" hidden></div>
       <div class="touch-label" id="touchLabel" hidden></div>
@@ -354,7 +357,7 @@
   </section>
 
   <footer>
-    4단계: 감상 화면(한 번에 → 하나씩·손으로) · 해석 · 목소리 고르기<br>
+    4단계(수정 1): 분위기 소리 · 겹침 방지 · 목소리 크기 · 길게 누르기<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1602,6 +1605,7 @@
     }
 
     function setViewParts(state) {
+      stopVoice();                    // [수정] 상태가 바뀌면 이전 목소리는 멈춤 (겹침 방지)
       viewState = state;
       $("viewWait").hidden = state !== "wait";
       $("viewMain").hidden = !(state === "whole" || state === "scene" || state === "touch");
@@ -1763,6 +1767,7 @@
       setHighlight(s.box);
       startSense(s.sense, s.box);
     }
+    $("art").addEventListener("contextmenu", (e) => e.preventDefault());   // 길게 누를 때 메뉴 막기
     $("art").addEventListener("pointerdown", onTouchMove);
     $("art").addEventListener("pointermove", onTouchMove);
     const endTouch = () => { if (viewState === "touch") { touchScene = -1; stopSense(); $("touchLabel").hidden = true; setHighlight(null); } };
@@ -1777,19 +1782,114 @@
     //     ※ 세기는 아직 임시 표. 다음 단계에서 베버–페히너 → 스티븐스 법칙으로 바꿈
     // ==========================================================
     const TEMPO_BPM = { "느림": 50, "보통": 80, "빠름": 112 };     // 최대 1초에 2번 미만 (깜빡임 안전 기준 안)
-    const PITCH_HZ = { "낮음": 196, "중간": 330, "높음": 523 };
     const TEXTURE_VIBE = {                                          // 진동 모양 (ms: 켜짐, 꺼짐, 켜짐 …)
       "부드러움": [90], "물결": [180, 70, 110], "톡톡": [35, 60, 35, 60, 35],
       "거침": [45, 25, 45, 25, 45, 25, 45], "묵직함": [260]
     };
-    const TEXTURE_WAVE = { "부드러움": "sine", "물결": "sine", "톡톡": "triangle", "거침": "sawtooth", "묵직함": "sine" };
-    let senseTimer = null;
+
+    // ---------- [새로] 분위기 소리: '삐' 한 음 → 화음 + 멜로디 ----------
+    // AI가 고른 분위기(mode)에 맞는 음계·화음을 코드가 연주합니다.
+    // 근거: 장조는 밝게, 단조는 슬프게 느끼는 경향 같은 '음악과 감정의 연결' 연구
+    // (AI가 음악을 '만드는' 것이 아니라, AI가 고른 분위기를 정해진 규칙으로 소리로 바꿈)
+    const MODES = {
+      "밝음":   { scale: [0, 2, 4, 7, 9],  chord: [0, 4, 7] },        // 장조 5음 음계
+      "신남":   { scale: [0, 2, 4, 7, 9, 12], chord: [0, 4, 7, 12] },
+      "차분함": { scale: [0, 4, 7, 11, 14], chord: [0, 4, 7, 11] },   // 부드러운 7화음
+      "슬픔":   { scale: [0, 3, 5, 7, 10], chord: [0, 3, 7] },        // 단조 5음 음계
+      "신비":   { scale: [0, 4, 6, 7, 11], chord: [0, 7, 11, 18] },   // 떠 있는 듯한 화음
+      "긴장":   { scale: [0, 1, 3, 6, 7],  chord: [0, 3, 6] }         // 불안한 화음
+    };
+    const ROOT_HZ = { "낮음": 110, "중간": 220, "높음": 440 };      // 화음의 기본 높이
+    const CUTOFF = { "낮음": 700, "중간": 1400, "높음": 2800 };      // 소리의 밝기(필터)
+    const semi = (root, s) => root * Math.pow(2, s / 12);
+
+    let senseTimer = null, pad = null, beatNo = 0;
     const syncLog = [];                 // 한 박자 안에서 시각→청각→촉각 명령까지 걸린 시간
 
     function stopSense() {
       clearInterval(senseTimer);
       senseTimer = null;
+      stopPad();
       if (canVibrate) navigator.vibrate(0);
+    }
+
+    // 배경 화음(패드): 장면이 이어지는 동안 은은하게 깔림
+    function startPad(s, I) {
+      stopPad();
+      const ctx = getAudio();
+      if (!ctx) return;
+      const m = MODES[s.mode] || MODES["차분함"];
+      const root = ROOT_HZ[s.pitch] || 220;
+      const t = ctx.currentTime;
+      const master = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = CUTOFF[s.pitch] || 1400;
+      if (s.texture === "거침") filter.Q.value = 6;
+      const level = GAIN[profile.sound.level] * (0.25 + 0.5 * I) * 0.6;
+      master.gain.setValueAtTime(0, t);
+      master.gain.linearRampToValueAtTime(level, t + 1.2);          // 1.2초 동안 천천히 커짐
+      filter.connect(master);
+      master.connect(ctx.destination);
+      const wave = s.texture === "거침" ? "sawtooth" : s.texture === "톡톡" ? "triangle" : "sine";
+      const tones = m.chord.slice();
+      if (s.texture === "묵직함") tones.push(-12);                   // 묵직함: 한 옥타브 아래 음 추가
+      const oscs = tones.map((st) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = wave;
+        o.frequency.value = semi(root, st);
+        g.gain.value = 0.25;
+        o.connect(g); g.connect(filter);
+        o.start(t);
+        return o;
+      });
+      let lfo = null;
+      if (s.texture === "물결") {                                    // 물결: 소리가 천천히 출렁임
+        lfo = ctx.createOscillator();
+        const depth = ctx.createGain();
+        lfo.frequency.value = 0.3;
+        depth.gain.value = level * 0.4;
+        lfo.connect(depth); depth.connect(master.gain);
+        lfo.start(t);
+      }
+      pad = { master: master, oscs: oscs, lfo: lfo, level: level, scale: m.scale, root: root };
+    }
+    function stopPad() {
+      if (!pad) return;
+      const ctx = getAudio(), t = ctx.currentTime, p = pad;
+      p.master.gain.cancelScheduledValues(t);
+      p.master.gain.setValueAtTime(p.master.gain.value, t);
+      p.master.gain.linearRampToValueAtTime(0, t + 0.4);            // 0.4초 동안 사라짐 (뚝 끊기지 않게)
+      p.oscs.forEach((o) => o.stop(t + 0.45));
+      if (p.lfo) p.lfo.stop(t + 0.45);
+      pad = null;
+    }
+    // 해설 목소리가 나오는 동안 배경 화음을 작게 (겹침 방지)
+    function duckPad(on) {
+      if (!pad) return;
+      const t = getAudio().currentTime;
+      pad.master.gain.cancelScheduledValues(t);
+      pad.master.gain.setValueAtTime(pad.master.gain.value, t);
+      pad.master.gain.linearRampToValueAtTime(on ? pad.level * 0.2 : pad.level, t + 0.3);
+    }
+
+    // 박자마다 멜로디 한 음 (음계를 오르내림)
+    function pluck(s, I, period) {
+      if (!pad || voiceSrc) return;                                  // 목소리가 나오는 중이면 멜로디는 쉼
+      const ctx = getAudio();
+      const t = ctx.currentTime + 0.01;
+      const sc = pad.scale;
+      const n = sc.length, k = beatNo % (2 * n - 2 || 1);
+      const step = k < n ? k : 2 * n - 2 - k;                         // 0,1,2,3,4,3,2,1,0 …
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = s.texture === "톡톡" ? "triangle" : "sine";
+      o.frequency.value = semi(pad.root * 2, sc[step]);
+      const len = s.texture === "톡톡" ? 0.15 : Math.min(0.9, period / 1000 * 0.8);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(GAIN[profile.sound.level] * (0.3 + 0.6 * I) * 0.5, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + len + 0.05);
     }
 
     function startSense(s, box) {
@@ -1799,19 +1899,23 @@
       const I = clamp01(Number(s.intensity) || 0.5);
       const period = 60000 / (TEMPO_BPM[s.tempo] || 80);
       setGlow((s.colors && s.colors[0]) || "#FFD23F", box);
-      const beat = () => {
+      const withSound = p.sound.on && soundUsable();
+      if (withSound) startPad(s, I);
+      beatNo = 0;
+      const beat = () => {                                           // 공통 박자 시계: 한 박자에 세 감각을 함께
         const t0 = performance.now();
-        if (p.visual.on) pulseGlow(I * (p.visual.level / 5), period);                               // 👁
+        if (p.visual.on) pulseGlow(I * (p.visual.level / 5), period);                        // 👁
         const t1 = performance.now();
-        if (p.sound.on && soundUsable()) senseTone(PITCH_HZ[s.pitch] || 330, TEXTURE_WAVE[s.texture] || "sine", I, Math.min(0.6, period / 1000 * 0.6));   // 👂
+        if (withSound) pluck(s, I, period);                                                   // 👂
         const t2 = performance.now();
-        if (p.touch.on) {                                                                            // ✋
+        if (p.touch.on) {                                                                     // ✋
           if (vibeUsable()) navigator.vibrate(scalePattern(TEXTURE_VIBE[s.texture] || [90], I * (p.touch.level / 5)));
           else heartGlow();
         }
         const t3 = performance.now();
         syncLog.push(t3 - t0);
         if (syncLog.length > 300) syncLog.shift();
+        beatNo++;
       };
       beat();
       senseTimer = setInterval(beat, period);
@@ -1820,22 +1924,6 @@
     // 진동 켜짐 길이를 세기에 맞춰 늘이고 줄임 (웹 진동은 세기 자체를 못 바꿈)
     function scalePattern(pat, k) {
       return pat.map((v, i) => (i % 2 === 0 ? Math.round(v * (0.5 + 0.8 * k)) : v));
-    }
-
-    function senseTone(freq, wave, I, dur) {
-      const ctx = getAudio();
-      if (!ctx) return;
-      const t = ctx.currentTime + 0.02;
-      const osc = ctx.createOscillator(), g = ctx.createGain();
-      osc.type = wave;
-      osc.frequency.value = freq;
-      const duck = voiceSrc ? 0.35 : 1;                 // 해설 목소리가 나오는 중이면 작게
-      const peak = GAIN[profile.sound.level] * (0.4 + 0.6 * I) * duck * (wave === "sawtooth" ? 0.35 : 1);
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(peak, t + 0.04);
-      g.gain.linearRampToValueAtTime(0, t + dur);
-      osc.connect(g); g.connect(ctx.destination);
-      osc.start(t); osc.stop(t + dur + 0.05);
     }
 
     // 👁 빛: 사진 위(또는 장면 위치)에 색 빛을 올림
@@ -1875,7 +1963,7 @@
     }
     function senseLine(s) {
       if (!s) return "-";
-      return esc(s.emotion) + " · 세기 " + esc(s.intensity) + " · " + esc(s.tempo) + " · 소리 " + esc(s.pitch) +
+      return esc(s.emotion) + " · 분위기 " + esc(s.mode) + " · 세기 " + esc(s.intensity) + " · " + esc(s.tempo) + " · 소리 " + esc(s.pitch) +
         " · 진동 " + esc(s.texture) + " " + swatch(s.colors) + (s.why ? "<br>&nbsp;&nbsp;&nbsp;근거: " + esc(s.why) : "");
     }
     function syncText() {
@@ -1907,11 +1995,13 @@
     $("devBox").addEventListener("toggle", () => { const s = $("syncNow"); if (s) s.textContent = syncText(); });
 
     // ----- 🗣 GPT 음성 (항상 나오지 않음: '자동으로 읽기'가 켜진 사람만 자동, 나머지는 버튼) -----
-    let voiceSrc = null;
+    let voiceSrc = null, voiceSeq = 0;
     const ttsCache = new Map();          // 같은 글·같은 목소리는 다시 만들지 않음 (비용·시간 절약)
     function stopVoice() {
-      if (voiceSrc) { try { voiceSrc.stop(); } catch (e) {} voiceSrc = null; }
+      voiceSeq++;                        // 아직 준비 중인 목소리가 나중에 도착하면 버리도록 표시
+      if (voiceSrc) { try { voiceSrc.onended = null; voiceSrc.stop(); } catch (e) {} voiceSrc = null; }
       if ("speechSynthesis" in window) speechSynthesis.cancel();
+      duckPad(false);
     }
     function speakIfAuto(text, emotion) {
       if (profile.sound.on && soundUsable() && profile.voice.auto) speakAI(text, emotion, "voiceInfo");
@@ -1920,6 +2010,7 @@
       const info = infoId ? $(infoId) : null;
       if (!(profile.sound.on && soundUsable())) { if (info) info.textContent = "🔇 소리가 꺼져 있어 읽지 않아요"; return; }
       stopVoice();
+      const mySeq = voiceSeq;
       if (info) info.textContent = "🗣 목소리를 준비하고 있어요…";
       const voice = profile.voice.name || "coral";
       const key = voice + "|" + profile.voice.speed + "|" + text;
@@ -1937,14 +2028,24 @@
         }
         const ctx = getAudio();
         const audio = await ctx.decodeAudioData(buf.slice(0));
+        if (mySeq !== voiceSeq) return;                 // 그사이 다른 걸 눌렀으면 이 목소리는 버림
+        // [수정] 목소리마다 크기가 달라서, 실제 소리 크기(RMS)를 재서 같은 크기로 맞춤
+        const ch = audio.getChannelData(0);
+        let sq = 0, cnt = 0;
+        for (let i = 0; i < ch.length; i += 4) { sq += ch[i] * ch[i]; cnt++; }
+        const rms = Math.sqrt(sq / Math.max(1, cnt));
+        const norm = ctx.createGain();
+        norm.gain.value = Math.max(0.5, Math.min(4, 0.12 / (rms || 0.12)));
         const src = ctx.createBufferSource();
         src.buffer = audio;
-        src.connect(ctx.destination);
-        src.onended = () => { if (voiceSrc === src) voiceSrc = null; };
+        src.connect(norm); norm.connect(ctx.destination);
+        src.onended = () => { if (voiceSrc === src) { voiceSrc = null; duckPad(false); } };
         voiceSrc = src;
+        duckPad(true);                                  // 목소리 나오는 동안 배경 화음은 작게
         src.start();
         if (info) info.textContent = "🗣 AI 음성이에요";
       } catch (e) {
+        if (mySeq !== voiceSeq) return;
         if ("speechSynthesis" in window) {
           const u = new SpeechSynthesisUtterance(text);
           u.lang = "ko-KR";

@@ -37,6 +37,9 @@
   <button id="b1">① 짧게 (0.2초)</button>
   <button id="b2">② 길게 (1초)</button>
   <button id="b3">③ 두근두근 (패턴)</button>
+  <!-- [새로] 앱에서 '소리와 진동이 함께' 나올 때 진동이 막히는지 확인 -->
+  <button id="b4">④ 소리를 내면서 진동 (2초)</button>
+  <button id="b5">⑤ 소리 없이 진동 (2초)</button>
   <div class="box" id="result">버튼을 누르면 결과가 여기에 나와요.</div>
 
   <!-- 3) 결과 해석 -->
@@ -82,6 +85,21 @@
     $("b1").onclick = () => test(200, "짧게");
     $("b2").onclick = () => test(1000, "길게");
     $("b3").onclick = () => test([300, 150, 300, 150, 300], "두근두근");
+
+    // ④ 소리를 내면서 진동: 음악·화음이 나오는 동안 폰이 진동을 막는지 확인
+    let ctx = null;
+    $("b4").onclick = () => {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ctx = ctx || new AC();
+      ctx.resume();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = 330; g.gain.value = 0.15;
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 2);
+      test([400, 100, 400, 100, 400, 100, 400], "소리와 함께");
+      $("result").innerHTML += "\n👉 ⑤와 비교해 보세요. ⑤는 떨리는데 ④는 안 떨리면, 이 폰은 소리가 나는 동안 진동을 막는 거예요.";
+    };
+    $("b5").onclick = () => test([400, 100, 400, 100, 400, 100, 400], "소리 없이");
 
     // ----- 3) 결과에 따른 해결 방법 -----
     function showGuide(ok) {
