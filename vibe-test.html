@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>진동 점검</title>
+  <style>
+    body {
+      margin: 0 auto; padding: 16px; max-width: 560px;
+      background: #FFFDF7; color: #1A1A1A;
+      font-family: system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
+      font-size: 20px; line-height: 1.6;
+    }
+    h1 { font-size: 26px; margin: 8px 0; }
+    .box {
+      background: #FFF; border: 2px solid #CFCFCF; border-radius: 16px;
+      padding: 16px; margin: 16px 0; white-space: pre-line; font-size: 18px;
+    }
+    button {
+      display: block; width: 100%; min-height: 64px; margin: 12px 0;
+      font: inherit; font-size: 22px; font-weight: 700;
+      border: 3px solid #1A1A1A; border-radius: 16px; background: #FFD23F; color: #1A1A1A;
+    }
+    .good { color: #1E7B4F; font-weight: 700; }
+    .bad { color: #B3261E; font-weight: 700; }
+    a { color: #2F5F8F; }
+  </style>
+</head>
+<body>
+  <h1>📳 진동 점검</h1>
+  <p>진동이 왜 안 되는지 찾는 페이지예요. 위에서부터 차례로 눌러 주세요.</p>
+
+  <!-- 1) 자동으로 알아낸 정보 -->
+  <div class="box" id="info">확인 중...</div>
+
+  <!-- 2) 진동 시험 버튼 -->
+  <button id="b1">① 짧게 (0.2초)</button>
+  <button id="b2">② 길게 (1초)</button>
+  <button id="b3">③ 두근두근 (패턴)</button>
+  <div class="box" id="result">버튼을 누르면 결과가 여기에 나와요.</div>
+
+  <!-- 3) 결과 해석 -->
+  <div class="box" id="guide"></div>
+
+  <p><a href="index.html">← 앱으로 돌아가기</a></p>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const ua = navigator.userAgent;   // 브라우저가 알려 주는 기기·브라우저 정보
+
+    // ----- 1) 지금 어떤 환경에서 열었는지 알아내기 -----
+    const isAndroid = /Android/.test(ua);
+    const isIPhone = /iPhone|iPad/.test(ua);
+    // 앱 안의 브라우저(인앱 브라우저)는 진동을 막는 경우가 많음
+    const inApp = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\/|; wv\)/.test(ua);
+    // 다른 페이지 안에 끼워진 상태(미리보기 등)인지
+    const inFrame = (window.self !== window.top);
+    const chrome = (ua.match(/Chrome\/(\d+)/) || [])[1];
+    const samsung = /SamsungBrowser/.test(ua);
+    const hasVibrate = ("vibrate" in navigator);
+
+    const lines = [];
+    lines.push("기기: " + (isAndroid ? "안드로이드" : isIPhone ? "아이폰" : "기타"));
+    lines.push("브라우저: " + (samsung ? "삼성 인터넷" : chrome ? "Chrome " + chrome : "기타"));
+    lines.push("앱 안의 브라우저(카톡·Claude 앱 등): " + (inApp ? "예 ⚠️" : "아니요"));
+    lines.push("다른 화면 안에 끼워짐: " + (inFrame ? "예 ⚠️" : "아니요"));
+    lines.push("진동 기능 있음: " + (hasVibrate ? "예" : "아니요 ⚠️"));
+    $("info").textContent = lines.join("\n");
+
+    // ----- 2) 진동 시험 -----
+    function test(pattern, name) {
+      if (!hasVibrate) {
+        $("result").innerHTML = '<span class="bad">❌ 이 브라우저에는 진동 기능이 없어요.</span>';
+        return;
+      }
+      const ok = navigator.vibrate(pattern);   // true = 브라우저가 명령을 받아들임
+      $("result").innerHTML = ok
+        ? '<span class="good">✅ ' + name + ': 브라우저는 진동 명령을 받아들였어요.</span>\n손에 진동이 느껴졌나요?'
+        : '<span class="bad">❌ ' + name + ': 브라우저가 진동 명령을 거절했어요.</span>';
+      showGuide(ok);
+    }
+    $("b1").onclick = () => test(200, "짧게");
+    $("b2").onclick = () => test(1000, "길게");
+    $("b3").onclick = () => test([300, 150, 300, 150, 300], "두근두근");
+
+    // ----- 3) 결과에 따른 해결 방법 -----
+    function showGuide(ok) {
+      let g = "";
+      if (inApp || inFrame) {
+        g = "👉 앱 안에서 열려 있어요.\n오른쪽 위 ⋮ → '다른 브라우저로 열기' → Chrome 으로 다시 열어 주세요.";
+      } else if (!ok) {
+        g = "👉 브라우저가 막고 있어요.\nChrome 앱을 최신으로 업데이트한 뒤 다시 해 보세요.\n삼성 인터넷이면 Chrome으로도 해 보세요.";
+      } else {
+        g = "✅ 명령은 받아들였는데 진동이 안 느껴진다면 '폰 설정' 문제예요.\n\n" +
+            "【삼성 갤럭시】 설정 → 소리 및 진동 →\n" +
+            "  · '진동 세기'에서 모든 막대(전화·알림·시스템/터치)를 끝까지 올리기\n" +
+            "  · '시스템 소리/진동 제어'에서 '터치 상호작용' 진동 켜기\n" +
+            "【그 밖의 안드로이드】 설정 → 소리(및 진동) → 진동 및 햅틱 →\n" +
+            "  · '진동 및 햅틱 사용' 켜기, '터치 피드백' 켜기\n\n" +
+            "또 확인: 방해 금지 모드 끄기, 절전 모드 끄기.\n" +
+            "설정을 바꾼 뒤 Chrome을 완전히 닫았다가 다시 열어 주세요.";
+      }
+      $("guide").textContent = g;
+    }
+  </script>
+</body>
+</html>
