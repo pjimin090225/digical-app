@@ -339,6 +339,7 @@
       <div class="art-wrap" id="artWrap">
         <img id="artImg" alt="찍은 작품" draggable="false">
         <div class="glow" id="glow"></div>
+        <svg class="hl" id="dim" viewBox="0 0 1000 1000" preserveAspectRatio="none" hidden></svg>
         <svg class="hl" id="hl" viewBox="0 0 1000 1000" preserveAspectRatio="none" hidden></svg>
         <div class="touch-label" id="touchLabel" hidden></div>
       </div>
@@ -361,7 +362,7 @@
   </section>
 
   <footer>
-    4단계(수정 4) · 앱 4-4: 번호 칸 위치 · 분위기별 연주 · 해설과 감각 차례로<br>
+    4단계(수정 5) · 앱 4-5: 숫자 6가지로 소리 계산 · 8×8 칸 · 바깥 어둡게<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1606,7 +1607,7 @@
     //   지금: 사진 위에 1~36번 칸(6×6)을 그려서 보내고, "하늘은 몇 번 칸들?"이라고 물음
     //         (사진에 번호 표시를 붙여 AI가 고르게 하는 방법 = Set-of-Mark 방식)
     // ==========================================================
-    const GRID = 6;
+    const GRID = 8;      // [수정 4-5] 6×6 → 8×8 (더 촘촘하게)
 
     // 원래 사진 위에 번호 칸을 그린 '표시용 사진'을 만듦 (AI에게만 보냄, 사용자에게는 안 보임)
     function makeGridImage(dataURL) {
@@ -1652,41 +1653,39 @@
               Math.max(...rects.map((b) => b[2])), Math.max(...rects.map((b) => b[3]))];
     }
 
-    // AI가 고른 '작품 칸'으로 사진을 잘라 작품만 보여주고, 장면 칸들을 잘린 그림 기준으로 바꿈
+    // [수정 4-5] 사진을 네모로 잘라내지 않고, 작품이 아닌 칸만 어둡게 덮음
+    //   예전: 작품 칸들을 감싸는 큰 네모로 잘라서 → 칸 단위라 늘 비슷한 직사각형 + 정확도가 낮아 보였음
+    //   지금: 사진은 그대로 두고, AI가 '작품이 아니다'라고 본 칸만 살짝 어둡게 → 틀려도 잘려 나가지 않음
     function applyCells(r, d) {
-      return new Promise((resolve) => {
-        const frame = bboxOf((r.frame_cells || []).map(cellRect));
-        const area = frame ? (frame[2] - frame[0]) * (frame[3] - frame[1]) / 1e6 : 1;
-        const doCrop = d.type === "photo" && frame && area < 0.9 && (r.frame_cells || []).length >= 2;
-        const f = doCrop ? frame : [0, 0, 1000, 1000];
-        const fw = f[2] - f[0], fh = f[3] - f[1];
-        const conv = (b) => [(b[0] - f[0]) / fw * 1000, (b[1] - f[1]) / fh * 1000, (b[2] - f[0]) / fw * 1000, (b[3] - f[1]) / fh * 1000]
-          .map((v) => Math.max(0, Math.min(1000, v)));
-        (r.scenes || []).forEach((s) => {
-          s.rects = (s.cells || []).map(cellRect).map(conv).filter((b) => b[2] - b[0] > 5 && b[3] - b[1] > 5);
-          s.box = bboxOf(s.rects);
-        });
-        d.cropInfo = doCrop ? "작품 칸 " + JSON.stringify(r.frame_cells) + "만 잘라 냄"
-                            : "자르지 않음 (작품 칸 " + JSON.stringify(r.frame_cells || []) + ")";
-        if (!doCrop) { $("artImg").src = d.images[0]; resolve(); return; }
-        const img = new Image();
-        img.onload = () => {
-          const c = document.createElement("canvas");
-          c.width = Math.round(img.width * fw / 1000);
-          c.height = Math.round(img.height * fh / 1000);
-          c.getContext("2d").drawImage(img, img.width * f[0] / 1000, img.height * f[1] / 1000, c.width, c.height, 0, 0, c.width, c.height);
-          $("artImg").src = c.toDataURL("image/jpeg", 0.88);
-          resolve();
-        };
-        img.onerror = () => resolve();
-        img.src = d.images[0];
+      const frame = r.frame_cells || [];
+      const dim = $("dim");
+      const use = d.type === "photo" && frame.length >= 2 && frame.length < GRID * GRID * 0.9;
+      if (use) {
+        let h = "";
+        for (let n = 1; n <= GRID * GRID; n++) {
+          if (frame.includes(n)) continue;
+          const b = cellRect(n);
+          h += '<rect x="' + (b[0] - 0.5) + '" y="' + (b[1] - 0.5) + '" width="' + (b[2] - b[0] + 1) + '" height="' + (b[3] - b[1] + 1) + '"/>';
+        }
+        dim.innerHTML = '<g fill="rgba(0,0,0,0.55)" shape-rendering="crispEdges">' + h + "</g>";
+        dim.removeAttribute("hidden");
+      } else {
+        dim.innerHTML = "";
+        dim.setAttribute("hidden", "");
+      }
+      (r.scenes || []).forEach((s) => {
+        s.rects = (s.cells || []).map(cellRect);
+        s.box = bboxOf(s.rects);
       });
+      d.cropInfo = use ? "작품 칸 " + frame.length + "개, 바깥 " + (GRID * GRID - frame.length) + "칸은 어둡게" : "작품 칸을 못 찾음 → 사진 전체";
+      return Promise.resolve();
     }
 
     // 사진·영상을 받으면 → 바로 감상 화면으로
     function showConfirm(d) {
       lastData = d; lastResult = null;
       $("artImg").src = d.images[0];
+      $("dim").innerHTML = ""; $("dim").setAttribute("hidden", "");
       setHighlight(null);
       $("glow").style.opacity = "0";
       $("touchLabel").hidden = true;
@@ -1904,20 +1903,50 @@
       "거침": [45, 25, 45, 25, 45, 25, 45], "묵직함": [260]
     };
 
-    // ---------- [수정 4-4] 분위기별 '연주 방식' ----------
-    // 예전: 분위기마다 음계만 달랐고 모두 같은 부드러운 '삐-' 소리 → 작품이 달라도 다 비슷하게 들렸음
-    // 지금: 분위기마다 악기 소리(음색), 리듬, 멜로디 모양, 음역, 타악기, 울림 효과를 크게 다르게
-    // 근거: 장조-밝음 / 단조-슬픔 / 빠르고 끊어짐-신남 / 낮고 떨림-긴장 같은 '음악과 감정의 연결' 경향
-    // (AI가 작곡하는 것이 아니라, AI가 고른 분위기를 정해진 규칙으로 연주함)
-    const PRESETS = {
-      "밝음":   { scale: [0, 2, 4, 7, 9, 12], chord: [0, 4, 7], oct: 1,   lead: "triangle", att: 0.005, dec: 0.35, rhythm: [1,0,1,0,1,1,1,0], contour: "up",     bass: 1, kick: 0, hat: 1, echo: 0, trem: 0,  tmul: 1.0,  pad: 0.5 },
-      "신남":   { scale: [0, 2, 4, 5, 7, 9, 11, 12], chord: [0, 4, 7, 12], oct: 1, lead: "square", att: 0.003, dec: 0.12, rhythm: [1,0,1,1,0,1,1,1], contour: "updown", bass: 2, kick: 1, hat: 2, echo: 0, trem: 0,  tmul: 1.15, pad: 0.3 },
-      "차분함": { scale: [0, 4, 7, 11, 14],    chord: [0, 4, 7, 11], oct: 0.5, lead: "sine", att: 0.08, dec: 1.4, rhythm: [1,0,0,0,0,0,1,0], contour: "wander", bass: 0, kick: 0, hat: 0, echo: 1, trem: 0,  tmul: 0.85, pad: 1.0 },
-      "슬픔":   { scale: [0, 2, 3, 5, 7, 8, 10, 12], chord: [0, 3, 7], oct: 0.5, lead: "sine", att: 0.05, dec: 1.0, rhythm: [1,0,0,1,0,0,1,0], contour: "down", bass: 1, kick: 0, hat: 0, echo: 1, trem: 5, tmul: 0.8, pad: 0.9 },
-      "신비":   { scale: [0, 2, 4, 6, 8, 10, 12], chord: [0, 4, 6, 11], oct: 2, lead: "sine", att: 0.01, dec: 0.9, rhythm: [1,0,0,1,0,1,0,0], contour: "random", bass: 0, kick: 0, hat: 0, echo: 2, trem: 0, tmul: 0.9, pad: 0.8 },
-      "긴장":   { scale: [0, 1, 0, 1, 3, 1],  chord: [0, 3, 6], oct: 0.5, lead: "sawtooth", att: 0.005, dec: 0.18, rhythm: [1,1,1,1,1,1,1,1], contour: "repeat", bass: 2, kick: 2, hat: 0, echo: 0, trem: 7, tmul: 1.0, pad: 0.7 }
-    };
-    const ROOT_HZ = { "낮음": 110, "중간": 196, "높음": 330 };      // 기본 높이 (AI의 '소리 높이')
+    // ---------- [수정 4-5] 숫자 6가지 → 소리 '계산' ----------
+    // 예전: 분위기 단어 6개 중 하나 → 그 묶음대로 연주. AI가 늘 '차분함·중간'을 골라 다 비슷했음
+    // 지금: AI가 매긴 0~1 숫자 6가지로 소리의 모든 요소를 '연속으로' 계산 → 숫자가 조금만 달라도 소리가 달라짐
+    //   기분(valence)   → 장조 ↔ 단조 (밝은 음계 ↔ 어두운 음계)
+    //   활기(arousal)   → 빠르기, 음 개수, 북·찰랑이
+    //   밝기(brightness)→ 소리 높이(음역), 소리의 맑기(필터)
+    //   무게(weight)    → 낮은 베이스, 한 옥타브 아래 음
+    //   거칠기(roughness)→ 거친 음색, 떨림
+    //   흐름(flow)      → 음 길이(이어짐 ↔ 끊어짐), 메아리
+    // (AI가 작곡하는 것이 아니라, AI가 매긴 숫자를 정해진 규칙(수식)으로 소리로 바꿈)
+    const nn = (v) => { const x = Number(v); return isFinite(x) ? Math.max(0, Math.min(1, x)) : 0.5; };
+    function planOf(s) {
+      const v = nn(s.valence), a = nn(s.arousal), b = nn(s.brightness), w = nn(s.weight), r = nn(s.roughness), f = nn(s.flow);
+      let scale, chord, scaleName;
+      if (v < 0.3 && a > 0.6)               { scale = [0, 1, 3, 6, 7, 6, 3, 1]; chord = [0, 3, 6];     scaleName = "불안한 음계"; }
+      else if (v < 0.25)                    { scale = [0, 2, 3, 5, 7, 8, 10, 12]; chord = [0, 3, 7];   scaleName = "단조"; }
+      else if (v < 0.45)                    { scale = [0, 2, 3, 7, 9, 10, 12]; chord = [0, 3, 7, 10];  scaleName = "어스름한 단조"; }
+      else if (f > 0.65 && a < 0.5 && v < 0.7) { scale = [0, 2, 4, 6, 8, 10, 12]; chord = [0, 4, 8];  scaleName = "꿈결 음계"; }
+      else if (v < 0.62)                    { scale = [0, 4, 7, 11, 14]; chord = [0, 4, 7, 11];        scaleName = "부드러운 장조"; }
+      else                                  { scale = [0, 2, 4, 7, 9, 12]; chord = [0, 4, 7];          scaleName = "밝은 장조"; }
+      const rhythm = a < 0.2 ? [1,0,0,0,0,0,0,0] : a < 0.4 ? [1,0,0,0,1,0,0,0] : a < 0.6 ? [1,0,1,0,1,0,0,0] :
+                     a < 0.8 ? [1,0,1,1,0,1,1,0] : [1,1,1,1,1,1,1,1];
+      return {
+        scale: scale, chord: chord, scaleName: scaleName, rhythm: rhythm,
+        root: 82 * Math.pow(2, b * 2.2),                       // 82Hz(낮고 어두움) ~ 375Hz(높고 밝음)
+        leadOct: b > 0.55 ? 2 : 1,
+        bpm: 52 + a * 60,                                      // 52 ~ 112 BPM
+        lead: r > 0.6 ? "sawtooth" : a > 0.75 ? "square" : b > 0.6 ? "triangle" : "sine",
+        padWave: r > 0.6 ? "sawtooth" : b > 0.6 ? "triangle" : "sine",
+        att: f > 0.6 ? 0.06 : 0.005,
+        dec: 0.12 + f * 1.3,                                   // 흐를수록 음이 길게 이어짐
+        contour: v > 0.62 ? "up" : v < 0.35 ? "down" : f > 0.6 ? "random" : "updown",
+        bass: w > 0.6 ? 2 : w > 0.4 ? 1 : 0,
+        sub: w > 0.65,
+        kick: (v < 0.3 && a > 0.6) ? 2 : a > 0.75 ? 1 : 0,
+        hat: a > 0.8 ? 2 : a > 0.6 ? 1 : 0,
+        echo: f > 0.7 ? 2 : f > 0.45 ? 1 : 0,
+        trem: r > 0.55 ? 4 + r * 4 : f > 0.6 ? 0.35 : 0,
+        cutoff: 350 + b * 2800,
+        q: r * 6,
+        pad: 0.4 + (1 - a) * 0.6
+      };
+    }
+
     const semi = (root, s) => root * Math.pow(2, s / 12);
 
     let senseTimer = null, eng = null, stepNo = 0, noiseBuf = null;
@@ -1936,7 +1965,7 @@
       stopEngine();
       const ctx = getAudio();
       if (!ctx) return;
-      const P = PRESETS[s.mode] || PRESETS["차분함"];
+      const P = planOf(s);
       const t = ctx.currentTime;
       const bus = ctx.createGain();
       const level = GAIN[profile.sound.level] * (0.35 + 0.65 * I);
@@ -1956,34 +1985,34 @@
       }
 
       // 배경 화음(패드)
-      const root = (ROOT_HZ[s.pitch] || 196) * P.oct;
+      const root = P.root;
       const padGain = ctx.createGain(), trem = ctx.createGain(), filter = ctx.createBiquadFilter();
       padGain.gain.value = 0.10 * P.pad;
       filter.type = "lowpass";
-      filter.frequency.value = s.texture === "거침" ? 2400 : 1100;
-      if (s.texture === "거침") filter.Q.value = 5;
+      filter.frequency.value = P.cutoff;
+      filter.Q.value = P.q;
       trem.gain.value = 1;
       const chordTones = P.chord.slice();
-      if (s.texture === "묵직함") chordTones.push(-12);
+      if (P.sub) chordTones.push(-12);
       const oscs = [];
       chordTones.forEach((st, i) => {
         [-4, 4].forEach((det) => {                                     // 두 개를 살짝 어긋나게 → 풍성한 소리
           const o = ctx.createOscillator();
-          o.type = s.texture === "거침" ? "sawtooth" : (P.lead === "square" ? "triangle" : "sine");
+          o.type = P.padWave;
           o.frequency.value = semi(root, st);
           o.detune.value = det;
           o.connect(filter); o.start(t); oscs.push(o);
         });
       });
       filter.connect(trem); trem.connect(padGain); padGain.connect(bus);
-      // 떨림(트레몰로): 긴장·슬픔은 빠르게 떨리고, '물결'이면 천천히 출렁임
-      const tremHz = P.trem || (s.texture === "물결" ? 0.35 : 0);
+      // 떨림(트레몰로): 거칠수록 빠르게 떨리고, 흐름이 크면 천천히 출렁임
+      const tremHz = P.trem;
       let lfo = null;
       if (tremHz) {
         lfo = ctx.createOscillator();
         const depth = ctx.createGain();
         lfo.frequency.value = tremHz;
-        depth.gain.value = P.trem ? 0.35 : 0.45;
+        depth.gain.value = tremHz > 1 ? 0.35 : 0.45;
         lfo.connect(depth); depth.connect(trem.gain);
         lfo.start(t); oscs.push(lfo);
       }
@@ -2012,9 +2041,8 @@
       const t = ctx.currentTime + 0.01;
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = P.lead;
-      o.frequency.value = semi(e.root * 2, sc[idx]);
-      let dec = P.dec;
-      if (e.s.texture === "톡톡") dec = Math.min(dec, 0.15);
+      o.frequency.value = semi(e.root * P.leadOct, sc[idx]);
+      const dec = P.dec;
       const peak = (P.lead === "square" || P.lead === "sawtooth") ? 0.07 : 0.22;
       g.gain.setValueAtTime(0, t);
       g.gain.linearRampToValueAtTime(peak, t + P.att);
@@ -2061,8 +2089,8 @@
       if (!s) return;
       const p = profile;
       const I = clamp01(Number(s.intensity) || 0.5);
-      const P = PRESETS[s.mode] || PRESETS["차분함"];
-      const period = 60000 / Math.min(112, (TEMPO_BPM[s.tempo] || 84) * P.tmul);   // 한 박자 길이
+      const P = planOf(s);
+      const period = 60000 / Math.min(112, P.bpm);                 // 한 박자 길이 (최대 112 BPM → 깜빡임 1초 2번 미만)
       glowColors = colors && colors.length > 1 ? colors : null;
       setGlow((s.colors && s.colors[0]) || "#FFD23F", box);
       const withSound = p.sound.on && soundUsable();
@@ -2157,8 +2185,13 @@
     }
     function senseLine(s) {
       if (!s) return "-";
-      return esc(s.emotion) + " · 분위기 " + esc(s.mode) + " · 세기 " + esc(s.intensity) + " · " + esc(s.tempo) + " · 소리 " + esc(s.pitch) +
-        " · 진동 " + esc(s.texture) + " " + swatch(s.colors) + (s.why ? "<br>&nbsp;&nbsp;&nbsp;근거: " + esc(s.why) : "");
+      const P = planOf(s);
+      const f = (x) => Number(x).toFixed(2);
+      return esc(s.emotion) + " " + swatch(s.colors) +
+        "<br>&nbsp;&nbsp;&nbsp;기분 " + f(s.valence) + " · 활기 " + f(s.arousal) + " · 밝기 " + f(s.brightness) +
+        " · 무게 " + f(s.weight) + " · 거칠기 " + f(s.roughness) + " · 흐름 " + f(s.flow) +
+        "<br>&nbsp;&nbsp;&nbsp;→ " + P.scaleName + " · " + Math.round(P.bpm) + "BPM · 높이 " + Math.round(P.root) + "Hz · 진동 " + esc(s.texture) +
+        (s.why ? "<br>&nbsp;&nbsp;&nbsp;근거: " + esc(s.why) : "");
     }
     function syncText() {
       if (!syncLog.length) return "아직 측정 안 됨";
@@ -2173,7 +2206,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 4-4 · 서버 " + esc(r.version || "옛 버전(4-4 아님!)") + "<br>" +
+        "<b>버전</b>: 앱 4-5 · 서버 " + esc(r.version || "옛 버전(4-5 아님!)") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -2183,6 +2216,7 @@
         "문장 " + st.sentences + "개 · 평균 " + st.avgWords + "어절 · 최장 " + st.maxWords + "어절<br>" +
         ((c.violations || []).length ? "<span class='note'>" + c.violations.map(esc).join("<br>") + "</span><br>" : "") +
         "감각표 검사: " + (c.sensePassed ? "통과 ✅" : "⚠️ " + (c.senseProblems || []).map(esc).join(", ")) + " (만든 횟수 " + c.senseTries + "번)<br>" +
+        "<b>장면 간 대비 강조</b>: " + esc(Object.entries(r.contrast || {}).filter((x) => x[1] > 1).map((x) => x[0] + "×" + x[1]).join(", ") || "없음") + "<br>" +
         "<b>전체 감각</b>: " + senseLine(r.whole) + "<br>" +
         "<b>장면</b><br>" + (r.scenes || []).map((s, i) => (i + 1) + ". " + esc(s.name) + " → " + senseLine(s.sense) +
           ((s.cells || []).length ? "<br>&nbsp;&nbsp;&nbsp;칸 " + esc(JSON.stringify(s.cells)) : "")).join("<br>") +

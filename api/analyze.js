@@ -11,14 +11,14 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "4-4";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "4-5";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
 
 // 쉬운 말 규칙 (CEFR A1/A2의 능력 기준을 한국어 쉬운 글 규칙으로 응용)
 const RULES = { maxWords: 12, maxSummaryWords: 15, minScenes: 2, maxScenes: 5 };
-const GRID = 6;   // 사진 위에 그린 번호 칸: 6×6 = 36칸
+const GRID = 8;   // 사진 위에 그린 번호 칸: 8×8 = 64칸 (6×6보다 촘촘)
 
 // 어려운 낱말 목록 (시작용). 팀원 A가 CACD 작업하며 늘려 갈 목록
 const HARD_WORDS = [
@@ -30,7 +30,7 @@ const HARD_WORDS = [
 const TEMPOS = ["느림", "보통", "빠름"];
 const PITCHES = ["낮음", "중간", "높음"];
 const TEXTURES = ["부드러움", "물결", "톡톡", "거침", "묵직함"];
-const MODES = ["밝음", "신남", "차분함", "슬픔", "신비", "긴장"];   // 앱이 이 분위기에 맞는 화음·음계로 연주함
+const MODES = ["밝음", "신남", "차분함", "슬픔", "신비", "긴장"];   // (이제 숫자에서 코드가 계산하는 이름표)
 
 // ---------------------------------------------------------------------
 // 간단한 사용량 제한: 같은 인터넷 주소에서 10분에 60번까지
@@ -71,6 +71,7 @@ function textPrompt(type, explain, target, cropped) {
     "- summary: 무엇인지 + 첫 느낌을 1문장으로.",
     "- interpretation: 이 작품(장면)이 주는 느낌이나 이야기를 1~2문장으로 해석한다. 보이는 것을 늘어놓지 말고, '어떤 마음이 드는지', '무엇을 말하는 것 같은지'를 쓴다.",
     "- scenes: 감상하기 좋게 " + RULES.minScenes + "~" + RULES.maxScenes + "개로 나눈다. 각 장면은 '무엇이 있는지 + 어떤 느낌인지'를 함께 쓴다.",
+    "- 각 장면의 look: 감각으로 바꿀 재료. 실제로 보이는 색 이름·밝기·크기·움직임·표면을 20자 안팎으로 (사용자에게 보이지 않음. 이 칸은 쉬운 말 규칙 검사를 하지 않음).",
     type === "photo"
       ? "- 사진 위에 1~" + (GRID * GRID) + "번 번호가 적힌 " + GRID + "×" + GRID + " 칸이 그려져 있다. (왼쪽 위가 1번, 한 줄에 " + GRID + "칸씩, 오른쪽 아래가 " + (GRID * GRID) + "번)\n" +
         "  칸과 번호는 위치를 알려 주는 표시일 뿐이니 해설에는 쓰지 않는다.\n" +
@@ -95,9 +96,9 @@ function textPrompt(type, explain, target, cropped) {
     '{"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"candidates":[],"frame_cells":[작품이 있는 칸 번호들],',
     ' "summary":"밤하늘이 빙글빙글 도는 그림이에요.",',
     ' "interpretation":"조용한 마을 위로 하늘이 크게 움직여요. 잠 못 드는 밤의 설레는 마음 같아요.",',
-    ' "scenes":[{"name":"하늘","text":"하늘이 소용돌이처럼 돌아요. 바람이 크게 부는 것 같아요.","cells":[하늘이 보이는 칸 번호들]},',
-    '           {"name":"별","text":"노란 별이 반짝여요. 작은 등불처럼 따뜻해요.","cells":[별이 있는 칸 번호들]},',
-    '           {"name":"마을","text":"마을은 조용히 잠들어 있어요.","cells":[마을이 있는 칸 번호들]}]}',
+    ' "scenes":[{"name":"하늘","text":"하늘이 소용돌이처럼 돌아요. 바람이 크게 부는 것 같아요.","look":"짙은 파랑, 크게 휘도는 붓질","cells":[하늘이 보이는 칸 번호들]},',
+    '           {"name":"별","text":"노란 별이 반짝여요. 작은 등불처럼 따뜻해요.","look":"밝은 노랑, 작고 동그란 빛","cells":[별이 있는 칸 번호들]},',
+    '           {"name":"마을","text":"마을은 조용히 잠들어 있어요.","look":"어두운 남색, 작고 낮은 지붕들","cells":[마을이 있는 칸 번호들]}]}',
     "",
     "(위 예의 [ ] 안 글은 설명일 뿐이고, 실제로는 칸 번호 숫자들을 쓴다. 사진이 아니면 cells와 frame_cells는 빈 목록)",
     "[출력] 위와 같은 모양의 JSON만 출력한다. needs_choice가 true면 candidates에 [{\"name\":\"\",\"cells\":[칸 번호들]}]를 2~4개 쓴다."
@@ -105,37 +106,40 @@ function textPrompt(type, explain, target, cropped) {
 }
 
 // ---------------------------------------------------------------------
-// 3) Text to Sense 지시문 — 예시 값을 주지 않음 (예전에 AI가 예시 값을 그대로 베꼈음)
+// 3) Text to Sense 지시문 [수정 4-5]
+//    예전: '보통/중간/차분함' 같은 단어를 고르게 함 → AI가 안전한 가운데 단어만 골라 모두 비슷해짐
+//    지금: 6가지 느낌을 0~1 숫자로 매기게 하고, 소리·진동·빛으로 바꾸는 일은 '코드'가 함
+//    근거: 감정을 '기분(밝음↔어두움)'과 '활기(고요↔흥분)' 두 축으로 보는 감정 모델(러셀의 감정 원형 모델)과
+//          밝기·무게·거칠기를 소리 높이·굵기·음색과 연결하는 교차감각 대응 연구
 // ---------------------------------------------------------------------
+const DIMS = ["valence", "arousal", "brightness", "weight", "roughness", "flow"];
 function sensePrompt() {
   return [
-    "너는 문화 콘텐츠의 해설을 시각·청각·촉각 신호로 바꾸는 설계자다.",
-    "입력: 콘텐츠 종류, 요약, 해석, 장면별 쉬운 해설, (있으면) 기기가 분석한 소리 정보.",
-    "할 일: 전체(whole)와 장면마다 감각 신호표를 만든다.",
+    "너는 문화 콘텐츠의 느낌을 숫자로 재는 측정자다.",
+    "입력: 콘텐츠 종류, 요약, 해석, 장면별 쉬운 해설과 보이는 모습(look), (있으면) 기기가 분석한 소리 정보.",
+    "할 일: 전체(whole)와 장면마다 아래 값을 정한다.",
     "",
-    "[값의 종류]",
-    "- emotion: 그 장면의 감정을 한 낱말로",
-    "- intensity: 0.1~0.95 사이의 숫자. 조용하고 약하면 낮게, 강하고 극적이면 높게",
-    "- tempo: " + TEMPOS.join(" | "),
-    "- colors: 그 장면을 대표하는 실제 색 1~3개 (#RRGGBB)",
-    "- pitch: " + PITCHES.join(" | "),
-    "- texture: " + TEXTURES.join(" | ") + "  (진동으로 느낄 촉감)",
-    "- mode: " + MODES.join(" | ") + "  (배경 음악의 분위기. 앱이 이에 맞는 화음과 음계로 연주함)",
-    "- why: 왜 이렇게 정했는지 15자 안팎의 짧은 근거",
+    "[0~1 숫자 6가지] (소수 둘째 자리까지)",
+    "- valence 기분: 0 = 슬프고 어둡고 불안함 ↔ 1 = 기쁘고 환하고 따뜻함",
+    "- arousal 활기: 0 = 고요하고 멈춰 있음 ↔ 1 = 들뜨고 빠르고 긴장됨",
+    "- brightness 밝기: 0 = 어둡고 짙은 색 ↔ 1 = 밝고 가벼운 색",
+    "- weight 무게: 0 = 작고 가벼움 ↔ 1 = 크고 묵직함",
+    "- roughness 거칠기: 0 = 매끈하고 부드러움 ↔ 1 = 울퉁불퉁하고 거침",
+    "- flow 흐름: 0 = 뚝뚝 끊기고 톡톡 튐 ↔ 1 = 물결처럼 이어지고 감김",
     "",
-    "[정하는 기준 — 사람들이 감각을 연결하는 일반적인 경향(교차감각 대응)]",
-    "- 밝고 가볍고 작은 것 → 높은 소리, 밝은 색, 톡톡 / 어둡고 크고 무거운 것 → 낮은 소리, 짙은 색, 묵직함",
-    "- 움직임·긴장·흥분 → 빠름, 강하게 / 고요·잠·휴식 → 느림, 약하게, 부드러움",
-    "- 흐르고 감기는 것(물, 바람, 소용돌이) → 물결 / 울퉁불퉁·거친 표면·소란 → 거침",
-    "- mode: 기쁘고 환함 → 밝음, 들뜨고 활기참 → 신남, 고요·편안 → 차분함, 외로움·그리움·슬픔 → 슬픔, 꿈·밤·신기함 → 신비, 불안·위험·갈등 → 긴장",
+    "[그 밖의 값]",
+    "- emotion: 감정 한 낱말",
+    "- colors: 실제로 보이는 대표 색 1~3개 (#RRGGBB)",
+    "- why: 가장 중요한 근거 15자 안팎",
     "",
-    "[중요]",
-    "- 입력의 내용에 맞춰 값을 정한다. 아무 근거 없이 중간값(보통, 중간, 0.5)을 고르지 않는다.",
-    "- 장면마다 느낌이 다르면 값도 분명히 다르게 한다. 정말 같을 때만 같게 한다.",
+    "[매기는 방법 — 중요]",
+    "- 먼저 장면들을 서로 '비교'한다. 가장 밝은 장면과 가장 어두운 장면, 가장 활기찬 장면과 가장 고요한 장면을 정하고, 그 차이가 숫자에 분명히 드러나게 한다.",
+    "- 0.5 근처의 무난한 값을 피한다. 느낌이 뚜렷하면 0.2 아래나 0.8 위를 쓴다.",
+    "- look(보이는 모습)을 꼭 반영한다. 예: '짙은 파랑' → brightness 낮게, '노랑 빛' → brightness 높게.",
+    "- whole은 작품 전체를 처음 봤을 때의 종합적인 느낌이다. 장면 하나를 그대로 베끼지 않는다.",
     "- 장면 순서와 개수는 입력과 똑같이.",
-    "- whole은 작품 전체를 처음 봤을 때의 '종합적인 분위기'다. 가장 큰 장면 하나를 베끼지 말고, 모든 장면과 해석을 아울러 정한다.",
     "",
-    '[출력] JSON만: {"whole":{...}, "scenes":[{...}, ...]}  (각 {...}는 위 8가지 값을 모두 가짐)'
+    '[출력] JSON만: {"whole":{...}, "scenes":[{...}, ...]}  (각 {...}는 위 9가지 값을 모두 가짐)'
   ].join("\n");
 }
 
@@ -231,27 +235,53 @@ function stats(d) {
   };
 }
 
-// 감각표 검사: 빠진 값을 채우고, 장면끼리 전부 똑같으면 알려 줌
+// 감각표 정리: 숫자는 0~1로 맞추고, 숫자에서 이름표(빠르기·높이·진동 느낌·분위기)를 코드로 계산
+const n01 = (v, d) => { const x = Number(v); return isFinite(x) ? Math.max(0, Math.min(1, x)) : d; };
+function labelsOf(o) {
+  o.tempo = o.arousal < 0.35 ? "느림" : o.arousal < 0.65 ? "보통" : "빠름";
+  o.pitch = o.brightness < 0.35 ? "낮음" : o.brightness < 0.65 ? "중간" : "높음";
+  o.texture = o.roughness > 0.6 ? "거침" : o.flow > 0.6 ? "물결" : (o.arousal > 0.6 && o.flow < 0.4) ? "톡톡" : o.weight > 0.65 ? "묵직함" : "부드러움";
+  o.mode = (o.valence < 0.3 && o.arousal > 0.6) ? "긴장" : o.valence < 0.35 ? "슬픔" :
+           (o.flow > 0.65 && o.arousal < 0.5 && o.valence < 0.7) ? "신비" :
+           o.valence > 0.6 ? (o.arousal > 0.6 ? "신남" : "밝음") : "차분함";
+  o.intensity = +(0.2 + 0.7 * Math.max(o.arousal, o.weight * 0.8)).toFixed(2);   // 자극의 세기 (다음 단계: 스티븐스 법칙)
+  return o;
+}
 function cleanSense(s) {
   s = s || {};
-  const num = Number(s.intensity);
-  return {
+  const o = {
     emotion: String(s.emotion || "평온").slice(0, 12),
-    intensity: isFinite(num) ? Math.max(0.1, Math.min(0.95, num)) : 0.5,
-    tempo: TEMPOS.includes(s.tempo) ? s.tempo : "보통",
     colors: (Array.isArray(s.colors) ? s.colors : []).filter((c) => /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 3),
-    pitch: PITCHES.includes(s.pitch) ? s.pitch : "중간",
-    texture: TEXTURES.includes(s.texture) ? s.texture : "부드러움",
-    mode: MODES.includes(s.mode) ? s.mode : "차분함",
     why: String(s.why || "").slice(0, 40)
   };
+  DIMS.forEach((k) => { o[k] = n01(s[k], 0.5); });
+  return labelsOf(o);
 }
+
+// [새로] 장면 간 대비 강조: AI가 장면들을 너무 비슷하게 매기면, 차이를 키워서 감각으로 구분되게 함
+//        (차이의 '방향'은 AI 그대로, '크기'만 키움. 몇 배 키웠는지 개발용 정보에 표시)
+function spreadScenes(list) {
+  const info = {};
+  if (list.length < 2) return info;
+  DIMS.forEach((k) => {
+    const vals = list.map((o) => o[k]);
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const range = Math.max(...vals) - Math.min(...vals);
+    const want = 0.45;                                 // 장면 사이 차이가 적어도 이 정도는 되게
+    const kx = range > 0.02 && range < want ? Math.min(3, want / range) : 1;
+    if (kx > 1) list.forEach((o) => { o[k] = +Math.max(0.02, Math.min(0.98, mean + (o[k] - mean) * kx)).toFixed(2); });
+    info[k] = +kx.toFixed(2);
+  });
+  list.forEach(labelsOf);
+  return info;
+}
+
 function senseProblems(d, n) {
   const v = [];
   const sc = (d.scenes || []).map(cleanSense);
   if (sc.length !== n) v.push("장면 수가 " + n + "개여야 해요");
   if (sc.length >= 2) {
-    const key = (s) => [s.intensity, s.tempo, s.pitch, s.texture, s.mode].join("|");
+    const key = (s) => DIMS.map((k) => s[k]).join("|");
     if (sc.every((s) => key(s) === key(sc[0]))) v.push("모든 장면의 값이 똑같아요. 장면마다 느낌에 맞게 다르게 정해 주세요");
   }
   return v;
@@ -339,7 +369,7 @@ module.exports = async (req, res) => {
     const tSense = Date.now();
     const scenes = (text.scenes || []).slice(0, RULES.maxScenes);
     const senseIn = "종류: " + text.kind + "\n요약: " + text.summary + "\n해석: " + text.interpretation + "\n" +
-      scenes.map((s, i) => "장면 " + (i + 1) + " (" + s.name + "): " + s.text).join("\n") + "\n" + audioText(body.audio);
+      scenes.map((s, i) => "장면 " + (i + 1) + " (" + s.name + "): " + s.text + " / 보이는 모습: " + (s.look || "-")).join("\n") + "\n" + audioText(body.audio);
     const senseMsgs = [{ role: "system", content: sensePrompt() }, { role: "user", content: senseIn }];
     let sense = await callAI(senseMsgs, 0.1);   // 감각 신호표는 창의성 '낮게'
     let sProblems = senseProblems(sense.data, scenes.length);
@@ -355,7 +385,8 @@ module.exports = async (req, res) => {
     }
     const senseMs = Date.now() - tSense;
 
-    const sScenes = sense.data.scenes || [];
+    const sScenes = scenes.map((_, i) => cleanSense((sense.data.scenes || [])[i]));
+    const contrast = spreadScenes(sScenes);
     return res.status(200).json({
       ok: true,
       version: SERVER_VERSION,
@@ -369,7 +400,8 @@ module.exports = async (req, res) => {
       summary: text.summary || "",
       interpretation: text.interpretation || "",
       whole: cleanSense(sense.data.whole),
-      scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), sense: cleanSense(sScenes[i]) })),
+      scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), look: s.look || "", sense: sScenes[i] })),
+      contrast: contrast,
       check: { passed: violations.length === 0, violations: violations, tries: tries, stats: stats(text),
                sensePassed: sProblems.length === 0, senseProblems: sProblems, senseTries: senseTries },
       ms: { text: textMs, sense: senseMs, total: Date.now() - t0 }
