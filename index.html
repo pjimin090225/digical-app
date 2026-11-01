@@ -410,7 +410,7 @@
   </section>
 
   <footer>
-    5단계(수정 1) · 앱 5-2: 빛 지수 0.33 · 감각별 실제 느낌 막대 · 8초 후 멈춤<br>
+    6단계 · 앱 6-1: 감각 수치 = 사진 직접 보기 + 눈금 예시 + 3번 평균<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1760,7 +1760,8 @@
       try {
         // 사진이면 번호 칸을 그린 사진을 보냄 (사용자 화면에는 원래 사진)
         const sendImages = d.type === "photo" ? [await makeGridImage(d.images[0])] : d.images;
-        const r = await askAI({ type: d.type, images: sendImages, audio: d.audio || null, explain: profile.explain, target: target });
+        const r = await askAI({ type: d.type, images: sendImages, rawImage: d.type === "photo" ? d.images[0] : null,
+                                audio: d.audio || null, explain: profile.explain, target: target });
         if (seq !== analyzeSeq || currentScreen !== "view") return;   // 기다리는 사이 다른 화면으로 갔으면 무시
         if (r.needs_choice) { stop(); showChoice(d, r); return; }
         await applyCells(r, d);
@@ -2270,6 +2271,8 @@
     function swatch(colors) {
       return (colors || []).map((c) => '<span class="sw" style="background:' + esc(c) + '"></span>').join("");
     }
+    // 3번 매긴 값이 평균에서 평균적으로 얼마나 벗어났는지 (작을수록 일관됨)
+    function spreadAvg(sp) { const v = Object.values(sp || {}); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; }
     function senseLine(s) {
       if (!s) return "-";
       const P = planOf(s);
@@ -2278,6 +2281,7 @@
         "<br>&nbsp;&nbsp;&nbsp;기분 " + f(s.valence) + " · 활기 " + f(s.arousal) + " · 밝기 " + f(s.brightness) +
         " · 무게 " + f(s.weight) + " · 거칠기 " + f(s.roughness) + " · 흐름 " + f(s.flow) +
         "<br>&nbsp;&nbsp;&nbsp;→ " + P.scaleName + " · " + Math.round(P.bpm) + "BPM · 높이 " + Math.round(P.root) + "Hz · 진동 " + esc(s.texture) +
+        (s.spread ? "<br>&nbsp;&nbsp;&nbsp;3번 매긴 값의 흔들림: 평균 ±" + spreadAvg(s.spread).toFixed(3) : "") +
         (s.why ? "<br>&nbsp;&nbsp;&nbsp;근거: " + esc(s.why) : "");
     }
     function syncText() {
@@ -2294,7 +2298,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 5-2 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-1 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -2304,6 +2308,7 @@
         "문장 " + st.sentences + "개 · 평균 " + st.avgWords + "어절 · 최장 " + st.maxWords + "어절<br>" +
         ((c.violations || []).length ? "<span class='note'>" + c.violations.map(esc).join("<br>") + "</span><br>" : "") +
         "감각표 검사: " + (c.sensePassed ? "통과 ✅" : "⚠️ " + (c.senseProblems || []).map(esc).join(", ")) + " (만든 횟수 " + c.senseTries + "번)<br>" +
+        "<b>감각 수치 방법</b>: " + esc(r.senseMethod || "-") + "<br>" +
         "<b>감각 세기 법칙</b>: " + (law === "stevens" ? "스티븐스" : "베버–페히너") + " · 합계 상한 " + CAP + " (🔬 탐구 노트에서 바꿀 수 있어요)<br>" +
         "<b>전체 감각</b>: " + senseLine(r.whole) + "<br>" +
         "<b>장면</b><br>" + (r.scenes || []).map((s, i) => (i + 1) + ". " + esc(s.name) + " → " + senseLine(s.sense) +
@@ -2576,14 +2581,16 @@
       g.fillStyle = "#4A4A4A"; g.font = "20px sans-serif";
       g.fillText("느낌", 2, Y(1) + 14); g.fillText("자극 →", X(1) - 64, H - 6);
       const COL = { visual: "#C77700", sound: "#2F5F8F", touch: "#2E7D32" };
-      const curve = (fn, color, dash) => {
-        g.strokeStyle = color; g.lineWidth = 4; g.setLineDash(dash || []);
+      const curve = (fn, color, dash, faint) => {
+        g.globalAlpha = faint ? 0.25 : 1;
+        g.strokeStyle = color; g.lineWidth = faint ? 3 : 6; g.setLineDash(dash || []);
         g.beginPath();
         for (let i = 0; i <= 100; i++) { const x = i / 100, y = fn(x); i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y)); }
-        g.stroke(); g.setLineDash([]);
+        g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
       };
-      curve((x) => feelOf("visual", x, "fechner"), "#7A7A7A", [10, 8]);         // 베버–페히너: 한 곡선
-      SENSES.forEach((k) => curve((x) => feelOf(k, x, "stevens"), COL[k]));     // 스티븐스: 감각마다
+      // [수정 6-1] 지금 고른 법칙은 진하고 굵게, 다른 법칙은 흐리게
+      curve((x) => feelOf("visual", x, "fechner"), "#555555", [10, 8], law !== "fechner");   // 베버–페히너: 한 곡선
+      SENSES.forEach((k) => curve((x) => feelOf(k, x, "stevens"), COL[k], null, law !== "stevens"));     // 스티븐스: 감각마다
       // 목표 느낌 가로선 + 감각별 필요한 자극 점
       g.strokeStyle = "#B3261E"; g.lineWidth = 2; g.setLineDash([4, 4]);
       g.beginPath(); g.moveTo(X(0), Y(P)); g.lineTo(X(1), Y(P)); g.stroke(); g.setLineDash([]);

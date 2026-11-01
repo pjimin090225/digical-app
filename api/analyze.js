@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "5-1";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-1";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -117,31 +117,36 @@ function textPrompt(type, explain, target, cropped) {
 //          밝기·무게·거칠기를 소리 높이·굵기·음색과 연결하는 교차감각 대응 연구
 // ---------------------------------------------------------------------
 const DIMS = ["valence", "arousal", "brightness", "weight", "roughness", "flow"];
+// [수정 6-1] 'C 개선형': 감각 수치를 매기는 AI가 ① 사진을 직접 보고 ② 눈금 예시(기준표)에 맞춰 ③ 3번 매겨 평균
+//   예전 구멍: 이 단계 AI가 사진을 못 보고 '쉬운 해설 글'만 받았음 → 색·밝기·질감 정보가 대부분 사라졌음
+//   눈금 예시: 0.1 / 0.5 / 0.9가 각각 어떤 모습인지 정해 두어, AI마다·매번 기준이 흔들리지 않게 함 (통제 가능)
+const ANCHORS = [
+  "valence 기분      0.1 = 장례식, 우는 얼굴, 폐허 / 0.5 = 평범한 사무실, 무표정 / 0.9 = 생일 파티, 웃는 아이, 꽃밭",
+  "arousal 활기      0.1 = 잠든 고양이, 잔잔한 호수 / 0.5 = 천천히 걷는 사람 / 0.9 = 불꽃놀이, 전투, 격렬한 춤",
+  "brightness 밝기   0.1 = 밤하늘, 어두운 동굴, 검은 배경 / 0.5 = 흐린 날 실내 / 0.9 = 눈 덮인 한낮, 흰 벽, 노란 빛",
+  "weight 무게       0.1 = 깃털, 비눗방울, 얇은 선 / 0.5 = 의자, 사람 한 명 / 0.9 = 바위, 큰 철 조각상, 산",
+  "roughness 거칠기  0.1 = 유리, 비단, 매끈한 대리석 / 0.5 = 나무 책상 / 0.9 = 나무껍질, 두꺼운 붓질, 깨진 돌",
+  "flow 흐름         0.1 = 점 찍기, 톡톡 튀는 빗방울, 각진 모양 / 0.5 = 반듯한 직선 / 0.9 = 물결, 소용돌이, 흐르는 천"
+];
 function sensePrompt() {
   return [
     "너는 문화 콘텐츠의 느낌을 숫자로 재는 측정자다.",
-    "입력: 콘텐츠 종류, 요약, 해석, 장면별 쉬운 해설과 보이는 모습(look), (있으면) 기기가 분석한 소리 정보.",
+    "입력: 사진(또는 영상 장면 사진), 콘텐츠 종류, 요약, 해석, 장면별 쉬운 해설과 보이는 모습(look), (있으면) 기기가 분석한 소리 정보.",
+    "사진을 직접 보고 판단한다. 글은 장면을 찾는 데 참고만 한다.",
     "할 일: 전체(whole)와 장면마다 아래 값을 정한다.",
     "",
-    "[0~1 숫자 6가지] (소수 둘째 자리까지)",
-    "- valence 기분: 0 = 슬프고 어둡고 불안함 ↔ 1 = 기쁘고 환하고 따뜻함",
-    "- arousal 활기: 0 = 고요하고 멈춰 있음 ↔ 1 = 들뜨고 빠르고 긴장됨",
-    "- brightness 밝기: 0 = 어둡고 짙은 색 ↔ 1 = 밝고 가벼운 색",
-    "- weight 무게: 0 = 작고 가벼움 ↔ 1 = 크고 묵직함",
-    "- roughness 거칠기: 0 = 매끈하고 부드러움 ↔ 1 = 울퉁불퉁하고 거침",
-    "- flow 흐름: 0 = 뚝뚝 끊기고 톡톡 튐 ↔ 1 = 물결처럼 이어지고 감김",
+    "[0~1 숫자 6가지 — 아래 눈금 예시에 맞춰 매긴다] (소수 둘째 자리까지)",
+    ...ANCHORS.map((x) => "- " + x),
     "",
     "[그 밖의 값]",
     "- emotion: 감정 한 낱말",
-    "- colors: 실제로 보이는 대표 색 1~3개 (#RRGGBB)",
-    "- why: 가장 중요한 근거 15자 안팎",
+    "- colors: 사진에서 실제로 보이는 대표 색 1~3개 (#RRGGBB)",
+    "- why: 가장 중요한 근거 15자 안팎 (사진에서 본 것)",
     "",
-    "[매기는 방법 — 중요]",
-    "- 먼저 장면들을 서로 '비교'한다. 가장 밝은 장면과 가장 어두운 장면, 가장 활기찬 장면과 가장 고요한 장면을 정하고, 그 차이가 숫자에 분명히 드러나게 한다.",
-    "- 0.5 근처의 무난한 값을 피한다. 느낌이 뚜렷하면 0.2 아래나 0.8 위를 쓴다.",
-    "- look(보이는 모습)을 꼭 반영한다. 예: '짙은 파랑' → brightness 낮게, '노랑 빛' → brightness 높게.",
-    "- whole은 작품 전체를 처음 봤을 때의 종합적인 느낌이다. 장면 하나를 그대로 베끼지 않는다.",
-    "- 장면 순서와 개수는 입력과 똑같이.",
+    "[규칙]",
+    "- 눈금 예시와 비교해서 가장 가까운 위치를 고른다. 근거 없이 0.5를 고르지 않는다.",
+    "- 장면마다 사진에서 그 부분만 보고 매긴다. 장면 순서와 개수는 입력과 똑같이.",
+    "- whole은 사진 전체를 처음 봤을 때의 종합적인 느낌이다.",
     "",
     '[출력] JSON만: {"whole":{...}, "scenes":[{...}, ...]}  (각 {...}는 위 9가지 값을 모두 가짐)'
   ].join("\n");
@@ -260,6 +265,7 @@ function cleanSense(s) {
     why: String(s.why || "").slice(0, 40)
   };
   DIMS.forEach((k) => { o[k] = n01(s[k], 0.5); });
+  if (s.spread) o.spread = s.spread;
   return labelsOf(o);
 }
 
@@ -279,6 +285,26 @@ function spreadScenes(list) {
   });
   list.forEach(labelsOf);
   return info;
+}
+
+// 여러 번 매긴 결과를 평균 (숫자 6가지는 평균, 감정·색·근거는 첫 번째 것)
+function averageSense(list, n) {
+  const avgOne = (objs) => {
+    const cl = objs.map(cleanSense);
+    const out = Object.assign({}, objs[0] || {});
+    const spread = {};
+    DIMS.forEach((k) => {
+      const v = cl.map((o) => o[k]);
+      const m = v.reduce((a, b) => a + b, 0) / v.length;
+      out[k] = +m.toFixed(2);
+      spread[k] = +(v.reduce((a, b) => a + Math.abs(b - m), 0) / v.length).toFixed(3);   // 평균에서 벗어난 정도
+    });
+    out.spread = spread;
+    return out;
+  };
+  const scenes = [];
+  for (let i = 0; i < n; i++) scenes.push(avgOne(list.map((d) => (d.scenes || [])[i] || {})));
+  return { whole: avgOne(list.map((d) => d.whole || {})), scenes: scenes };
 }
 
 function senseProblems(d, n) {
@@ -370,24 +396,24 @@ module.exports = async (req, res) => {
     }
     const textMs = Date.now() - tText;
 
-    // ---------- 3) Text to Sense ----------
+    // ---------- 3) Text to Sense (C 개선형) ----------
     const tSense = Date.now();
     const scenes = (text.scenes || []).slice(0, RULES.maxScenes);
     const senseIn = "종류: " + text.kind + "\n요약: " + text.summary + "\n해석: " + text.interpretation + "\n" +
       scenes.map((s, i) => "장면 " + (i + 1) + " (" + s.name + "): " + s.text + " / 보이는 모습: " + (s.look || "-")).join("\n") + "\n" + audioText(body.audio);
-    const senseMsgs = [{ role: "system", content: sensePrompt() }, { role: "user", content: senseIn }];
-    let sense = await callAI(senseMsgs, 0.1);   // 감각 신호표는 창의성 '낮게'
-    let sProblems = senseProblems(sense.data, scenes.length);
-    let senseTries = 1;
-    if (sProblems.length) {
-      const fix = await callAI(senseMsgs.concat([
-        { role: "assistant", content: JSON.stringify(sense.data) },
-        { role: "user", content: "고쳐 주세요:\n- " + sProblems.join("\n- ") }
-      ]), 0.3);
-      senseTries = 2;
-      const p2 = senseProblems(fix.data, scenes.length);
-      if (p2.length <= sProblems.length) { sense = fix; sProblems = p2; }
-    }
+    // 감각 단계에는 번호 칸이 없는 원래 사진을 보냄 (칸 선이 색 판단을 방해하지 않게)
+    const raw = (typeof body.rawImage === "string" && body.rawImage.startsWith("data:image/") && body.rawImage.length < 2000000) ? [body.rawImage] : images;
+    const senseUser = [{ type: "text", text: senseIn }].concat(
+      raw.slice(0, 4).map((url) => ({ type: "image_url", image_url: { url: url, detail: "low" } })));   // 느낌 판단에는 저해상도면 충분 (빠르고 저렴)
+    const senseMsgs = [{ role: "system", content: sensePrompt() }, { role: "user", content: senseUser }];
+    // 3번을 동시에 매김 (창의성 0.5) → 평균. 한 번만 매길 때보다 우연한 치우침이 줄고, 3번의 차이로 '흔들림'을 잴 수 있음
+    const SAMPLES = 3;
+    const runs = await Promise.allSettled(Array.from({ length: SAMPLES }, () => callAI(senseMsgs, 0.5)));
+    const okRuns = runs.filter((r) => r.status === "fulfilled").map((r) => r.value);
+    if (!okRuns.length) throw (runs[0].reason || { status: 500, message: "sense failed" });
+    const sense = { data: averageSense(okRuns.map((r) => r.data), scenes.length) };
+    const sProblems = senseProblems(sense.data, scenes.length);
+    const senseTries = okRuns.length;
     const senseMs = Date.now() - tSense;
 
     const sScenes = scenes.map((_, i) => cleanSense((sense.data.scenes || [])[i]));
@@ -408,6 +434,7 @@ module.exports = async (req, res) => {
       summary: text.summary || "",
       interpretation: text.interpretation || "",
       whole: cleanSense(sense.data.whole),
+      senseMethod: "사진 직접 보기 + 눈금 예시 + " + senseTries + "번 평균",
       scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), look: s.look || "", sense: sScenes[i] })),
       contrast: contrast,
       check: { passed: violations.length === 0, violations: violations, tries: tries, stats: stats(text),
