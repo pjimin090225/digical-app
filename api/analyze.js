@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-2";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-3";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -29,6 +29,11 @@ const HARD_WORDS = [
 
 // 평가하는 말 (근거 없이 좋다·나쁘다를 정해 버리는 말) — 쉬운 정보에서는 피함
 const JUDGE_WORDS = ["멋지", "멋진", "아름다", "아름답", "훌륭", "대단", "예쁘", "예쁜", "완벽", "걸작", "명작", "최고"];
+
+// [수정 6-3] 해석하는 말 — 해설은 '보이는 것'만. 느낌·마음·이야기는 관객의 몫
+const FEEL_WORDS = ["같아요", "같은 느낌", "느껴", "느낌", "기분", "마음", "분위기", "행복", "즐거", "슬픈", "슬퍼", "무서", "외로", "신나", "설레", "포근", "것 같", "듯해", "듯이"];
+// 흑백 사진에서 쓰면 안 되는 색 낱말 (흰·검은·회색은 괜찮음)
+const COLOR_WORDS = ["빨간", "빨강", "붉은", "파란", "파랑", "푸른", "노란", "노랑", "초록", "녹색", "분홍", "보라", "주황", "갈색", "금빛", "황금", "화려한 색", "알록달록", "색깔", "컬러", "다채로운 색"];
 
 const TEMPOS = ["느림", "보통", "빠름"];
 const PITCHES = ["낮음", "중간", "높음"];
@@ -50,7 +55,7 @@ function tooMany(ip) {
 // ---------------------------------------------------------------------
 // 1) Original to Text 지시문
 // ---------------------------------------------------------------------
-function textPrompt(type, explain, target, cropped) {
+function textPrompt(type, explain, target, cropped, pixel) {
   const perScene = explain === "short" ? 1 : 2;
   const what = {
     photo: "사용자가 휴대폰 카메라로 찍은 사진 1장",
@@ -71,9 +76,9 @@ function textPrompt(type, explain, target, cropped) {
     "[무엇을 쓸까]",
     "- kind: 찍힌 대상의 종류. 카메라로 찍었다고 '사진'이라고 하지 않는다. (그림, 조각, 사진작품, 포스터, 공연·무대, 영상 화면, 건축, 공예, 책, 음악, 일상 물건, 기타)",
     "- is_artwork: 문화예술 작품이면 true, 일상 물건·풍경이면 false. false여도 그 장면의 분위기와 느낌을 해설한다.",
-    "- summary: 무엇인지 + 첫 느낌을 1문장으로.",
-    "- interpretation: 이 작품(장면)이 주는 느낌이나 이야기를 1~2문장으로 해석한다. 보이는 것을 늘어놓지 말고, '어떤 마음이 드는지', '무엇을 말하는 것 같은지'를 쓴다.",
-    "- scenes: 감상하기 좋게 " + RULES.minScenes + "~" + RULES.maxScenes + "개로 나눈다. 각 장면은 '무엇이 있는지 + 어떤 느낌인지'를 함께 쓴다.",
+    "- summary: 무엇이 보이는지 1문장. (사실만)",
+    "- interpretation: 눈에 띄는 모습을 1~2문장 더. 자세·표정·움직임·밝고 어두움·크기처럼 사진에서 확인할 수 있는 것만. (이름은 예전 그대로지만 '해석'이 아니라 '더 자세한 해설'이다)",
+    "- scenes: 눈에 띄는 부분 " + RULES.minScenes + "~" + RULES.maxScenes + "개. 각 부분에 '무엇이 어떻게 보이는지'만 쓴다.",
     "- 각 장면의 look: 감각으로 바꿀 재료. 실제로 보이는 색 이름·밝기·크기·움직임·표면을 20자 안팎으로 (사용자에게 보이지 않음. 이 칸은 쉬운 말 규칙 검사를 하지 않음).",
     type === "photo"
       ? "- 사진 위에 1~" + (GRID * GRID) + "번 번호가 적힌 " + GRID + "×" + GRID + " 칸이 그려져 있다. (왼쪽 위가 1번, 한 줄에 " + GRID + "칸씩, 오른쪽 아래가 " + (GRID * GRID) + "번)\n" +
@@ -87,22 +92,27 @@ function textPrompt(type, explain, target, cropped) {
     "1. 한 문장은 " + RULES.maxWords + "어절 이하. 한 문장에 정보 하나만.",
     "2. 장면마다 " + perScene + "문장 이하. summary는 1문장 " + RULES.maxSummaryWords + "어절 이하. interpretation은 2문장 이하.",
     "3. 초등학생도 아는 낱말만. 미술·음악 전문 용어(구도, 질감, 명암, 상징 등)는 쓰지 않는다.",
-    "4. 느낌은 일상 물건이나 몸의 느낌으로 비유한다. (예: '이불 속처럼 포근해요')",
+    "4. 모양·크기는 일상 물건에 빗대어도 된다. (예: '공처럼 동그래요') 마음·느낌에는 빗대지 않는다.",
     "5. 주어를 분명히, '~요'로 끝나는 부드러운 존댓말.",
-    "6. '멋진, 아름다운, 훌륭한, 대단한, 예쁜' 같은 평가하는 말을 쓰지 않는다. 대신 무엇이 보이는지와, 그래서 어떤 느낌이 드는지를 근거와 함께 쓴다. (나쁜 예: '멋진 그림이에요' / 좋은 예: '노란 별이 반짝여서 설레는 느낌이 들어요')",
+    "6. '멋진, 아름다운, 훌륭한, 대단한, 예쁜' 같은 평가하는 말을 쓰지 않는다.",
+    "7. 느낌·마음·이야기는 쓰지 않는다. 그것은 감상하는 사람이 정한다. '~같아요', '~느껴져요', '행복해요', '즐거운 분위기', '세상을 지켜요'처럼 사진에서 확인할 수 없는 말을 쓰지 않는다.",
+    "   (나쁜 예: '아이가 행복해 보여요. 즐거운 분위기예요.' / 좋은 예: '아이가 입을 크게 벌리고 웃어요. 눈은 감고 있어요.')",
+    "8. 소리, 냄새, 바람, 온도처럼 사진에 찍히지 않는 것은 쓰지 않는다.",
     "",
     "[정직 규칙]",
     "- 작품 이름은 확실할 때만 title_guess에, 아니면 빈 문자열.",
-    "- 확실하지 않은 해석은 '~같아요'로 쓴다. 지어내지 않는다.",
+    "- 보이지 않는 것은 지어내지 않는다. 잘 안 보이면 '잘 보이지 않아요'라고 쓴다.",
+    pixel && pixel.gray ? "- 앱이 사진의 픽셀을 직접 재 보니 이 사진은 흑백이다. 빨강·파랑·노랑 같은 색 이름이나 '화려한 색'을 쓰지 않는다. 흰색·검은색·회색, 밝고 어두움만 쓴다." : "",
+    pixel && !pixel.gray && pixel.colors && pixel.colors.length ? "- 앱이 픽셀에서 잰 대표 색: " + pixel.colors.join(", ") + ". 색을 말할 때는 실제로 보이는 색만 쓴다." : "",
     "- 사람이 보이면 누구인지 추측하지 않고, 얼굴 생김새를 자세히 묘사하지 않는다.",
     "",
     "[좋은 예 — 밤하늘 그림]",
     '{"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"candidates":[],"frame_cells":[작품이 있는 칸 번호들],',
-    ' "summary":"밤하늘이 빙글빙글 도는 그림이에요.",',
-    ' "interpretation":"조용한 마을 위로 하늘이 크게 움직여요. 잠 못 드는 밤의 설레는 마음 같아요.",',
-    ' "scenes":[{"name":"하늘","text":"하늘이 소용돌이처럼 돌아요. 바람이 크게 부는 것 같아요.","look":"짙은 파랑, 크게 휘도는 붓질","cells":[하늘이 보이는 칸 번호들]},',
-    '           {"name":"별","text":"노란 별이 반짝여요. 작은 등불처럼 따뜻해요.","look":"밝은 노랑, 작고 동그란 빛","cells":[별이 있는 칸 번호들]},',
-    '           {"name":"마을","text":"마을은 조용히 잠들어 있어요.","look":"어두운 남색, 작고 낮은 지붕들","cells":[마을이 있는 칸 번호들]}]}',
+    ' "summary":"밤하늘과 작은 마을을 그린 그림이에요.",',
+    ' "interpretation":"하늘에 소용돌이 모양이 크게 그려져 있어요. 마을은 화면 아래에 작게 있어요.",',
+    ' "scenes":[{"name":"하늘","text":"하늘에 굵은 선이 빙글빙글 돌아요.","look":"짙은 파랑, 크게 휘도는 붓질","cells":[하늘이 보이는 칸 번호들]},',
+    '           {"name":"별","text":"노란 동그라미 별이 열 개쯤 있어요.","look":"밝은 노랑, 작고 동그란 빛","cells":[별이 있는 칸 번호들]},',
+    '           {"name":"마을","text":"작은 집들이 낮게 모여 있어요. 창문에 불빛이 있어요.","look":"어두운 남색, 작고 낮은 지붕들","cells":[마을이 있는 칸 번호들]}]}',
     "",
     "(위 예의 [ ] 안 글은 설명일 뿐이고, 실제로는 칸 번호 숫자들을 쓴다. 사진이 아니면 cells와 frame_cells는 빈 목록)",
     "[출력] 위와 같은 모양의 JSON만 출력한다. needs_choice가 true면 candidates에 [{\"name\":\"\",\"cells\":[칸 번호들]}]를 2~4개 쓴다."
@@ -202,14 +212,14 @@ function sentencesOf(text) {
 }
 const wordsOf = (s) => s.split(/\s+/).filter(Boolean).length;
 
-function checkRules(d, explain, type) {
+function checkRules(d, explain, type, pixel) {
   const v = [];
   const perScene = explain === "short" ? 1 : 2;
   const sum = sentencesOf(d.summary);
   if (sum.length !== 1) v.push("summary가 " + sum.length + "문장이에요 (1문장)");
   sum.forEach((s) => { if (wordsOf(s) > RULES.maxSummaryWords) v.push("summary가 " + wordsOf(s) + "어절이에요 (" + RULES.maxSummaryWords + "어절 이하)"); });
   const itp = sentencesOf(d.interpretation);
-  if (itp.length === 0) v.push("interpretation(해석)이 없어요");
+  if (itp.length === 0) v.push("interpretation(더 자세한 해설)이 없어요");
   if (itp.length > 2) v.push("interpretation이 " + itp.length + "문장이에요 (2문장 이하)");
   itp.forEach((s) => { if (wordsOf(s) > RULES.maxWords) v.push("interpretation에 " + wordsOf(s) + "어절 문장이 있어요 (" + RULES.maxWords + "어절 이하)"); });
 
@@ -224,7 +234,9 @@ function checkRules(d, explain, type) {
   });
   const all = [d.summary, d.interpretation].concat(scenes.map((s) => s.text)).join(" ");
   HARD_WORDS.forEach((w) => { if (all.includes(w)) v.push("어려운 낱말 '" + w + "'을 썼어요"); });
-  JUDGE_WORDS.forEach((w) => { if (all.includes(w)) v.push("평가하는 말 '" + w + "…'을 썼어요. 보이는 것과 느낌의 근거로 바꿔 주세요"); });
+  JUDGE_WORDS.forEach((w) => { if (all.includes(w)) v.push("평가하는 말 '" + w + "…'을 썼어요. 보이는 모습으로 바꿔 주세요"); });
+  FEEL_WORDS.forEach((w) => { if (all.includes(w)) v.push("해석하는 말 '" + w + "'을 썼어요. 느낌은 빼고 보이는 것만 써 주세요"); });
+  if (pixel && pixel.gray) COLOR_WORDS.forEach((w) => { if (all.includes(w)) v.push("흑백 사진인데 색 낱말 '" + w + "'을 썼어요. 흰색·검은색·회색, 밝고 어두움으로만 써 주세요"); });
   if (type === "video" && (all.match(/보여/g) || []).length > 2) v.push("'보여요/보여줘요'를 너무 많이 썼어요. 무엇이 일어나는지를 말해 주세요");
   if (/^사진$/.test(String(d.kind || ""))) v.push("kind를 '사진'이라고 했어요. 찍힌 대상의 종류를 써 주세요");
   return v;
@@ -351,6 +363,11 @@ module.exports = async (req, res) => {
     const explain = body.explain === "short" ? "short" : "normal";
     const target = String(body.target || "").slice(0, 30);
     const cropped = !!body.cropped;
+    // [수정 6-3] 앱이 픽셀에서 직접 잰 사실 (흑백인지, 대표 색) — AI가 색을 지어내지 않게 알려 줌
+    const pixel = body.pixel && typeof body.pixel === "object" ? {
+      gray: !!body.pixel.gray,
+      colors: (Array.isArray(body.pixel.colors) ? body.pixel.colors : []).slice(0, 3).map((c) => String(c).slice(0, 12))
+    } : null;
     const images = (Array.isArray(body.images) ? body.images : [])
       .filter((s) => typeof s === "string" && s.startsWith("data:image/") && s.length < 2000000)
       .slice(0, 8);
@@ -369,7 +386,7 @@ module.exports = async (req, res) => {
       image_url: { url: url, detail: type === "photo" ? "high" : "low" }   // 영상 장면은 저해상도로 (빠르고 저렴)
     }));
     const msgs = [
-      { role: "system", content: textPrompt(type, explain, target, cropped) },
+      { role: "system", content: textPrompt(type, explain, target, cropped, pixel) },
       { role: "user", content: userParts }
     ];
     const tText = Date.now();
@@ -386,14 +403,14 @@ module.exports = async (req, res) => {
     }
 
     // ---------- 2) 규칙 검사기 → 어기면 한 번 고쳐 쓰게 함 ----------
-    let violations = checkRules(text, explain, type);
+    let violations = checkRules(text, explain, type, pixel);
     let tries = 1;
     if (violations.length) {
       const fix = await callAI(msgs.concat([
         { role: "assistant", content: JSON.stringify(text) },
         { role: "user", content: "다음 규칙을 어겼어요. 같은 모양의 JSON으로 고쳐 주세요:\n- " + violations.join("\n- ") }
       ]), 0.4);
-      const v2 = checkRules(fix.data, explain, type);
+      const v2 = checkRules(fix.data, explain, type, pixel);
       tries = 2;
       if (v2.length <= violations.length) { text = fix.data; violations = v2; }
     }
@@ -402,7 +419,8 @@ module.exports = async (req, res) => {
     // ---------- 3) Text to Sense (C 개선형) ----------
     const tSense = Date.now();
     const scenes = (text.scenes || []).slice(0, RULES.maxScenes);
-    const senseIn = "종류: " + text.kind + "\n요약: " + text.summary + "\n해석: " + text.interpretation + "\n" +
+    const senseIn = (pixel && pixel.gray ? "(앱이 잰 사실: 흑백 사진)\n" : "") +
+      "종류: " + text.kind + "\n요약: " + text.summary + "\n자세한 해설: " + text.interpretation + "\n" +
       scenes.map((s, i) => "장면 " + (i + 1) + " (" + s.name + "): " + s.text + " / 보이는 모습: " + (s.look || "-")).join("\n") + "\n" + audioText(body.audio);
     // 감각 단계에는 번호 칸이 없는 원래 사진을 보냄 (칸 선이 색 판단을 방해하지 않게)
     const raw = (typeof body.rawImage === "string" && body.rawImage.startsWith("data:image/") && body.rawImage.length < 2000000) ? [body.rawImage] : images;
