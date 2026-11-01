@@ -220,7 +220,7 @@
     .art.touching { touch-action: none; outline: 4px solid var(--accent); }
     .glow { position: absolute; opacity: 0; pointer-events: none; mix-blend-mode: screen; }
     .hl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-    .touch-ring { position: absolute; width: 64px; height: 64px; margin: -32px 0 0 -32px; border: 6px solid #FFF; border-radius: 50%; outline: 2px solid rgba(0,0,0,0.75); outline-offset: 0; pointer-events: none; }
+    .touch-ring { position: absolute; width: 96px; height: 96px; margin: -48px 0 0 -48px; border: 6px solid #FFF; border-radius: 50%; outline: 2px solid rgba(0,0,0,0.75); outline-offset: 0; pointer-events: none; }
     .touch-label { line-height: 1.4; position: absolute; transform: translateX(-50%); background: #1A1A1A; color: #FFF; font-weight: 800; padding: 4px 14px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
     .scene-bar { margin: calc(var(--gap) * 1.5) 0 0; font-weight: 800; font-size: 20px; }
     .row2 { display: flex; gap: var(--gap); }
@@ -412,7 +412,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-2: 감각 변환기 다시 설계 + 픽셀로 만져보기<br>
+    6단계 · 앱 6-3: 분위기 음악 + 질감으로 만져보기<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1811,6 +1811,7 @@
     // [수정 4-4] 해설 목소리와 감각은 '차례로': 자동 읽기가 켜져 있으면 먼저 듣고 → 그다음 감각
     //           (예전: 동시에 나와서 겹침. 화음을 줄여도 진동·화음 끝자락이 남았음)
     let wholeTimer = null;
+    const PLAY_BARS = 8;               // [수정 6-3] 4마디 구절 × 2번 (느린 곡 약 30초, 빠른 곡 약 18초) + 끝맺음 3.5초
     function playWhole() {
       setViewParts("whole");
       setHighlight(null);
@@ -1818,9 +1819,8 @@
       $("sceneBar").textContent = "전체 느끼기";
       renderButtons();
       const begin = () => {
-        startSense(lastResult.whole, null, allColors());
         clearTimeout(wholeTimer);
-        wholeTimer = setTimeout(() => { if (viewState === "whole") stopSense(); }, 8000);    // [수정 5-2] 8초 뒤 조용히 멈춤 (반복 피로 줄이기)
+        startSense(lastResult.whole, null, allColors(), PLAY_BARS);   // [수정 6-3] 8초에서 자르지 않고 구절 2번 + 끝맺음 화음
       };
       if (autoVoice()) narrate(lastResult.summary + " " + lastResult.interpretation, lastResult.whole.emotion, begin);
       else begin();
@@ -1853,9 +1853,8 @@
       setHighlight(s.rects);
       renderButtons();
       const begin = () => {
-        startSense(s.sense, s.box, null);
         clearTimeout(wholeTimer);
-        wholeTimer = setTimeout(() => { if (viewState === "scene") stopSense(); }, 8000);  // 장면도 8초 뒤 조용히
+        startSense(s.sense, s.box, null, PLAY_BARS);
       };
       if (autoVoice()) narrate(s.text, s.sense.emotion, begin);
       else begin();
@@ -1901,17 +1900,34 @@
     // 장면 감상 중에는 그림을 톡 눌러도 다음 장면
     $("art").onclick = () => { if (viewState === "scene") playScene(sceneIdx + 1); };
 
-    // ----- ✋ 손으로 만져보기 [수정 6-2]: 손가락 아래의 '픽셀'을 실시간으로 읽음 -----
-    //   밝기 → 소리 높이 (밝을수록 높게, 그 장면의 음계에 맞춰서)
-    //   색의 진하기(채도) → 음색 (진할수록 또렷한 소리)
-    //   경계선(윤곽) → 손가락이 넘어갈 때 '톡' 소리 + 짧은 진동
-    //   결(주변 밝기가 얼마나 들쭉날쭉한지) → 움직이는 동안 잘게 떨리는 진동
-    //   장면 이름 → AI가 고른 칸을 이용해 손가락 위에 이름표로
-    //   ※ 사진의 '실제 픽셀'을 읽는 것이라 AI를 다시 부르지 않음 (인터넷 없이도, 지연 없이 반응)
-    let touchScene = -1, touchMap = null, tSyn = null, tPrev = null;
-    const TMAP_W = 200;                 // 계산용으로 줄인 사진 가로 칸 수 (작을수록 빠름)
+    // ----- ✋ 손으로 만져보기 [수정 6-3]: '장면 분위기 + 질감' -----
+    //   역할 나누기:  분위기 = 손가락이 있는 '장면'의 화음·음색·색 (AI가 장면마다 매긴 수치에서)
+    //                질감   = 손가락 아래 '픽셀'에서 바로 계산
+    //     · 문지르는 소리: 손가락이 빨리 움직일수록 커짐, 멈추면 조용 (실제로 물건을 문지를 때처럼)
+    //       매끈한 곳 = 부드러운 '스-' / 거친 곳 = 까칠한 '사각사각'
+    //     · 진동 알갱이: 거친 곳을 지날 때만 오돌토돌 (매끈한 곳은 진동 없음 → 차이로 질감을 느낌)
+    //     · 진한 윤곽(물체의 테두리)을 넘을 때만 '톡' + 짧은 진동
+    //   ※ 사진의 실제 픽셀을 읽는 것이라 AI를 다시 부르지 않음 (지연 없음)
+    let touchScene = -1, touchMap = null, tSyn = null, tPrev = null, touchInfo = null;
+    let sceneCand = -1;
+    const TMAP_W = 200;                 // 계산용으로 줄인 사진 가로 칸 수
+    const EDGE_ABS = 0.07;              // '진한 윤곽' 기준: 부드럽게 한 사진에서 옆 칸과 밝기 차이 7% 이상 (실제 사진 3장으로 정함)
+    const ROUGH_LO = 0.006, ROUGH_HI = 0.055;   // 결(잔무늬) 세기 눈금: 흐린 배경 ≈ 0.002, 수놓은 옷 ≈ 0.06
 
-    // 사진 → 밝기·윤곽·결 지도 (한 번만 계산)
+    // 상자 흐림(주변 (2r+1)×(2r+1)칸 평균) — 가로, 세로 나눠서 빠르게
+    function boxBlur(src, W, H, r) {
+      const tmp = new Float32Array(W * H), out = new Float32Array(W * H);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        let s = 0; for (let d = -r; d <= r; d++) s += src[y * W + Math.max(0, Math.min(W - 1, x + d))];
+        tmp[y * W + x] = s / (2 * r + 1);
+      }
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        let s = 0; for (let d = -r; d <= r; d++) s += tmp[Math.max(0, Math.min(H - 1, y + d)) * W + x];
+        out[y * W + x] = s / (2 * r + 1);
+      }
+      return out;
+    }
+    // 사진 → 밝기·윤곽·결 지도 (만져보기를 시작할 때 한 번만 계산)
     function buildTouchMap() {
       const img = $("artImg");
       if (!img || !img.naturalWidth) return null;
@@ -1922,32 +1938,23 @@
       g.drawImage(img, 0, 0, W, H);
       let px;
       try { px = g.getImageData(0, 0, W, H).data; } catch (e) { return null; }
-      const N = W * H, lum = new Float32Array(N), sat = new Float32Array(N);
-      for (let i = 0; i < N; i++) {
-        const r = px[i * 4] / 255, gg = px[i * 4 + 1] / 255, b = px[i * 4 + 2] / 255;
-        lum[i] = 0.2126 * r + 0.7152 * gg + 0.0722 * b;           // 사람 눈 기준 밝기
-        const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
-        sat[i] = mx > 0 ? (mx - mn) / mx : 0;
-      }
-      // 윤곽: 소벨(Sobel) 필터 = 옆 칸과 밝기 차이가 큰 곳
+      const N = W * H, lum = new Float32Array(N);
+      for (let i = 0; i < N; i++) lum[i] = (0.2126 * px[i * 4] + 0.7152 * px[i * 4 + 1] + 0.0722 * px[i * 4 + 2]) / 255;
+      // 윤곽: 사진을 살짝 흐리게 한 뒤(머리카락 같은 잔무늬 지우기) 소벨 필터로 밝기 차이가 큰 곳
+      const sm = boxBlur(lum, W, H, 2);
+      const S = (x, y) => sm[Math.max(0, Math.min(H - 1, y)) * W + Math.max(0, Math.min(W - 1, x))];
       const edge = new Float32Array(N);
-      const L = (x, y) => lum[Math.max(0, Math.min(H - 1, y)) * W + Math.max(0, Math.min(W - 1, x))];
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        const gx = -L(x-1,y-1) - 2*L(x-1,y) - L(x-1,y+1) + L(x+1,y-1) + 2*L(x+1,y) + L(x+1,y+1);
-        const gy = -L(x-1,y-1) - 2*L(x,y-1) - L(x+1,y-1) + L(x-1,y+1) + 2*L(x,y+1) + L(x+1,y+1);
-        edge[y * W + x] = Math.hypot(gx, gy);
+        const gx = -S(x-1,y-1) - 2*S(x-1,y) - S(x-1,y+1) + S(x+1,y-1) + 2*S(x+1,y) + S(x+1,y+1);
+        const gy = -S(x-1,y-1) - 2*S(x,y-1) - S(x+1,y-1) + S(x-1,y+1) + 2*S(x,y+1) + S(x+1,y+1);
+        edge[y * W + x] = Math.hypot(gx, gy) / 8;
       }
-      // 사진마다 윤곽 세기가 달라서, '상위 8%'를 윤곽으로 보도록 기준을 맞춤
-      const sorted = Array.from(edge).sort((a, b) => a - b);
-      const thr = Math.max(0.15, sorted[Math.floor(N * 0.92)]);
-      // 결: 주변 5×5칸 밝기의 흔들림(표준편차)
-      const rough = new Float32Array(N);
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        let s = 0, s2 = 0, n = 0;
-        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const v = L(x + dx, y + dy); s += v; s2 += v * v; n++; }
-        rough[y * W + x] = Math.sqrt(Math.max(0, s2 / n - (s / n) * (s / n)));
-      }
-      return { W: W, H: H, px: px, lum: lum, sat: sat, edge: edge, thr: thr, rough: rough };
+      // 결: 원래 밝기 - 살짝 흐린 밝기 = 잔무늬. 그 세기를 주변 5×5칸에서 잼
+      const sm1 = boxBlur(lum, W, H, 1), hf2 = new Float32Array(N);
+      for (let i = 0; i < N; i++) { const d = lum[i] - sm1[i]; hf2[i] = d * d; }
+      const rv = boxBlur(hf2, W, H, 2), rough = new Float32Array(N);
+      for (let i = 0; i < N; i++) rough[i] = clamp01((Math.sqrt(rv[i]) - ROUGH_LO) / (ROUGH_HI - ROUGH_LO));
+      return { W: W, H: H, px: px, lum: lum, edge: edge, rough: rough };
     }
     // 손가락 위치 → 지도 칸
     function mapAt(clientX, clientY) {
@@ -1958,16 +1965,15 @@
       const x = Math.min(touchMap.W - 1, Math.floor(u * touchMap.W)), y = Math.min(touchMap.H - 1, Math.floor(v * touchMap.H));
       const i = y * touchMap.W + x, p = touchMap.px;
       const hex = "#" + [p[i * 4], p[i * 4 + 1], p[i * 4 + 2]].map((c) => c.toString(16).padStart(2, "0")).join("");
-      return { u: u, v: v, x: x, y: y, lum: touchMap.lum[i], sat: touchMap.sat[i],
-               edge: Math.min(2, touchMap.edge[i] / touchMap.thr), rough: Math.min(1, touchMap.rough[i] * 6), color: hex };
+      return { x: x, y: y, lum: touchMap.lum[i], edge: touchMap.edge[i], rough: touchMap.rough[i], color: hex };
     }
-    // 손가락이 빨리 움직이면 가는 윤곽선을 건너뛸 수 있어서, 지난 위치~지금 위치 사이의 칸을 모두 확인
+    // 손가락이 빨리 움직여 가는 윤곽을 건너뛰지 않도록, 지난 위치~지금 위치 사이 칸을 모두 확인
     function edgeAlong(x0, y0, x1, y1) {
       const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
       let mx = 0;
       for (let k = 1; k <= n; k++) {
         const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n);
-        mx = Math.max(mx, touchMap.edge[y * touchMap.W + x] / touchMap.thr);
+        mx = Math.max(mx, touchMap.edge[y * touchMap.W + x]);
       }
       return mx;
     }
@@ -1983,58 +1989,115 @@
       return best;
     }
 
-    // 만지기용 소리: 계속 이어지는 소리 1개 (손가락을 따라 높이가 미끄러지듯 바뀜)
+    // ---- 만지기용 소리 ----
+    let noiseBuf = null;
+    function getNoise(ctx) {
+      if (!noiseBuf) {
+        noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      return noiseBuf;
+    }
     function startTouchSound() {
       stopTouchSound();
       const ctx = getAudio();
       if (!ctx || !(profile.sound.on && soundUsable())) return;
       const t = ctx.currentTime;
-      const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
-      const flt = ctx.createBiquadFilter(), g = ctx.createGain(), comp = ctx.createDynamicsCompressor();
-      o1.type = "triangle"; o2.type = "sine";
-      o1.frequency.value = 330; o2.frequency.value = 660; o2.detune.value = 4;
-      const g2 = ctx.createGain(); g2.gain.value = 0.35;          // 한 옥타브 위 소리를 살짝 섞어 폰에서도 또렷하게
-      flt.type = "lowpass"; flt.frequency.value = 1500; flt.Q.value = 1;
-      g.gain.setValueAtTime(0, t);
-      o1.connect(flt); o2.connect(g2); g2.connect(flt); flt.connect(g); g.connect(comp); comp.connect(ctx.destination);
-      o1.start(t); o2.start(t);
-      tSyn = { ctx: ctx, o1: o1, o2: o2, flt: flt, g: g, comp: comp, st: null, lastTick: 0 };
+      const master = ctx.createGain(), comp = ctx.createDynamicsCompressor();
+      master.gain.value = 1;
+      master.connect(comp); comp.connect(ctx.destination);
+      // 문지르는 소리 = 잡음(쉬-)을 걸러서 만듦
+      const src = ctx.createBufferSource();
+      src.buffer = getNoise(ctx); src.loop = true;
+      const move = ctx.createGain(); move.gain.value = 0;          // 손가락 속도에 따라 커짐
+      const soft = ctx.createBiquadFilter(); soft.type = "lowpass"; soft.frequency.value = 900;
+      const gSoft = ctx.createGain(); gSoft.gain.value = 1;
+      const hard = ctx.createBiquadFilter(); hard.type = "bandpass"; hard.frequency.value = 3200; hard.Q.value = 0.9;
+      const gHard = ctx.createGain(); gHard.gain.value = 0;
+      const grain = ctx.createGain(); grain.gain.value = 0.5;       // 사각사각: 소리를 빠르게 켰다 껐다
+      const lfo = ctx.createOscillator(), lfoAmt = ctx.createGain();
+      lfo.type = "square"; lfo.frequency.value = 18; lfoAmt.gain.value = 0;
+      lfo.connect(lfoAmt); lfoAmt.connect(grain.gain);
+      src.connect(soft); soft.connect(gSoft); gSoft.connect(move);
+      src.connect(hard); hard.connect(gHard); gHard.connect(grain); grain.connect(move);
+      move.connect(master);
+      src.start(t); lfo.start(t);
+      // 장면 화음 (분위기) — 아주 작게 깔림
+      const pad = ctx.createGain(); pad.gain.value = 0;
+      const padF = ctx.createBiquadFilter(); padF.type = "lowpass"; padF.frequency.value = 1500;
+      padF.connect(pad); pad.connect(master);
+      tSyn = { ctx: ctx, master: master, comp: comp, src: src, lfo: lfo, lfoAmt: lfoAmt, move: move, soft: soft, gSoft: gSoft,
+               hard: hard, gHard: gHard, pad: pad, padF: padF, padOsc: [], scene: -2 };
+      // 손가락을 멈추면 화면이 '움직임' 신호를 보내지 않음 → 0.08초 동안 신호가 없으면 문지르는 소리를 줄임
+      tSyn.still = setInterval(() => {
+        if (tSyn && (!tPrev || performance.now() - tPrev.t > 80)) tSyn.move.gain.setTargetAtTime(0, tSyn.ctx.currentTime, 0.06);
+      }, 50);
     }
     function stopTouchSound() {
       if (!tSyn) return;
       const s = tSyn, t = s.ctx.currentTime;
-      s.g.gain.cancelScheduledValues(t);
-      s.g.gain.setTargetAtTime(0, t, 0.05);
-      try { s.o1.stop(t + 0.3); s.o2.stop(t + 0.3); } catch (x) {}
-      setTimeout(() => { try { s.comp.disconnect(); } catch (x) {} }, 500);
+      clearInterval(s.still);
+      s.master.gain.cancelScheduledValues(t);
+      s.master.gain.setTargetAtTime(0, t, 0.08);
+      [s.src, s.lfo].concat(s.padOsc).forEach((o) => { try { o.stop(t + 0.5); } catch (x) {} });
+      setTimeout(() => { try { s.comp.disconnect(); } catch (x) {} }, 800);
       tSyn = null;
     }
-    // 밝기 → 그 장면 음계의 음 (2옥타브, 220~880Hz 근처: 폰 스피커가 잘 내는 높이)
-    function touchNote(lum, sense) {
-      const P = planOf(sense || {});
-      const steps = Math.round(lum * 14);                          // 0~14번째 음 = 2옥타브
-      const st = P.scale[steps % 7] + 12 * Math.floor(steps / 7);
-      return { st: st, f: 220 * Math.pow(2, st / 12), P: P };
+    // 장면이 바뀌면: 그 장면의 화음으로 천천히 바꾸고, 그 장면 악기로 '인사' 음 하나
+    function touchSceneSound(sense, gain) {
+      if (!tSyn) return;
+      const s = tSyn, ctx = s.ctx, t = ctx.currentTime;
+      s.padOsc.forEach((o) => { try { o.stop(t + 0.6); } catch (x) {} });
+      s.padOsc = [];
+      s.pad.gain.cancelScheduledValues(t);
+      s.pad.gain.setTargetAtTime(0, t, 0.12);
+      if (!sense) return;
+      const P = planOf(sense);
+      s.padF.frequency.setTargetAtTime(P.padCut, t, 0.1);
+      chordTones(P, 0, P.c.flow > 0.6).forEach((st) => {
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.type = P.c.roughness > 0.6 ? "sawtooth" : "triangle";
+        o.frequency.value = semi(P.root, st);
+        og.gain.value = 0.3;
+        o.connect(og); og.connect(s.padF);
+        o.start(t + 0.15); s.padOsc.push(o);
+      });
+      s.pad.gain.setTargetAtTime(gain * 0.22, t + 0.2, 0.25);
+      playLead({ ctx: ctx, P: P, mix: s.master, send: null }, chordTones(P, 0, false)[2], t + 0.05, 0.9, true);
     }
-    // '톡' 소리: 윤곽을 넘을 때
-    function touchTick(f, loud) {
+    // '톡': 짧게 걸러 낸 잡음 한 번 (나무를 손톱으로 톡 치는 느낌)
+    function touchTick(loud) {
       const ctx = getAudio();
       if (!ctx) return;
       const t = ctx.currentTime;
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = "square"; o.frequency.value = Math.min(1760, f * 2);
+      const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      src.buffer = getNoise(ctx);
+      f.type = "bandpass"; f.frequency.value = 1800; f.Q.value = 3;
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(loud, t + 0.002);
-      g.gain.exponentialRampToValueAtTime(0.0005, t + 0.06);
-      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0005, t + 0.05);
+      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.start(t, Math.random()); src.stop(t + 0.06);
     }
 
+    let sceneTimer = null, sceneFirst = true;
+    function commitScene(i) {
+      if (i === touchScene && tSyn && tSyn.scene === i) return;
+      touchScene = i;
+      const lab = $("touchLabel");
+      const sc = i >= 0 ? lastResult.scenes[i] : null;
+      if (sc) { lab.textContent = sc.name; lab.hidden = false; setHighlight(sc.rects); }
+      else { lab.hidden = true; setHighlight(null); }
+      const sense = sc ? sc.sense : lastResult.whole;
+      if (tSyn) { tSyn.scene = i; touchSceneSound(sense, senseOutputs(clamp01(Number(sense.intensity) || 0.5)).gain); }
+    }
     function startTouch() {
       setViewParts("touch");
       stopSense();
       setHighlight(null);
-      $("sceneBar").textContent = "✋ 그림 위를 손가락으로 천천히 쓸어 보세요";
+      $("sceneBar").textContent = "✋ 그림 위를 손가락으로 천천히 문질러 보세요";
       renderButtons();
-      touchScene = -1; tPrev = null;
+      touchScene = -1; sceneCand = -1; tPrev = null; sceneFirst = true;
       touchMap = buildTouchMap();
       if (!touchMap) $("sceneBar").textContent = "✋ 이 사진은 픽셀을 읽을 수 없어 장면 이름만 알려 줘요";
     }
@@ -2047,73 +2110,69 @@
       const lab = $("touchLabel"), ring = $("touchRing");
       const lx = e.clientX - wrap.left, ly = e.clientY - wrap.top;
       lab.style.left = lx + "px";
-      lab.style.top = (ly - 64) + "px";
-      // 1) 장면 이름표 (AI가 고른 칸)
-      const i = sceneAt(e.clientX, e.clientY);
-      if (i !== touchScene) {
-        touchScene = i;
-        if (i < 0) { lab.hidden = true; setHighlight(null); }
-        else { lab.textContent = lastResult.scenes[i].name; lab.hidden = false; setHighlight(lastResult.scenes[i].rects); }
+      lab.style.top = (ly - 84) + "px";                            // 손가락에 가리지 않게 위쪽에
+      if (!tSyn && profile.sound.on && soundUsable()) startTouchSound();
+      // 1) 장면 (분위기): 같은 장면에 0.15초 이상 머물 때만 바꿈 → 경계에서 깜빡이지 않게
+      const cand = sceneAt(e.clientX, e.clientY);
+      if (sceneFirst) { sceneFirst = false; sceneCand = cand; commitScene(cand); }        // 처음 닿은 곳은 바로
+      else if (cand !== sceneCand) {                                                       // 바뀐 곳에 0.15초 머물면 바꿈
+        sceneCand = cand;
+        clearTimeout(sceneTimer);
+        sceneTimer = setTimeout(() => { if (viewState === "touch" && sceneCand === cand) commitScene(cand); }, 150);
       }
-      const sense = i >= 0 ? lastResult.scenes[i].sense : lastResult.whole;
+      const sense = touchScene >= 0 ? lastResult.scenes[touchScene].sense : lastResult.whole;
       const out = senseOutputs(clamp01(Number(sense && sense.intensity) || 0.5));
       const m = mapAt(e.clientX, e.clientY);
-      if (!m) { if (tSyn) tSyn.g.gain.setTargetAtTime(0, tSyn.ctx.currentTime, 0.05); ring.hidden = true; tPrev = null; return; }
-      // 손가락 속도 (화면 픽셀/초) — 멈추면 소리가 작아지고, 움직이면 커짐
+      if (!m) { if (tSyn) tSyn.move.gain.setTargetAtTime(0, tSyn.ctx.currentTime, 0.05); ring.hidden = true; tPrev = null; return; }
+      // 손가락 속도 (화면 픽셀/초)
       let speed = 0;
       if (tPrev) speed = Math.hypot(e.clientX - tPrev.x, e.clientY - tPrev.y) / Math.max(8, now - tPrev.t) * 1000;
-      const moving = Math.min(1, speed / 400);
-      // 2) 👁 손가락 아래 색으로 빛나는 동그라미
+      const moving = Math.min(1, speed / 350);
+      // 2) 👁 손가락 둘레에 그 자리 색 + 장면 색 빛
       if (profile.visual.on) {
+        const sc = (sense && sense.colors && sense.colors[0]) || m.color;
         ring.hidden = false;
         ring.style.left = lx + "px"; ring.style.top = ly + "px";
         ring.style.borderColor = m.color;
-        ring.style.boxShadow = "0 0 " + Math.round(10 + 30 * out.glow) + "px " + Math.round(4 + 12 * out.glow) + "px " + m.color;
-        ring.style.opacity = String(0.4 + 0.6 * Math.min(1, out.glow / 0.85));
+        ring.style.boxShadow = "0 0 " + Math.round(14 + 40 * out.glow) + "px " + Math.round(6 + 16 * out.glow) + "px " + sc;
       }
-      // 3) 👂 소리: 밝기 → 높이(장면 음계에 맞춤), 채도 → 또렷함, 속도 → 크기
-      const note = touchNote(m.lum, sense);
-      if (!tSyn && profile.sound.on && soundUsable()) startTouchSound();
+      // 3) 👂 문지르는 소리: 속도 → 크기, 결 → 매끈(스-)/거침(사각사각)
       if (tSyn) {
         const t = tSyn.ctx.currentTime;
-        if (tSyn.st !== note.st) {
-          tSyn.o1.frequency.setTargetAtTime(note.f, t, 0.03);       // 음이 바뀔 때 미끄러지듯
-          tSyn.o2.frequency.setTargetAtTime(note.f * 2, t, 0.03);
-          tSyn.st = note.st;
-        }
-        tSyn.flt.frequency.setTargetAtTime(700 + m.sat * 2800 + m.rough * 1200, t, 0.05);
-        const comp = Math.pow(330 / note.f, 0.25);                  // 높은 소리가 더 크게 들리는 것 보정
-        tSyn.g.gain.setTargetAtTime(out.gain * 0.45 * comp * (0.35 + 0.65 * moving), t, 0.04);
+        tSyn.move.gain.setTargetAtTime(out.gain * 2.4 * moving, t, 0.04);
+        tSyn.gSoft.gain.setTargetAtTime(0.9 * (1 - m.rough) + 0.2, t, 0.05);
+        tSyn.gHard.gain.setTargetAtTime(0.9 * m.rough, t, 0.05);
+        tSyn.lfoAmt.gain.setTargetAtTime(0.5 * m.rough, t, 0.05);
+        tSyn.lfo.frequency.setTargetAtTime(10 + 30 * moving, t, 0.05);       // 빨리 문지를수록 알갱이가 촘촘
+        tSyn.soft.frequency.setTargetAtTime(500 + 900 * m.lum, t, 0.08);     // 밝은 곳은 살짝 맑은 소리
       }
-      // 4) 윤곽을 넘는 순간: '톡' + 짧은 진동
-      const along = tPrev && tPrev.mx !== undefined ? edgeAlong(tPrev.mx, tPrev.my, m.x, m.y) : m.edge;
-      const crossed = tPrev && tPrev.edge < 1 && along >= 1 &&
-                      now - (tPrev.tick || 0) > 70;                 // 너무 자주 울리지 않게 (0.07초 간격 이상)
+      // 4) 진한 윤곽을 넘는 순간: '톡' + 짧은 진동
+      const along = tPrev ? edgeAlong(tPrev.mx, tPrev.my, m.x, m.y) : m.edge;
+      const crossed = tPrev && tPrev.edge < EDGE_ABS && along >= EDGE_ABS && now - (tPrev.tick || 0) > 90;
+      const canBuzz = profile.touch.on && vibeUsable();
+      let vibeAt = tPrev ? tPrev.vibeAt || 0 : 0;
       if (crossed) {
-        if (tSyn) touchTick(note.f, out.gain * 0.35);
-        if (profile.touch.on && vibeUsable()) navigator.vibrate(Math.round(18 + 30 * out.vibe));
-        tPrev.tick = now;
-        tPrev.vibeAt = now;
-      } else if (profile.touch.on && vibeUsable() && moving > 0.15 && now - ((tPrev && tPrev.vibeAt) || 0) > 140) {
-        // 5) ✋ 결: 들쭉날쭉한 곳은 잘게 끊긴 진동, 매끈한 곳은 약한 진동 한 번
-        const duty = Math.max(0.3, Math.min(1, 0.3 + 0.7 * out.vibe));
-        let pat;
-        if (m.rough > 0.35) pat = [22, 18, 22, 18, 22];                                 // 오돌토돌
-        else pat = [Math.round(15 + 25 * duty * (0.5 + m.rough))];                     // 매끈: 약하게 한 번
-        navigator.vibrate(pat);
-        if (tPrev) tPrev.vibeAt = now;
+        if (tSyn) touchTick(out.gain * 0.8);
+        if (canBuzz) navigator.vibrate(Math.round(30 + 25 * out.vibe));
+        vibeAt = now;
+      } else if (canBuzz && moving > 0.1 && now - vibeAt > 110) {
+        // 5) ✋ 결: 거친 곳만 오돌토돌 진동 (매끈한 곳은 진동 없음)
+        const k = 0.75 + 0.5 * out.vibe;
+        if (m.rough > 0.55) { navigator.vibrate([Math.round(22 * k), 16, Math.round(22 * k), 16, Math.round(22 * k)]); vibeAt = now; }
+        else if (m.rough > 0.25) { navigator.vibrate(Math.round(20 * k)); vibeAt = now; }
       }
-      const prevVibe = tPrev ? tPrev.vibeAt : 0, prevTick = tPrev ? tPrev.tick : 0;
-      tPrev = { x: e.clientX, y: e.clientY, mx: m.x, my: m.y, t: now, edge: m.edge, vibeAt: crossed ? now : prevVibe, tick: crossed ? now : prevTick };
-      touchInfo = { lum: m.lum, sat: m.sat, edge: m.edge, rough: m.rough, f: note.f, scale: note.P.scaleName };
+      tPrev = { x: e.clientX, y: e.clientY, mx: m.x, my: m.y, t: now, edge: m.edge, vibeAt: vibeAt,
+                tick: crossed ? now : (tPrev ? tPrev.tick : 0) };
+      touchInfo = { lum: m.lum, edge: m.edge, rough: m.rough, moving: moving, crossed: !!crossed,
+                    scene: touchScene >= 0 ? lastResult.scenes[touchScene].name : "(장면 밖 = 전체)" };
     }
-    let touchInfo = null;
     $("art").addEventListener("contextmenu", (e) => e.preventDefault());   // 길게 누를 때 메뉴 막기
     $("art").addEventListener("pointerdown", onTouchMove);
     $("art").addEventListener("pointermove", onTouchMove);
     const endTouch = () => {
       if (viewState !== "touch") return;
-      touchScene = -1; tPrev = null;
+      touchScene = -1; sceneCand = -1; tPrev = null; sceneFirst = true;
+      clearTimeout(sceneTimer);
       stopTouchSound();
       if (canVibrate) navigator.vibrate(0);
       $("touchLabel").hidden = true; $("touchRing").hidden = true;
@@ -2212,19 +2271,17 @@
       else if (a > 0.65 && f < 0.4) inst = "pluck";
       else inst = "epiano";
       const INST_KO = { reed: "리드(거친 관악 느낌)", bell: "종소리", flute: "부드러운 피리", pluck: "튕기는 현", epiano: "전자 피아노" };
-      // 리듬: 활기가 높을수록 음이 많음 (모두 박자 위 → 어지러움 줄이기)
-      const rhythm = a < 0.2 ? [1,0,0,0,0,0,0,0] : a < 0.4 ? [1,0,0,0,1,0,0,0] :
-                     a < 0.7 ? [1,0,1,0,1,0,1,0] : [1,0,1,0,1,0,1,1];
+      // 리듬: 활기가 높을수록 한 마디 안의 음이 많음 (1·2·3·4개, 모두 박자 위)
+      const rhythm = RHYTHMS[a < 0.3 ? 0 : a < 0.55 ? 1 : a < 0.8 ? 2 : 3];
       return {
         c: c, mode: mode, scale: mode.s, scaleName: mode.name, prog: prog, progName: progName,
         inst: inst, instName: INST_KO[inst], rhythm: rhythm,
         root: 196 * Math.pow(2, b * 1.0),                  // 멜로디 기준음 196~392Hz (폰 스피커가 잘 내는 높이)
-        bpm: 50 + a * 62,                                  // 50~112 BPM
+        bpm: 64 + a * 44,                                  // 64~108 BPM
         barsPerChord: a < 0.35 ? 2 : 1,                    // 잔잔하면 화음이 천천히 바뀜
         padLevel: 0.5 + (1 - a) * 0.5,
         padCut: 500 + b * 2600,
         bass: w > 0.35, bass2: w > 0.65,                   // 무게 → 베이스(두 번째 박에도)
-        kick: a > 0.75,
         echo: f > 0.55 ? (f > 0.8 ? 2 : 1) : 0,
         trem: r > 0.6 ? 5 + r * 3 : (f > 0.7 ? 0.35 : 0),
         seed: seedOf(s)
@@ -2426,80 +2483,88 @@
       g.gain.exponentialRampToValueAtTime(0.0005, t + 0.45);
       o.connect(f); f.connect(g); g.connect(e.mix); o.start(t); o.stop(t + 0.5);
     }
-    function playKick(e, t) {
-      const ctx = e.ctx;
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.12);
-      g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.18);
-      o.connect(g); g.connect(e.mix); o.start(t); o.stop(t + 0.2);
+
+    // [수정 6-3] 잔잔한 분위기 음악: 한 박자 단위로만 연주(반 박자 없음), 음 수를 줄이고 길게 울림
+    //   한 마디 = 4박자. 활기가 높을수록 한 마디 안의 음이 많아짐 (1·2·3·4개)
+    //   4마디 = 한 구절. 구절의 4번째 마디는 첫 박만 길게 (숨 쉬는 자리)
+    const RHYTHMS = [[1,0,0,0], [1,0,1,0], [1,0,1,1], [1,1,1,1]];
+    function noteAt(P, step) {
+      const k = step % 4, bar = Math.floor(step / 4);
+      const last = bar % 4 === 3;
+      const r = last ? [1,0,0,0] : P.rhythm;
+      if (!r[k]) return 0;
+      let n = 1;                                                   // 다음 음까지 몇 박자인지 = 이 음의 길이
+      while (k + n < 4 && !r[k + n]) n++;
+      return n;
     }
 
-    // 한 '반 박자'(step) 연주 예약
-    function scheduleStep(e, step, t, halfSec) {
+    // 한 박자(step) 연주 예약. 이 박자에 음이 있으면 그 길이(초)를 돌려줌
+    function scheduleStep(e, step, t, beatSec) {
       const P = e.P;
-      const k = step % 8, bar = Math.floor(step / 8);
-      const chordBar = Math.floor(bar / P.barsPerChord);
-      const deg = P.prog[chordBar % 4];
+      const k = step % 4, bar = Math.floor(step / 4);
+      const deg = P.prog[Math.floor(bar / P.barsPerChord) % 4];
       const phrasePos = bar % 4;
-      if (k === 0 && bar % P.barsPerChord === 0) playPad(e, deg, t, halfSec * 8 * P.barsPerChord);
+      if (k === 0 && bar % P.barsPerChord === 0) playPad(e, deg, t, beatSec * 4 * P.barsPerChord);
       if (!e.motif || (k === 0 && phrasePos === 0)) e.motif = makeMotif(e);
-      const rest = phrasePos === 3 && k >= 4;                      // 4마디째 뒤 절반은 쉼 (숨 쉴 틈)
-      if (P.rhythm[k] && !rest) {
+      const n = noteAt(P, step);
+      if (n) {
         const ct = chordTones(P, deg, false);
         let st;
-        if (k === 0) st = ct[Math.floor(e.rnd() * 3)] + (ct[0] < 0 ? 12 : 0);   // 첫 박은 화음 음
+        if (k === 0) st = ct[Math.floor(e.rnd() * 3)];              // 마디 첫 박은 화음 음
         else {
-          const pos = e.motif[(phrasePos * 8 + k) % 32];
+          const pos = e.motif[(phrasePos * 4 + k) % 32];
           st = P.scale[pos % 7] + 12 * Math.floor(pos / 7);
         }
-        const len = P.rhythm[(k + 1) % 8] ? halfSec * 0.95 : halfSec * 1.9;
-        playLead(e, st, t, len, k === 0);
+        playLead(e, st, t, Math.min(2.6, n * beatSec * 0.95), k === 0);
       }
       if (P.bass && k === 0) playBass(e, chordTones(P, deg, false)[0], t);
-      if (P.bass2 && k === 4) playBass(e, chordTones(P, deg, false)[2], t);
-      if (P.kick && k === 0) playKick(e, t);
+      if (P.bass2 && k === 2) playBass(e, chordTones(P, deg, false)[2], t);
+    }
+    // 끝맺음: 으뜸화음(음계의 첫 화음)을 길게 울리며 끝
+    function scheduleEnding(e, t, ringSec) {
+      playPad(e, 0, t, ringSec);
+      playLead(e, 0, t, ringSec, true);
+      playLead(e, 12, t + 0.02, ringSec, false);
+      if (e.P.bass) playBass(e, 0, t);
     }
 
-    // ④ 진동 패턴: 수치로 직접 만들기
-    //   활기 → 한 박자 안의 진동 횟수(1~4번)      무게·흐름 → 한 번의 길이(길면 묵직·이어짐, 짧으면 톡톡)
-    //   거칠기 → 한 번의 진동을 잘게 쪼갬(오돌토돌)   세기(스티븐스로 정한 값) → 길이 + 약할 때는 켜짐 비율(PWM)
-    //   ※ 폰 진동은 '켜기/끄기'만 되므로, 짧게 켜고 끄기를 반복해 약한 진동을 흉내 냄(PWM). 효과는 폰마다 다를 수 있음
-    function vibePattern(c, strength, beatMs, accent) {
-      const n = 1 + Math.round(c.arousal * 3);
-      const slot = (beatMs * 0.85) / n;
-      let onLen = slot * (0.2 + 0.5 * c.flow + 0.3 * c.weight) * (0.6 + 0.5 * strength);
-      onLen = Math.max(30, Math.min(slot - 30, onLen));
-      const grain = c.roughness > 0.5;                              // 거칠면 오돌토돌
-      const weak = strength < 0.2;                                  // 아주 약할 때(세기 1~2단계)만 PWM으로 약하게
+    // ④ 진동: 음 하나에 진동 하나 (소리와 같이 시작, 음 길이에 맞춰 길게)
+    //   흐름 → 음 길이 중 얼마나 이어서 떨릴지 (흐를수록 길게 이어짐)
+    //   활기 → 긴 진동을 몇 번으로 나눌지     거칠기 → 오돌토돌(잘게 끊김)
+    //   세기(스티븐스로 정한 값) → 길이 + 아주 약할 때는 켜짐 비율(PWM)
+    //   ※ 폰 진동은 '켜기/끄기'만 되므로 세기 흉내는 폰마다 다를 수 있음
+    function vibeForNote(c, strength, noteMs, accent) {
+      let total = noteMs * (0.3 + 0.55 * c.flow) * (0.75 + 0.5 * strength) * (accent ? 1.15 : 1);
+      total = Math.max(70, Math.min(1400, total));
+      const parts = c.arousal > 0.7 ? 3 : c.arousal > 0.45 ? 2 : 1;
+      const gap = 70;
+      const each = Math.max(40, (total - gap * (parts - 1)) / parts);
+      const grain = c.roughness > 0.5, weak = strength < 0.2;
       const pat = [];
-      for (let i = 0; i < n; i++) {
-        const len = Math.min(slot - 30, onLen * (accent && i === 0 ? 1.3 : 1));   // 마디 첫 박은 조금 길게
+      for (let i = 0; i < parts; i++) {
         if (grain || weak) {
           const on = grain ? 22 : 20;
           const off = grain ? Math.round(14 + 16 * c.roughness) : Math.round(8 + 60 * (0.2 - strength));
-          const want = grain ? Math.min(slot - 10, Math.max(len, (on + off) * 2 + on)) : len;   // 오돌토돌은 최소 3알갱이
-          let used = 0;
-          while (used + on <= want + 1) { pat.push(on, off); used += on + off; }
-          if (!used) pat.push(Math.round(len), 0);
-          pat[pat.length - 1] += Math.max(0, Math.round(slot - used));   // 남은 시간은 쉼
-        } else {
-          pat.push(Math.round(len), Math.max(0, Math.round(slot - len)));
-        }
+          for (let used = 0; used + on <= each + 1; used += on + off) pat.push(on, off);
+          if (!pat.length) pat.push(Math.round(each), 0);
+          pat[pat.length - 1] = gap;
+        } else pat.push(Math.round(each), gap);
       }
-      while (pat.length && pat.length % 2 === 0) pat.pop();        // 마지막 '쉼'은 필요 없음
+      pat.pop();                                                   // 마지막 쉼은 필요 없음
       return pat;
     }
 
     // '미리 예약하는 박자 시계' — 소리는 오디오 시계로 정확히 예약, 빛·진동은 그 시각에 맞춰 실행하고 차이를 기록
+    //   bars: 몇 마디 연주하고 끝낼지 (없으면 멈출 때까지 계속 — 탐구 노트 체험용)
     let pendingFx = [];
-    function startSense(s, box, colors) {
+    const RING_SEC = 3.5;               // 끝맺음 화음이 울리는 시간
+    function startSense(s, box, colors, bars) {
       stopSense();
       if (!s) return;
       const p = profile;
       const I = clamp01(Number(s.intensity) || 0.5);
       const P = planOf(s);
-      const beatSec = 60 / Math.min(112, P.bpm);
-      const halfSec = beatSec / 2;
+      const beatSec = 60 / P.bpm;
       glowColors = colors && colors.length > 1 ? colors : null;
       const gEl = glowEl; glowEl = $("glow");                     // 이번에 빛을 낼 곳 (탐구 노트에서는 노트 안의 원)
       setGlow((s.colors && s.colors[0]) || "#FFD23F", box, gEl);
@@ -2510,34 +2575,39 @@
       const ctx = getAudio();
       if (!ctx) return;
       stepNo = 0;
-      let next = ctx.currentTime + 0.08;
+      let next = ctx.currentTime + 0.08, noteNo = 0, ended = false;
       const myRun = {};
       senseRun = myRun;
-      const fx = (beatNo) => {
+      const fx = (ms, accent, n) => {
         if (senseRun !== myRun) return;
-        if (p.visual.on) pulseGlow(out.glow, beatSec * 1000, beatNo, gEl);                         // 👁
+        if (p.visual.on) pulseGlow(out.glow, ms, n, gEl);                                          // 👁
         if (p.touch.on) {                                                                          // ✋
-          if (vibeUsable()) navigator.vibrate(vibePattern(P.c, out.vibe, beatSec * 1000, beatNo % 4 === 0));
+          if (vibeUsable()) navigator.vibrate(vibeForNote(P.c, out.vibe, ms, accent));
           else heartGlow();
         }
       };
+      const at = (when, f) => {                                   // 오디오 시계 시각 when에 f 실행 + 차이 기록
+        const waitMs = (when - ctx.currentTime) * 1000;
+        const due = performance.now() + waitMs;
+        pendingFx.push(setTimeout(() => {
+          syncLog.push(Math.abs(performance.now() - due)); if (syncLog.length > 300) syncLog.shift();
+          f();
+        }, Math.max(0, waitMs)));
+      };
       const tick = () => {
-        if (senseRun !== myRun) return;
+        if (senseRun !== myRun || ended) return;
         while (next < ctx.currentTime + 0.12) {
-          const onBeat = stepNo % 2 === 0;
-          if (withSound && eng) scheduleStep(eng, stepNo, next, halfSec);                         // 👂
-          if (onBeat) {
-            const waitMs = (next - ctx.currentTime) * 1000;
-            const due = performance.now() + waitMs;
-            const beatNo = stepNo / 2;
-            const id = setTimeout(() => {
-              const late = Math.abs(performance.now() - due);
-              syncLog.push(late); if (syncLog.length > 300) syncLog.shift();
-              fx(beatNo);
-            }, Math.max(0, waitMs));
-            pendingFx.push(id);
+          if (bars && stepNo >= bars * 4) {                       // 정한 마디를 다 연주하면 → 끝맺음 화음
+            ended = true;
+            if (withSound && eng) scheduleEnding(eng, next, RING_SEC);
+            at(next, () => fx(RING_SEC * 1000 * 0.6, true, noteNo++));
+            at(next + RING_SEC + 0.4, () => { if (senseRun === myRun) { stopSense(); if (onSenseEnd) onSenseEnd(); } });
+            return;
           }
-          next += halfSec;
+          if (withSound && eng) scheduleStep(eng, stepNo, next, beatSec);                        // 👂
+          const n = noteAt(P, stepNo);
+          if (n) { const k = stepNo % 4, num = noteNo++; at(next, () => fx(n * beatSec * 1000, k === 0, num)); }
+          next += beatSec;
           stepNo++;
         }
         if (pendingFx.length > 50) pendingFx = pendingFx.slice(-20);
@@ -2545,6 +2615,7 @@
       tick();
       senseTimer = setInterval(tick, 25);
     }
+    let onSenseEnd = null;              // 끝맺음이 끝났을 때 할 일 (화면 쪽에서 정함)
     let senseRun = null;
     let glowEl = null, lastOut = null;
 
@@ -2563,7 +2634,7 @@
       }
       if (matchMedia("(prefers-reduced-motion: reduce)").matches) { g.style.opacity = String(0.08 + a * 0.6); return; }
       g.animate([{ opacity: 0.08 }, { opacity: 0.08 + a }, { opacity: 0.08 }],          // a = 법칙으로 계산한 빛 세기(최대 0.85)
-                { duration: Math.min(700, period * 0.7), easing: "ease-in-out" });
+                { duration: Math.min(1600, period * 0.8), easing: "ease-in-out" });
       g.style.opacity = "0.08";
     }
     function heartGlow() {
@@ -2616,7 +2687,7 @@
         "<br>&nbsp;&nbsp;&nbsp;눈금 적용 → 기분 " + f(P.c.valence) + " · 활기 " + f(P.c.arousal) + " · 무게 " + f(P.c.weight) +
         " · 거칠기 " + f(P.c.roughness) + " · 흐름 " + f(P.c.flow) +
         "<br>&nbsp;&nbsp;&nbsp;→ " + P.scaleName + " · 코드 " + P.progName + " · " + P.instName + " · " + Math.round(P.bpm) + "BPM · 기준음 " + Math.round(P.root) + "Hz" +
-        "<br>&nbsp;&nbsp;&nbsp;→ 진동 한 박자: [" + vibePattern(P.c, lastOut ? lastOut.vibe : 0.6, 60000 / P.bpm, false).join(", ") + "]ms" +
+        "<br>&nbsp;&nbsp;&nbsp;→ 리듬(한 마디) [" + P.rhythm.join(" ") + "] · 진동(첫 음) [" + vibeForNote(P.c, lastOut ? lastOut.vibe : 0.6, noteAt(P, 0) * 60000 / P.bpm, true).join(", ") + "]ms" +
         (s.spread ? "<br>&nbsp;&nbsp;&nbsp;3번 매긴 값의 흔들림: 평균 ±" + spreadAvg(s.spread).toFixed(3) : "") +
         (s.why ? "<br>&nbsp;&nbsp;&nbsp;근거: " + esc(s.why) : "");
     }
@@ -2634,7 +2705,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-2 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-3 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -2662,8 +2733,9 @@
     function touchText() {
       if (!touchInfo) return "아직 만지지 않음";
       const f = (x) => Number(x).toFixed(2);
-      return "밝기 " + f(touchInfo.lum) + " → " + Math.round(touchInfo.f) + "Hz (" + esc(touchInfo.scale) + ") · 색 진하기 " + f(touchInfo.sat) +
-        " · 윤곽 " + f(touchInfo.edge) + (touchInfo.edge >= 1 ? " (경계선!)" : "") + " · 결 " + f(touchInfo.rough);
+      return "장면 " + esc(touchInfo.scene) + " (분위기 = 이 장면의 화음·음색·색)" +
+        "<br>밝기 " + f(touchInfo.lum) + " · 결 " + f(touchInfo.rough) + (touchInfo.rough > 0.55 ? " (거침 → 오돌토돌)" : touchInfo.rough > 0.25 ? " (중간)" : " (매끈 → 진동 없음)") +
+        " · 윤곽 " + f(touchInfo.edge) + " (기준 " + EDGE_ABS + ")" + (touchInfo.crossed ? " → 톡!" : "") + " · 손 속도 " + f(touchInfo.moving);
     }
     $("devBox").addEventListener("toggle", () => {
       const s = $("syncNow"); if (s) s.innerHTML = syncText();
