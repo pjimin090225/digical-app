@@ -226,9 +226,6 @@
     .scene-bar { margin: calc(var(--gap) * 1.5) 0 0; font-weight: 800; font-size: 20px; }
     .row2 { display: flex; gap: var(--gap); }
     .mini { padding: 4px 10px; border: 2px solid #1A1A1A; border-radius: 10px; background: #FFF; font-weight: 800; }
-    .mood-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-    .mood-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 2px; border: 2px solid #1A1A1A; border-radius: 14px; background: #FFF; font-weight: 800; font-size: 0.8rem; line-height: 1.2; }
-    .mood-btn span { font-size: 1.9rem; }
     /* 탐구 노트 */
     .presets button[aria-pressed="true"] { background: var(--accent); }
     .slider { width: 100%; height: 48px; accent-color: var(--primary); }
@@ -373,7 +370,6 @@
     <div id="viewMain" hidden>
       <div class="scene-bar"><span class="ai-tag">🤖 AI가 만든 감각</span> <span id="sceneBar"></span></div>
       <div id="viewBtns"></div>
-      <div id="moodBox" class="card" hidden></div>
       <details class="card"><summary>📝 글로 보기</summary><div id="textBody"></div></details>
       <details class="card" id="devBox"><summary>🔧 개발용 정보 (심사 설명용)</summary><div id="devBody"></div></details>
     </div>
@@ -419,7 +415,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-5: 보이는 것만 해설 + 기분 고르기 시험 + 덩어리 만져보기<br>
+    6단계 · 앱 6-7: 실제 악기 소리 + 문지르는 소리 + 보이는 것만 해설<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1782,12 +1778,12 @@
         stop();
         lastResult = r;
         lastResult.clientMs = performance.now() - tStart;
+        if (r.whole) preloadFor(r.whole);    // [수정 6-7] 이 작품에 쓸 악기 녹음을 ▶ 누르기 전에 미리 불러옴
         if (d.pixel && d.pixel.hex.length) {           // AI가 고른 '대표 색' 대신 픽셀에서 잰 색 (흑백 사진에 분홍색이 나오던 문제)
           lastResult.aiColors = (r.whole && r.whole.colors) || [];
           if (r.whole) r.whole.colors = d.pixel.hex.slice();
           (r.scenes || []).forEach((sc) => { if (sc.sense) sc.sense.colors = d.pixel.hex.slice(); });
         }
-        resetMood();
         renderTexts(r);
         showReady();                    // [수정 6-4] 바로 소리를 내지 않고 '준비됐어요' → ▶ 버튼
       } catch (e) {
@@ -1869,95 +1865,14 @@
 
     // 📝 글로 보기 (접혀 있음) + 🔧 개발용 정보
     function renderTexts(r) {
-      $("textBody").innerHTML = textLocked()
-        ? '<p class="note">🔒 먼저 ▶ 느껴보고, 기분을 고르면 글이 열려요.<br>(글을 먼저 읽으면 글이 느낌을 정해 버릴 수 있어서예요)</p>'
-        : "<p><b>" + esc(r.summary) + "</b></p><p>" + esc(r.interpretation) + "</p>" +
+      $("textBody").innerHTML =
+        "<p><b>" + esc(r.summary) + "</b></p><p>" + esc(r.interpretation) + "</p>" +
           "<p class='note'>눈에 띄는 부분</p>" +
           (r.scenes || []).map((s, i) => "<p>" + (i + 1) + ". <b>" + esc(s.name) + "</b> — " + esc(s.text) + "</p>").join("");
       $("devBody").innerHTML = devInfoHTML(r);
     }
 
-    // ==========================================================
-    // [수정 6-5] 해설(보이는 것)과 해석(느낌)을 나누기 — 시험용 세 가지 방식
-    //   A: 감각 먼저 + 기분 고르기 — 글은 기분을 고른 뒤에 열림 (글이 느낌을 미리 정하지 않게)
-    //   B: 해석 없음 — 글(보이는 것만)은 바로 보이고, 기분은 AI 수치 그대로
-    //   C: 기분 고르기만 — 글은 바로 보이고, 감상이 끝나면 기분을 고름
-    //   기분을 고르면: 그 기분으로 다시 들려줌(기분·활기 수치만 바꿈, 밝기·무게·거칠기·흐름은 사진에서 잰 그대로)
-    //                 AI의 추측은 고른 '뒤에만' 보여 줌. 같았는지 기록 → 검증 자료
-    // ==========================================================
-    const KEY_VARIANT = "digical.variant.v1", KEY_MOOD = "digical.mood.v1";
-    const VARIANTS = { A: "감각 먼저 + 기분 고르기", B: "해석 없음 (보이는 것만)", C: "기분 고르기만" };
-    let variant = "A";
-    try {
-      const u = new URLSearchParams(location.search).get("mode");
-      if (u && VARIANTS[u.toUpperCase()]) { variant = u.toUpperCase(); localStorage.setItem(KEY_VARIANT, variant); }
-      else { const v = localStorage.getItem(KEY_VARIANT); if (v && VARIANTS[v]) variant = v; }
-    } catch (e) {}
-    const MOODS = [
-      { id: "joy", emo: "😊", name: "기뻐요", v: 0.9, a: 0.75 },
-      { id: "calm", emo: "😌", name: "편안해요", v: 0.78, a: 0.25 },
-      { id: "sad", emo: "😢", name: "슬퍼요", v: 0.2, a: 0.25 },
-      { id: "fear", emo: "😨", name: "무서워요", v: 0.15, a: 0.8 },
-      { id: "unsure", emo: "🤔", name: "잘 모르겠어요" }
-    ];
-    let mood = { picked: null, ai: null };               // 이번 작품에서 고른 기분
-    // AI 수치가 네 기분 중 어디에 가장 가까운지 (눈금 적용한 기분·활기로 비교)
-    function aiMoodOf(s) {
-      const cv = calib("valence", s.valence), ca = calib("arousal", s.arousal);
-      let best = null, bd = 9;
-      MOODS.filter((m) => m.v !== undefined).forEach((m) => {
-        const d = Math.hypot(cv - calib("valence", m.v), ca - calib("arousal", m.a));
-        if (d < bd) { bd = d; best = m; }
-      });
-      return best;
-    }
-    function moodSense() {
-      const m = mood.picked && MOODS.find((x) => x.id === mood.picked);
-      if (!m || m.v === undefined || !lastResult) return null;
-      return Object.assign({}, lastResult.whole, { valence: m.v, arousal: m.a });
-    }
-    const textLocked = () => variant === "A" && !mood.picked;
-    function resetMood() { mood = { picked: null, ai: null }; }
-    function moodLog() { try { return JSON.parse(localStorage.getItem(KEY_MOOD) || "[]"); } catch (e) { return []; } }
-    function pickMood(id) {
-      const m = MOODS.find((x) => x.id === id);
-      mood.picked = id;
-      mood.ai = aiMoodOf(lastResult.whole);
-      const rec = { t: new Date().toISOString(), variant: variant, work: String(lastResult.summary || "").slice(0, 30),
-                    picked: id, ai: mood.ai.id, match: id === mood.ai.id ? 1 : 0 };
-      try { const l = moodLog(); l.push(rec); localStorage.setItem(KEY_MOOD, JSON.stringify(l.slice(-500))); } catch (e) {}
-      readyMode = false;
-      renderTexts(lastResult);
-      renderButtons();
-      if (m.v !== undefined) {                            // 고른 기분으로 다시 들려줌
-        clearTimeout(wholeTimer);
-        $("sceneBar").textContent = m.emo + " 내가 고른 기분으로 느끼기";
-        startSense(moodSense(), null, allColors(), PLAY_BARS);
-      }
-    }
-    // 기분 고르기 칸 (감상이 끝난 뒤에 나타남)
-    function renderMood() {
-      const box = $("moodBox");
-      if (variant === "B" || viewState !== "whole") { box.hidden = true; return; }
-      if (!mood.picked && !mood.ready) { box.hidden = true; return; }
-      box.hidden = false;
-      if (!mood.picked) {
-        box.innerHTML = '<p class="q-mid" style="margin:0 0 8px">어떤 느낌이었나요?</p><div class="mood-row">' +
-          MOODS.map((m) => '<button class="mood-btn" data-m="' + m.id + '"><span>' + m.emo + "</span>" + m.name + "</button>").join("") +
-          '</div><p class="note">정답은 없어요. 느낀 대로 골라 주세요.</p>';
-        return;
-      }
-      const me = MOODS.find((x) => x.id === mood.picked), ai = mood.ai;
-      box.innerHTML = "<p><b>나: " + me.emo + " " + me.name + "</b> · AI의 추측: " + ai.emo + " " + ai.name + "</p>" +
-        '<p class="note">' + (me.id === ai.id ? "AI와 같았어요." : me.id === "unsure" ? "괜찮아요. 느낌은 천천히 생겨도 돼요." : "AI와 달랐어요. 정답은 없어요 — 같은 작품도 사람마다 다르게 느껴요.") + "</p>" +
-        '<button class="big ghost" data-m="again">🔁 기분 다시 고르기</button>';
-    }
-    $("moodBox").onclick = (e) => {
-      const b = e.target.closest("button"); if (!b) return;
-      if (b.dataset.m === "again") { mood.picked = null; mood.ready = true; renderMood(); renderButtons(); return; }
-      pickMood(b.dataset.m);
-    };
-
+    // [수정 6-7] 기분 고르기 시험(A·B·C)은 팀 결정으로 뺌 → 'B: 보이는 것만 해설 + 기분은 AI 수치'로 정함
     // ----- 감상 단계 -----
     // [수정 4-4] 해설 목소리와 감각은 '차례로': 자동 읽기가 켜져 있으면 먼저 듣고 → 그다음 감각
     //           (예전: 동시에 나와서 겹침. 화음을 줄여도 진동·화음 끝자락이 남았음)
@@ -1971,11 +1886,9 @@
       renderButtons();
       const begin = () => {
         clearTimeout(wholeTimer);
-        // [수정 6-5] 끝까지 들으면 → 기분 고르기 칸이 나타남 (방식 A·C)
-        onSenseEnd = () => { if (viewState === "whole") { mood.ready = true; renderButtons(); } };
-        startSense(moodSense() || lastResult.whole, null, allColors(), PLAY_BARS);   // 구절 2번 + 끝맺음 화음
+        startSense(lastResult.whole, null, allColors(), PLAY_BARS);   // 구절 2번 + 끝맺음 화음
       };
-      if (autoVoice() && !textLocked()) narrate(lastResult.summary + " " + lastResult.interpretation, lastResult.whole.emotion, begin);
+      if (autoVoice()) narrate(lastResult.summary + " " + lastResult.interpretation, lastResult.whole.emotion, begin);
       else begin();
     }
     // 전체 느끼기의 빛은 모든 장면의 색을 차례로 보여줌 (전체 = 여러 장면이 모인 것)
@@ -2023,7 +1936,7 @@
 
     function renderButtons() {
       const canTouch = lastData.type === "photo";                 // 만져보기는 픽셀만 쓰므로 사진이면 항상 가능
-      const canVoice = profile.sound.on && soundUsable() && !textLocked();
+      const canVoice = profile.sound.on && soundUsable();
       let h = "";
       if (viewState === "whole") {
         // [수정 6-5] '하나씩 자세히'는 없앰 (위치를 정확히 짚지 못하고, 부분끼리 감각도 거의 같았음)
@@ -2035,7 +1948,6 @@
       }
       if (canVoice && viewState !== "touch") h += '<button class="big ghost" data-v="voice">🔊 해설 듣기</button><div class="result" id="voiceInfo"></div>';
       $("viewBtns").innerHTML = h;
-      renderMood();
     }
 
     $("viewBtns").onclick = (e) => {
@@ -2059,12 +1971,12 @@
     // 장면 감상 중에는 그림을 톡 눌러도 다음 장면
     $("art").onclick = () => { if (viewState === "scene") playScene(sceneIdx + 1); };
 
-    // ----- ✋ 손으로 만져보기 [수정 6-5]: '덩어리마다 다른 음' + 질감 진동 -----
+    // ----- ✋ 손으로 만져보기 [수정 6-7]: 덩어리 + '문지르는 소리'(재질) + 질감 진동 -----
+    //   (6-5의 '덩어리마다 다른 음'은 그림이 악기처럼 느껴져 기획(시각→촉각·청각 전이)과 맞지 않아 뺌)
     //   1) 만져보기를 시작할 때 사진을 '색·밝기가 비슷한 곳끼리' 몇 개의 덩어리로 한 번만 나눔 (AI 아님, 픽셀 계산)
     //      · 색 5가지로 묶기(k-평균 묶기) → 떨어져 있으면 다른 덩어리 → 아주 작은 조각은 옆 덩어리에 합침 → 최대 8개
-    //   2) 덩어리마다 음 하나: 밝은 덩어리일수록 높은 음. 음계·악기는 작품 전체 분위기(또는 내가 고른 기분)를 따름
-    //   3) 덩어리 안을 문지르면 그 음이 이어서 울림 — 거친 곳은 소리가 떨리고(트레몰로) 진동도 오돌토돌, 매끈한 곳은 맑게
-    //   4) 다른 덩어리로 넘어가면 '톡' 진동 + 새 덩어리의 음으로 인사 + 배경 화음도 그 음의 화음으로 바뀜
+    //   2) 덩어리 안을 문지르면 그 덩어리 재질의 '문지르는 소리' (아래 설명) + 거친 곳은 오돌토돌 진동
+    //   3) 다른 덩어리로 넘어가면 '톡' 진동 + 노란 테두리가 새 덩어리로
     let touchMap = null, tSyn = null, tPrev = null, touchInfo = null, curSeg = -1;
     const TMAP_W = 200;                 // 계산용으로 줄인 사진 가로 칸 수
     const SEG_K = 5, SEG_MAX = 8, SEG_MIN = 0.015;   // 색 5가지, 최대 8덩어리, 사진의 1.5%보다 작은 조각은 합침
@@ -2212,43 +2124,62 @@
       cv.hidden = false;
     }
 
-    // ---- 만지기용 소리 ----
-    // 덩어리 음 높이: 밝은 덩어리일수록 음계에서 높은 음 (약 한 옥타브 반 안에서)
-    function segNote(P, k) {
-      const S = touchMap.seg, n = S.n;
-      const deg = n > 1 ? Math.round(S.st[k].rank * 9 / (n - 1)) : 4;
-      return { deg: deg, st: P.scale[deg % 7] + 12 * Math.floor(deg / 7) };
+    // ---- 만지기용 소리 [수정 6-7]: 문지르는 소리 (악기 X, 재질 O) ----
+    //   실제로 물건을 문지를 때처럼: 손가락이 움직일 때만 소리가 나고(멈추면 조용), 빨리 문지를수록 크고 높아짐
+    //   재질은 '그 덩어리의 거칠기'(+손가락 바로 아래 결)로 정함
+    //     매끈 → 천·피부를 쓸 듯 작고 낮은 '스-'      거침 → 돌·나무껍질을 긁듯 '사각사각'(작은 알갱이 소리가 촘촘)
+    let noiseBuf = null, crackleBuf = null;
+    function getNoise(ctx) {
+      if (!noiseBuf) {
+        noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      return noiseBuf;
     }
-    function touchSense() { return moodSense() || lastResult.whole; }   // 내가 고른 기분이 있으면 그것, 없으면 AI 수치
+    // '사각사각' 재료: 2초 동안 아주 짧은 '틱' 소리(2~5ms)를 1초에 약 70번 무작위로 흩어 놓음
+    function getCrackle(ctx) {
+      if (!crackleBuf) {
+        const sr = ctx.sampleRate;
+        crackleBuf = ctx.createBuffer(1, sr * 2, sr);
+        const d = crackleBuf.getChannelData(0);
+        for (let n = 0; n < 140; n++) {
+          const at = Math.floor(Math.random() * (d.length - sr * 0.01)), amp = 0.3 + Math.random() * 0.7, len = sr * (0.002 + Math.random() * 0.003);
+          for (let i = 0; i < len; i++) d[at + i] += (Math.random() * 2 - 1) * amp * Math.exp(-i / (len / 3));
+        }
+      }
+      return crackleBuf;
+    }
+    function touchSense() { return lastResult.whole; }
     function startTouchSound() {
       stopTouchSound();
       const ctx = getAudio();
       if (!ctx || !(profile.sound.on && soundUsable())) return;
       const t = ctx.currentTime;
-      const P = planOf(touchSense());
       const master = ctx.createGain(), comp = ctx.createDynamicsCompressor();
-      master.gain.setValueAtTime(0, t); master.gain.linearRampToValueAtTime(1, t + 0.3);
+      master.gain.value = 1;
       master.connect(comp); comp.connect(ctx.destination);
-      // 이어지는 음: 두 소리(기본 + 한 옥타브 위)를 섞음
-      const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), g2 = ctx.createGain();
-      const flt = ctx.createBiquadFilter(), trem = ctx.createGain(), move = ctx.createGain();
-      o1.type = "triangle"; o2.type = "sine"; g2.gain.value = 0.3;
-      flt.type = "lowpass"; flt.frequency.value = 2200;
-      trem.gain.value = 1; move.gain.value = 0;
-      const lfo = ctx.createOscillator(), lfoAmt = ctx.createGain();       // 떨림(트레몰로): 거친 곳에서만
-      lfo.frequency.value = 16; lfoAmt.gain.value = 0;
-      lfo.connect(lfoAmt); lfoAmt.connect(trem.gain);
-      o1.connect(flt); o2.connect(g2); g2.connect(flt); flt.connect(trem); trem.connect(move); move.connect(master);
-      o1.start(t); o2.start(t); lfo.start(t);
-      // 배경 화음 — 아주 작게
-      const pad = ctx.createGain(), padF = ctx.createBiquadFilter();
-      pad.gain.value = 0; padF.type = "lowpass"; padF.frequency.value = P.padCut;
-      padF.connect(pad); pad.connect(master);
-      tSyn = { ctx: ctx, P: P, master: master, comp: comp, o1: o1, o2: o2, flt: flt, trem: trem, move: move, lfo: lfo, lfoAmt: lfoAmt,
-               pad: pad, padF: padF, padOsc: [], seg: -1, f: 0 };
-      // 손가락을 멈추면 움직임 신호가 오지 않음 → 0.08초 동안 신호가 없으면 작게(그래도 은은히 남김)
-      tSyn.still = setInterval(() => {
-        if (tSyn && (!tPrev || performance.now() - tPrev.t > 80)) tSyn.move.gain.setTargetAtTime(tSyn.base * 0.3, tSyn.ctx.currentTime, 0.08);
+      const move = ctx.createGain(); move.gain.value = 0;          // 손가락 속도 → 크기 (멈추면 0)
+      move.connect(master);
+      const src = ctx.createBufferSource(); src.buffer = getNoise(ctx); src.loop = true;
+      // 매끈: 낮게 걸러 낸 '스-'
+      const soft = ctx.createBiquadFilter(); soft.type = "lowpass"; soft.frequency.value = 500; soft.Q.value = 0.5;
+      const gSoft = ctx.createGain(); gSoft.gain.value = 0;
+      src.connect(soft); soft.connect(gSoft); gSoft.connect(move);
+      // 거침 ①: 가운데 높이를 걸러 낸 '쓱'
+      const grit = ctx.createBiquadFilter(); grit.type = "bandpass"; grit.frequency.value = 1800; grit.Q.value = 1;
+      const gGrit = ctx.createGain(); gGrit.gain.value = 0;
+      src.connect(grit); grit.connect(gGrit); gGrit.connect(move);
+      // 거침 ②: 알갱이 '사각사각' — 빨리 문지르면 빨리 재생해서 알갱이가 촘촘해짐
+      const cr = ctx.createBufferSource(); cr.buffer = getCrackle(ctx); cr.loop = true;
+      const crF = ctx.createBiquadFilter(); crF.type = "bandpass"; crF.frequency.value = 2500; crF.Q.value = 0.7;
+      const gCr = ctx.createGain(); gCr.gain.value = 0;
+      cr.connect(crF); crF.connect(gCr); gCr.connect(move);
+      src.start(t); cr.start(t);
+      tSyn = { ctx: ctx, master: master, comp: comp, move: move, src: src, cr: cr, soft: soft, gSoft: gSoft, grit: grit, gGrit: gGrit,
+               crF: crF, gCr: gCr, segRough: 0, base: 0, mat: "" };
+      tSyn.still = setInterval(() => {                             // 손가락을 멈추면(0.08초 동안 움직임 신호 없음) 조용히
+        if (tSyn && (!tPrev || performance.now() - tPrev.t > 80)) tSyn.move.gain.setTargetAtTime(0, tSyn.ctx.currentTime, 0.05);
       }, 50);
     }
     function stopTouchSound() {
@@ -2256,33 +2187,29 @@
       const s = tSyn, t = s.ctx.currentTime;
       clearInterval(s.still);
       s.master.gain.cancelScheduledValues(t);
-      s.master.gain.setTargetAtTime(0, t, 0.08);
-      [s.o1, s.o2, s.lfo].concat(s.padOsc).forEach((o) => { try { o.stop(t + 0.5); } catch (x) {} });
-      setTimeout(() => { try { s.comp.disconnect(); } catch (x) {} }, 800);
+      s.master.gain.setTargetAtTime(0, t, 0.05);
+      [s.src, s.cr].forEach((o) => { try { o.stop(t + 0.3); } catch (x) {} });
+      setTimeout(() => { try { s.comp.disconnect(); } catch (x) {} }, 600);
       tSyn = null;
     }
-    // 새 덩어리에 들어갔을 때: 음 바꾸기 + 인사 음 + 배경 화음 바꾸기
+    // 새 덩어리에 들어갔을 때: 그 덩어리의 재질로 바꿈
     function touchSegSound(k, gain) {
       if (!tSyn || k < 0) return;
-      const s = tSyn, ctx = s.ctx, t = ctx.currentTime, P = s.P, st = touchMap.seg.st[k];
-      const nt = segNote(P, k);
-      s.f = semi(P.root, nt.st);
-      s.o1.frequency.setTargetAtTime(s.f, t, 0.03);
-      s.o2.frequency.setTargetAtTime(s.f * 2, t, 0.03);
-      s.flt.frequency.setTargetAtTime(st.rough > 0.55 ? 1400 : 2600, t, 0.05);
-      s.base = gain * 0.55 * Math.pow(330 / s.f, 0.25);            // 높은 소리가 더 크게 들리는 것 보정
-      playLead({ ctx: ctx, P: P, mix: s.master, send: null }, nt.st, t + 0.01, 0.7, true);
-      // 배경 화음: 이 음을 바탕으로 한 화음 (음계 안에서)
-      s.padOsc.forEach((o) => { try { o.stop(t + 0.5); } catch (x) {} });
-      s.padOsc = [];
-      s.pad.gain.cancelScheduledValues(t);
-      s.pad.gain.setTargetAtTime(0, t, 0.08);
-      chordTones(P, nt.deg % 7, false).forEach((x) => {
-        const o = ctx.createOscillator(), og = ctx.createGain();
-        o.type = "triangle"; o.frequency.value = semi(P.root / 2, x); og.gain.value = 0.3;
-        o.connect(og); og.connect(s.padF); o.start(t + 0.1); s.padOsc.push(o);
-      });
-      s.pad.gain.setTargetAtTime(gain * 0.2, t + 0.15, 0.2);
+      tSyn.segRough = touchMap.seg.st[k].rough;
+      tSyn.base = gain;
+    }
+    // 손가락이 움직일 때마다: 재질(덩어리 거칠기 60% + 손가락 아래 결 40%)과 속도로 소리 정하기
+    function touchFriction(m, moving) {
+      const s = tSyn, t = s.ctx.currentTime;
+      const r = clamp01(0.6 * s.segRough + 0.4 * m.rough);
+      s.mat = r < 0.3 ? "매끈(스-)" : r < 0.55 ? "중간(쓱)" : "거침(사각사각)";
+      s.gSoft.gain.setTargetAtTime(0.9 * (1 - r), t, 0.05);
+      s.soft.frequency.setTargetAtTime(250 + 900 * moving + 250 * m.lum, t, 0.05);            // 빨리 문지르면 조금 높게
+      s.gGrit.gain.setTargetAtTime(0.5 * r, t, 0.05);
+      s.grit.frequency.setTargetAtTime(1100 + 2200 * moving, t, 0.05);
+      s.gCr.gain.setTargetAtTime(r > 0.3 ? 2.2 * (r - 0.3) : 0, t, 0.05);
+      s.cr.playbackRate.setTargetAtTime(0.6 + 1.6 * moving, t, 0.05);
+      s.move.gain.setTargetAtTime(s.base * 6 * moving * (0.55 + 0.45 * r), t, 0.03);   // 매끈한 곳은 더 작게
     }
 
     function startTouch() {
@@ -2332,13 +2259,8 @@
         ring.style.left = lx + "px"; ring.style.top = ly + "px";
         ring.style.borderColor = touchMap.seg.st[m.seg].color;
       }
-      // 3) 👂 이어지는 음: 움직이면 커지고, 거친 곳일수록 떨림
-      if (tSyn) {
-        const t = tSyn.ctx.currentTime;
-        tSyn.move.gain.setTargetAtTime(tSyn.base * (0.3 + 0.7 * moving), t, 0.04);
-        tSyn.lfoAmt.gain.setTargetAtTime(0.55 * m.rough, t, 0.05);
-        tSyn.lfo.frequency.setTargetAtTime(10 + 20 * moving, t, 0.05);
-      }
+      // 3) 👂 문지르는 소리: 움직일 때만, 재질에 따라
+      if (tSyn) touchFriction(m, moving);
       // 4) ✋ 결: 거친 곳만 오돌토돌 진동 (매끈한 곳은 진동 없음) — 지난번 좋았던 방식 그대로
       if (!changed && canBuzz && moving > 0.1 && now - vibeAt > 110) {
         const k = 0.75 + 0.5 * out.vibe;
@@ -2348,7 +2270,7 @@
       tPrev = { x: e.clientX, y: e.clientY, t: now, vibeAt: vibeAt };
       const st = touchMap.seg.st[m.seg];
       touchInfo = { n: touchMap.seg.n, k: m.seg, part: st.part, segLum: st.lum, segRough: st.rough, rank: st.rank,
-                    rough: m.rough, moving: moving, f: tSyn ? tSyn.f : 0, scale: planOf(sense).scaleName };
+                    rough: m.rough, moving: moving, mat: tSyn ? tSyn.mat : "(소리 꺼짐)" };
     }
     $("art").addEventListener("contextmenu", (e) => e.preventDefault());   // 길게 누를 때 메뉴 막기
     $("art").addEventListener("pointerdown", onTouchMove);
@@ -2458,7 +2380,7 @@
       const rhythm = RHYTHMS[a < 0.3 ? 0 : a < 0.55 ? 1 : a < 0.8 ? 2 : 3];
       return {
         c: c, mode: mode, scale: mode.s, scaleName: mode.name, prog: prog, progName: progName,
-        inst: inst, instName: INST_KO[inst], rhythm: rhythm,
+        inst: inst, instName: (INST_NAME[INST_FILE[inst]] || INST_KO[inst]), rhythm: rhythm,
         root: 196 * Math.pow(2, b * 1.0),                  // 멜로디 기준음 196~392Hz (폰 스피커가 잘 내는 높이)
         bpm: 64 + a * 44,                                  // 64~108 BPM
         barsPerChord: a < 0.35 ? 2 : 1,                    // 잔잔하면 화음이 천천히 바뀜
@@ -2488,6 +2410,91 @@
     // ---------- 소리 기계 ----------
     //  악기들 → mix → level(③ 자동 크기 조절) → fade(켜고 끌 때) → 압축기(갑자기 커지는 것 막기) → 스피커
     //  level 뒤에 '폰 스피커 흉내 필터(250Hz 아래 제거)' → 측정기 : 사람이 폰으로 듣는 크기를 재서 목표 크기에 맞춤
+    // ==========================================================
+    // [수정 6-7] 실제 악기 녹음 소리 (기계음 줄이기)
+    //   소리 출처: FluidR3_GM 사운드폰트 (Frank Wen 제작, CC BY 3.0) — gleitz/midi-js-soundfonts에서 mp3로 바꾼 파일
+    //   악기마다 C·E♭·G♭·A 음(3반음 간격)만 저장하고, 그 사이 음은 재생 속도를 살짝 바꿔 만듦 (±1.5반음 이내라 자연스러움)
+    //   먼저 우리 저장소의 sounds 폴더에서 찾고, 없으면 원래 공개 주소에서, 그것도 안 되면 예전 합성음으로 연주
+    // ==========================================================
+    const SAMPLE_BASES = ["sounds/", "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/"];
+    const INST_FILE = { epiano: "acoustic_grand_piano", bell: "vibraphone", flute: "flute", pluck: "orchestral_harp",
+                        reed: "cello", pad: "string_ensemble_1", bass: "cello" };
+    const INST_NAME = { acoustic_grand_piano: "피아노", vibraphone: "비브라폰", flute: "플루트", orchestral_harp: "하프",
+                        cello: "첼로", string_ensemble_1: "현악 합주" };
+    const SUSTAINED = { flute: 1, cello: 1, string_ensemble_1: 1 };      // 길게 이어지는 악기 (나머지는 저절로 사라지는 악기)
+    const SAMPLE_NOTES = [];
+    for (let o = 2; o <= 6; o++) ["C", "Eb", "Gb", "A"].forEach((n, k) => SAMPLE_NOTES.push({ name: n + o, midi: 12 * (o + 1) + k * 3 }));
+    SAMPLE_NOTES.push({ name: "C7", midi: 96 });
+    const SAMPLE_GAIN = 2.5;           // 녹음 파일은 합성음보다 작게 녹음돼 있어서 키움 (최종 크기는 자동 맞춤이 조절)
+    const sampleBank = {};              // 악기 → { midi → {buf, off} }
+    const sampleState = {};             // 악기 → "loading" | "ready" | "fail"
+    async function loadInstrument(file) {
+      if (sampleState[file]) return;
+      sampleState[file] = "loading";
+      const ctx = getAudio();
+      if (!ctx) { sampleState[file] = "fail"; return; }
+      for (const base of SAMPLE_BASES) {
+        try {
+          const bank = {};
+          await Promise.all(SAMPLE_NOTES.map(async (n) => {
+            const r = await fetch(base + file + "-mp3/" + n.name + ".mp3");
+            if (!r.ok) throw new Error("no file");
+            const buf = await ctx.decodeAudioData(await r.arrayBuffer());
+            // mp3는 앞에 아주 짧은 빈 소리가 붙어 있음 → 실제 소리가 시작되는 지점을 찾아 거기서부터 재생 (박자 맞추기)
+            const d = buf.getChannelData(0);
+            let i = 0; while (i < d.length && Math.abs(d[i]) < 0.003) i++;
+            bank[n.midi] = { buf: buf, off: Math.min(0.08, i / buf.sampleRate) };
+          }));
+          sampleBank[file] = bank;
+          sampleState[file] = "ready";
+          sampleState[file + ":from"] = base.startsWith("http") ? "공개 주소" : "우리 저장소";
+          return;
+        } catch (e) { /* 다음 주소로 */ }
+      }
+      sampleState[file] = "fail";
+    }
+    function preloadFor(s) {            // 이 작품에 필요한 악기만 미리 불러옴
+      const P = planOf(s);
+      [INST_FILE[P.inst], INST_FILE.pad].concat(P.bass ? [INST_FILE.bass] : []).forEach((f) => loadInstrument(f));
+    }
+    // 악기 소리 하나 재생. 준비가 안 됐으면 false (→ 합성음으로 대신)
+    function playSample(e, file, freq, t, dur, peak, attack, dest) {
+      const bank = sampleBank[file];
+      if (!bank) return false;
+      const midi = 69 + 12 * Math.log2(freq / 440);
+      let best = null;
+      SAMPLE_NOTES.forEach((n) => { if (!best || Math.abs(n.midi - midi) < Math.abs(best.midi - midi)) best = n; });
+      if (Math.abs(best.midi - midi) > 2.5) return false;
+      const smp = bank[best.midi], ctx = e.ctx;
+      const rate = Math.pow(2, (midi - best.midi) / 12);
+      const sus = !!SUSTAINED[file];
+      const out = ctx.createGain();
+      out.connect(dest || e.mix);
+      if (e.send && !dest) out.connect(e.send);
+      // 녹음은 약 3초. 길게 이어지는 악기가 그보다 길게 울려야 하면 2.4초마다 새로 겹쳐 이어 붙임
+      const seg = 2.4, release = sus ? 0.35 : 0.8;
+      const total = sus ? dur : Math.min(dur, 2.8);
+      for (let k = 0; k * seg < total && (sus || k === 0); k++) {     // 저절로 사라지는 악기는 한 번만
+        const st = t + k * seg, src = ctx.createBufferSource(), g = ctx.createGain();
+        src.buffer = smp.buf; src.playbackRate.value = rate;
+        const fadeIn = k === 0 ? Math.max(0.004, attack || 0) : 0.4;
+        const end = Math.min(t + total, st + seg + 0.4);
+        g.gain.setValueAtTime(0, st);
+        g.gain.linearRampToValueAtTime(1, st + fadeIn);
+        g.gain.setValueAtTime(1, Math.max(st + fadeIn, end - (end >= t + total ? 0 : 0.4)));
+        g.gain.linearRampToValueAtTime(0, end + (end >= t + total ? release : 0));
+        src.connect(g); g.connect(out);
+        src.start(st, smp.off); src.stop(end + release + 0.05);
+      }
+      out.gain.value = peak * SAMPLE_GAIN;
+      return true;
+    }
+    function sampleText() {
+      const fs = Object.keys(INST_NAME);
+      return fs.filter((f) => sampleState[f]).map((f) => INST_NAME[f] + " " +
+        (sampleState[f] === "ready" ? "✅ 녹음 소리 (" + sampleState[f + ":from"] + ")" : sampleState[f] === "loading" ? "⏳ 불러오는 중 (그동안 합성음)" : "❌ 못 불러옴 → 합성음")).join("<br>") || "아직 불러오지 않음";
+    }
+
     function startEngine(s, I, out) {
       stopEngine();
       const ctx = getAudio();
@@ -2573,6 +2580,11 @@
     // 배경 화음 바꾸기 (부드럽게 겹쳐 넘어감)
     function playPad(e, deg, t, durSec) {
       const ctx = e.ctx, P = e.P;
+      if (sampleBank[INST_FILE.pad]) {                             // 현악 합주 녹음으로 배경 화음
+        const att = 0.3 + (1 - P.c.arousal) * 0.9;
+        chordTones(P, deg, P.c.flow > 0.6).forEach((x) => playSample(e, INST_FILE.pad, semi(P.root / 2, x + 12 * (x < 5 ? 1 : 0)), t, durSec + 0.2, 0.2 * P.padLevel, att));
+        return;
+      }
       const tones = chordTones(P, deg, P.c.flow > 0.6);
       tones.forEach((st) => {
         [-5, 5].forEach((det) => {
@@ -2612,6 +2624,8 @@
     function playLead(e, st, t, len, accent) {
       const ctx = e.ctx, P = e.P;
       const freq = semi(P.root, st);
+      const file = INST_FILE[P.inst];                              // 실제 악기 녹음이 준비됐으면 그걸로
+      if (playSample(e, file, freq, t, SUSTAINED[file] ? len : len * 1.6, (accent ? 0.55 : 0.43) * (SUSTAINED[file] ? 0.8 : 1), SUSTAINED[file] ? 0.04 : 0)) return;
       const g = ctx.createGain();
       const peak = 0.16 * (accent ? 1 : 0.78);
       g.connect(e.mix);
@@ -2658,6 +2672,7 @@
     }
     function playBass(e, st, t) {
       const ctx = e.ctx;
+      if (playSample(e, INST_FILE.bass, semi(e.P.root / 2, st), t, 0.9, 0.42, 0.02)) return;
       const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
       o.type = "sawtooth";                                         // 배음이 많아 폰 스피커에서도 '낮게' 들림
       o.frequency.value = semi(e.P.root / 2, st);
@@ -2907,7 +2922,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-5 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-7 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -2923,11 +2938,9 @@
         "<b>장면</b><br>" + (r.scenes || []).map((s, i) => (i + 1) + ". " + esc(s.name) + " → " + senseLine(s.sense) +
           ((s.cells || []).length ? "<br>&nbsp;&nbsp;&nbsp;칸 " + esc(JSON.stringify(s.cells)) : "")).join("<br>") +
         "<br><br><b>⏱ 감각 동시 출력 (공통 박자 시계)</b><br>소리–빛·진동 시각 차이: <span id='syncNow'>" + syncText() + "</span>" +
+        "<br><br><b>🎻 악기 소리</b><br><span id='sampleNow'>" + sampleText() + "</span><br><span class='note'>출처: FluidR3_GM 사운드폰트 (CC BY 3.0)</span>" +
         "<br><br><b>🔊 소리 크기 자동 맞춤</b><br><span id='levelNow'>" + levelText() + "</span>" +
         "<br><br><b>✋ 만져보기 (마지막으로 만진 곳)</b><br><span id='touchNow'>" + touchText() + "</span>" +
-        "<br><br><b>🧪 해설·해석 나누기 시험</b><br>지금 방식: <b>" + variant + " · " + VARIANTS[variant] + "</b><br>" +
-        Object.keys(VARIANTS).map((k) => "<button class='mini' data-var='" + k + "'>" + k + "</button>").join(" ") +
-        " <span class='note'>(바꾸면 다음 작품부터 적용. 주소 끝에 ?mode=A 처럼 붙여도 됨)</span><br>" + moodStatsText() +
         "<br><b>픽셀에서 잰 사실</b>: " + (lastData && lastData.pixel ? (lastData.pixel.gray ? "흑백" : "컬러") + " (색 진하기 평균 " + lastData.pixel.sat + ") · 대표 색 " + swatch(lastData.pixel.hex) + " " + esc(lastData.pixel.names.join(", ")) +
           (r.aiColors && r.aiColors.length ? " · (AI가 고른 색은 쓰지 않음: " + swatch(r.aiColors) + ")" : "") : "-");
     }
@@ -2941,20 +2954,10 @@
       if (!touchInfo) return "아직 만지지 않음";
       const f = (x) => Number(x).toFixed(2);
       return "사진을 색·밝기가 비슷한 곳끼리 " + touchInfo.n + "덩어리로 나눔 (색 " + SEG_K + "가지로 묶기 → 떨어진 곳은 따로 → 1.5%보다 작은 조각은 합침 → 최대 " + SEG_MAX + "개)" +
-        "<br>만진 덩어리: 사진의 " + (touchInfo.part * 100).toFixed(1) + "% · 평균 밝기 " + f(touchInfo.segLum) + " (어두운 쪽부터 " + (touchInfo.rank + 1) + "번째) → " +
-        Math.round(touchInfo.f) + "Hz (" + esc(touchInfo.scale) + ")" +
-        "<br>손가락 아래 결 " + f(touchInfo.rough) + (touchInfo.rough > 0.55 ? " (거침 → 오돌토돌 진동 + 소리 떨림)" : touchInfo.rough > 0.25 ? " (중간)" : " (매끈 → 진동 없음)") +
+        "<br>만진 덩어리: 사진의 " + (touchInfo.part * 100).toFixed(1) + "% · 평균 밝기 " + f(touchInfo.segLum) + " · 덩어리 거칠기 " + f(touchInfo.segRough) + "<br>" +
+        "문지르는 소리 재질: " + esc(touchInfo.mat) +
+        "<br>손가락 아래 결 " + f(touchInfo.rough) + (touchInfo.rough > 0.55 ? " (거침 → 오돌토돌 진동)" : touchInfo.rough > 0.25 ? " (중간)" : " (매끈 → 진동 없음)") +
         " · 손 속도 " + f(touchInfo.moving);
-    }
-    function moodStatsText() {
-      const l = moodLog();
-      if (!l.length) return "기분 고르기 기록: 아직 없음";
-      return Object.keys(VARIANTS).map((k) => {
-        const x = l.filter((r) => r.variant === k), sure = x.filter((r) => r.picked !== "unsure");
-        const mt = sure.filter((r) => r.match).length;
-        return k + ": " + x.length + "번" + (sure.length ? " · AI와 같음 " + mt + "/" + sure.length + " (" + Math.round(mt / sure.length * 100) + "%)" : "") +
-          " · 잘 모르겠어요 " + (x.length - sure.length) + "번";
-      }).join("<br>") + "<br><button class='mini' data-moodcsv='1'>📋 기록 복사(CSV)</button>";
     }
     $("devBody").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
@@ -2963,20 +2966,12 @@
         try { localStorage.setItem(KEY_LAT, String(latAdj)); } catch (x) {}
         const s = $("syncNow"); if (s) s.innerHTML = syncText();
       }
-      if (b.dataset.var) {
-        variant = b.dataset.var;
-        try { localStorage.setItem(KEY_VARIANT, variant); } catch (x) {}
-        $("devBody").innerHTML = devInfoHTML(lastResult);
-      }
-      if (b.dataset.moodcsv) {
-        const csv = "시각,방식,작품,고른 기분,AI 추측,같음\n" + moodLog().map((r) => [r.t, r.variant, '"' + r.work.replace(/"/g, "'") + '"', r.picked, r.ai, r.match].join(",")).join("\n");
-        (navigator.clipboard ? navigator.clipboard.writeText(csv) : Promise.reject()).then(() => { b.textContent = "✅ 복사됨"; }, () => { b.textContent = "복사 안 됨"; });
-      }
     });
     $("devBox").addEventListener("toggle", () => {
       const s = $("syncNow"); if (s) s.innerHTML = syncText();
       const l = $("levelNow"); if (l) l.innerHTML = levelText();
       const t = $("touchNow"); if (t) t.innerHTML = touchText();
+      const sm = $("sampleNow"); if (sm) sm.innerHTML = sampleText();
     });
 
     // ----- 🗣 해설 목소리 (항상 나오지 않음: '자동으로 읽기'가 켜진 사람만 자동, 나머지는 버튼) -----
