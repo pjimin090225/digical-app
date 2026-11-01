@@ -225,6 +225,7 @@
     .touch-label { line-height: 1.4; position: absolute; transform: translateX(-50%); background: #1A1A1A; color: #FFF; font-weight: 800; padding: 4px 14px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
     .scene-bar { margin: calc(var(--gap) * 1.5) 0 0; font-weight: 800; font-size: 20px; }
     .row2 { display: flex; gap: var(--gap); }
+    .ai-mood { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #F1EEF8; border: 2px dashed #8A7FB8; }
     .mini { padding: 4px 10px; border: 2px solid #1A1A1A; border-radius: 10px; background: #FFF; font-weight: 800; }
     /* 탐구 노트 */
     .presets button[aria-pressed="true"] { background: var(--accent); }
@@ -415,7 +416,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-7: 실제 악기 소리 + 문지르는 소리 + 보이는 것만 해설<br>
+    6단계 · 앱 6-8: 재질 소리 + 사진 특징 반영 + AI 느낌 한 줄<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1778,6 +1779,10 @@
         stop();
         lastResult = r;
         lastResult.clientMs = performance.now() - tStart;
+        if (r.whole && d.pixel) {            // [수정 6-8] 소리 계산에 픽셀 특징과 주인공 재질을 함께 넘김
+          r.whole.px = { lum: d.pixel.lum, contrast: d.pixel.contrast, color: d.pixel.gray ? 0 : d.pixel.sat, complexity: d.pixel.complexity };
+          r.whole.material = r.material || "모름";
+        }
         if (r.whole) preloadFor(r.whole);    // [수정 6-7] 이 작품에 쓸 악기 녹음을 ▶ 누르기 전에 미리 불러옴
         if (d.pixel && d.pixel.hex.length) {           // AI가 고른 '대표 색' 대신 픽셀에서 잰 색 (흑백 사진에 분홍색이 나오던 문제)
           lastResult.aiColors = (r.whole && r.whole.colors) || [];
@@ -1813,6 +1818,13 @@
               const r = p[i * 4] / 255, gg = p[i * 4 + 1] / 255, b = p[i * 4 + 2] / 255;
               sats.push(Math.max(r, gg, b) - Math.min(r, gg, b)); pts.push([r, gg, b]);
             }
+            // [수정 6-8] 소리에 쓸 픽셀 특징: 평균 밝기, 명암 차이, 복잡도(옆 칸과의 밝기 차이 평균)
+            const L = pts.map((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+            const lumMean = L.reduce((a, b) => a + b, 0) / N;
+            const contrast = Math.sqrt(L.reduce((a, b) => a + (b - lumMean) ** 2, 0) / N);
+            let gsum = 0;
+            for (let y = 0; y < H - 1; y++) for (let x = 0; x < W - 1; x++) { const i = y * W + x; gsum += Math.abs(L[i] - L[i + 1]) + Math.abs(L[i] - L[i + W]); }
+            const complexity = Math.min(1, gsum / ((W - 1) * (H - 1)) / 0.12);
             sats.sort((a, b) => a - b);
             const mean = sats.reduce((a, b) => a + b, 0) / N, p90 = sats[Math.floor(N * 0.9)];
             const gray = mean < 0.07 && p90 < 0.15;          // 흑백(세피아 같은 옅은 색조 포함)
@@ -1830,7 +1842,8 @@
             }
             const top = cen.map((m, k) => ({ m: m, n: cnt[k] })).sort((a, b) => b.n - a.n).slice(0, 3);
             const hex = top.map((t) => "#" + t.m.map((v) => Math.round(v * 255).toString(16).padStart(2, "0")).join(""));
-            resolve({ gray: gray, sat: +mean.toFixed(3), hex: hex, names: top.map((t) => colorName(t.m, gray)) });
+            resolve({ gray: gray, sat: +mean.toFixed(3), hex: hex, names: top.map((t) => colorName(t.m, gray)),
+                      lum: +lumMean.toFixed(3), contrast: +contrast.toFixed(3), complexity: +complexity.toFixed(3) });
           } catch (e) { resolve(null); }
         };
         img.onerror = () => resolve(null);
@@ -1868,7 +1881,8 @@
       $("textBody").innerHTML =
         "<p><b>" + esc(r.summary) + "</b></p><p>" + esc(r.interpretation) + "</p>" +
           "<p class='note'>눈에 띄는 부분</p>" +
-          (r.scenes || []).map((s, i) => "<p>" + (i + 1) + ". <b>" + esc(s.name) + "</b> — " + esc(s.text) + "</p>").join("");
+          (r.scenes || []).map((s, i) => "<p>" + (i + 1) + ". <b>" + esc(s.name) + "</b> — " + esc(s.text) + "</p>").join("") +
+          (r.mood_line ? '<p class="ai-mood">🤖 AI가 느낀 분위기 <span class="note">(정답 아님 · 사람마다 달라요)</span><br>' + esc(r.mood_line) + "</p>" : "");
       $("devBody").innerHTML = devInfoHTML(r);
     }
 
@@ -1940,7 +1954,8 @@
       let h = "";
       if (viewState === "whole") {
         // [수정 6-5] '하나씩 자세히'는 없앰 (위치를 정확히 짚지 못하고, 부분끼리 감각도 거의 같았음)
-        h = (readyMode ? '<p class="q-mid" style="margin:4px 0 8px">▶ 버튼을 누르면 소리·빛·진동이 천천히 나와요</p>' : "") +
+        h = (readyMode ? '<p class="q-mid" style="margin:4px 0 8px">▶ 버튼을 누르면 소리·빛·진동이 천천히 나와요</p>' +
+                         '<p class="note" style="margin:0 0 8px">세게 느껴지면 처음 화면의 감각 설정에서 줄일 수 있어요.</p>' : "") +
             '<button class="big primary" data-v="again">' + (readyMode ? "▶ 느껴보기" : "🔁 다시 느끼기") + "</button>" +
             (canTouch ? '<button class="big" data-v="touch">✋ 손으로 만져보기</button>' : "");
       } else if (viewState === "touch") {
@@ -2092,7 +2107,68 @@
       });
       // 밝기 순위 (어두운 덩어리 = 0)
       st.map((s, k) => k).sort((a, b) => st[a].lum - st[b].lum).forEach((k, r) => { st[k].rank = r; });
+      // ⑥ 번호를 적을 자리: 덩어리 경계에서 가장 먼 칸 (경계에서부터 거리 재기)
+      const dist = new Int32Array(N).fill(-1), qq = new Int32Array(N);
+      let h2 = 0, t2 = 0;
+      for (let i = 0; i < N; i++) {
+        const x = i % W, y = (i / W) | 0;
+        if (x === 0 || y === 0 || x === W - 1 || y === H - 1 || comp[i - 1] !== comp[i] || comp[i + 1] !== comp[i] || comp[i - W] !== comp[i] || comp[i + W] !== comp[i]) { dist[i] = 0; qq[t2++] = i; }
+      }
+      while (h2 < t2) {
+        const i = qq[h2++], x = i % W;
+        for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) {
+          if (j < 0 || j >= N || dist[j] >= 0 || comp[j] !== comp[i]) continue;
+          dist[j] = dist[i] + 1; qq[t2++] = j;
+        }
+      }
+      st.forEach((s) => { s.cd = -1; });
+      for (let i = 0; i < N; i++) { const s = st[comp[i]]; if (dist[i] > s.cd) { s.cd = dist[i]; s.cx = i % W; s.cy = (i / W) | 0; } }
       return { comp: comp, n: nComp, st: st };
+    }
+
+    // [수정 6-8] 덩어리마다 재질을 AI에게 묻기: 덩어리 테두리와 번호를 그린 사진을 한 번 보냄
+    //   (8×8 칸으로 위치를 짚게 하던 방식은 틀렸지만, 이건 앱이 이미 나눈 실제 모양에 '이름'만 붙이는 일이라 훨씬 쉬움)
+    const SEG_COLORS = ["#FF3B30", "#FFCC00", "#34C759", "#00C7BE", "#007AFF", "#AF52DE", "#FF2D92", "#FF9500"];
+    function makeSegImage() {
+      const img = $("artImg"), M = touchMap, S = M.seg;
+      const OW = 640, OH = Math.round(OW * M.H / M.W), sx = OW / M.W, sy = OH / M.H;
+      const cv = document.createElement("canvas"); cv.width = OW; cv.height = OH;
+      const g = cv.getContext("2d");
+      g.drawImage(img, 0, 0, OW, OH);
+      for (let y = 0; y < M.H; y++) for (let x = 0; x < M.W; x++) {       // 덩어리 경계에 색 선
+        const i = y * M.W + x, k = S.comp[i];
+        if ((x < M.W - 1 && S.comp[i + 1] !== k) || (y < M.H - 1 && S.comp[i + M.W] !== k)) {
+          g.fillStyle = SEG_COLORS[k % SEG_COLORS.length]; g.fillRect(x * sx, y * sy, sx + 1, sy + 1);
+        }
+      }
+      g.font = "bold 26px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+      S.st.forEach((st, k) => {                                          // 번호 동그라미
+        const cx = st.cx * sx, cy = st.cy * sy;
+        g.fillStyle = "rgba(0,0,0,0.8)"; g.beginPath(); g.arc(cx, cy, 19, 0, 7); g.fill();
+        g.strokeStyle = SEG_COLORS[k % SEG_COLORS.length]; g.lineWidth = 4; g.stroke();
+        g.fillStyle = "#FFF"; g.fillText(String(k + 1), cx, cy + 1);
+      });
+      return cv.toDataURL("image/jpeg", 0.85);
+    }
+    async function requestMaterials() {
+      const M = touchMap;
+      if (!M) return;
+      if (lastData.segMaterials && lastData.segMaterials.length === M.seg.n) {   // 같은 사진이면 다시 묻지 않음
+        lastData.segMaterials.forEach((r, k) => { M.seg.st[k].material = r.material; M.seg.st[k].thing = r.thing; });
+        M.matState = "done"; return;
+      }
+      M.matState = "asking";
+      const t0 = performance.now();
+      try {
+        const r = await askAI({ type: "photo", task: "materials", images: [makeSegImage()], n: M.seg.n }, false);
+        if (M !== touchMap) return;
+        const arr = M.seg.st.map(() => ({ material: "모름", thing: "" }));
+        (r.regions || []).forEach((x) => { if (arr[x.n - 1]) arr[x.n - 1] = { material: x.material, thing: x.thing }; });
+        arr.forEach((x, k) => { M.seg.st[k].material = x.material; M.seg.st[k].thing = x.thing; });
+        lastData.segMaterials = arr;
+        M.matState = "done"; M.matMs = Math.round(performance.now() - t0);
+        if (curSeg >= 0 && tSyn) touchSegSound(curSeg, tSyn.base);      // 지금 만지는 덩어리에 바로 적용
+      } catch (e) { if (M === touchMap) M.matState = "fail"; }
     }
 
     function mapAt(clientX, clientY) {
@@ -2129,6 +2205,7 @@
     //   재질은 '그 덩어리의 거칠기'(+손가락 바로 아래 결)로 정함
     //     매끈 → 천·피부를 쓸 듯 작고 낮은 '스-'      거침 → 돌·나무껍질을 긁듯 '사각사각'(작은 알갱이 소리가 촘촘)
     let noiseBuf = null, crackleBuf = null;
+    const BG_IN_TOUCH = true;           // 만져보기 중 작품 분위기 화음을 아주 작게 깔지 (false로 바꾸면 끔)
     function getNoise(ctx) {
       if (!noiseBuf) {
         noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
@@ -2151,6 +2228,24 @@
       return crackleBuf;
     }
     function touchSense() { return lastResult.whole; }
+    // [수정 6-8] 재질별 문지르는 소리 (모두 '잡음'을 걸러서 만든 소리)
+    //   soft = 낮게 걸러 낸 '스-'(sf = 높이) / grit = 가운데를 걸러 낸 '쓱'(gf) / cr = 알갱이 '사각'(cf) / ring = 아주 좁게 걸러 낸 '삐익·뽀득'(rf, 유리·금속·고무)
+    //   vib: none = 진동 없음, light = 가볍게 톡, grain = 오돌토돌
+    const MAT_SOUND = {
+      "유리":   { soft: 0.25, sf: 1600, grit: 0,    gf: 2000, cr: 0,   cf: 3000, ring: 0.5,  rf: 2600, vib: "none" },
+      "금속":   { soft: 0.15, sf: 1200, grit: 0.2,  gf: 3000, cr: 0,   cf: 3000, ring: 0.55, rf: 3400, vib: "light" },
+      "나무":   { soft: 0.3,  sf: 600,  grit: 0.5,  gf: 900,  cr: 0.3, cf: 1200, ring: 0,    rf: 1000, vib: "grain" },
+      "돌":     { soft: 0.15, sf: 500,  grit: 0.55, gf: 1600, cr: 0.7, cf: 2200, ring: 0,    rf: 1000, vib: "grain" },
+      "천":     { soft: 0.9,  sf: 450,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 1000, vib: "none" },
+      "피부":   { soft: 0.7,  sf: 350,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 1000, vib: "none" },
+      "종이":   { soft: 0.2,  sf: 800,  grit: 0.5,  gf: 3200, cr: 0.3, cf: 3500, ring: 0,    rf: 1000, vib: "light" },
+      "플라스틱": { soft: 0.45, sf: 1000, grit: 0.1, gf: 1500, cr: 0,   cf: 2000, ring: 0.2,  rf: 1600, vib: "none" },
+      "고무":   { soft: 0.55, sf: 300,  grit: 0.1,  gf: 700,  cr: 0,   cf: 2000, ring: 0.3,  rf: 650,  vib: "light" },
+      "흙":     { soft: 0.2,  sf: 500,  grit: 0.4,  gf: 700,  cr: 0.9, cf: 1000, ring: 0,    rf: 1000, vib: "grain" },
+      "잎·풀":  { soft: 0.3,  sf: 900,  grit: 0.35, gf: 2600, cr: 0.45, cf: 3800, ring: 0,   rf: 1000, vib: "light" },
+      "털·머리카락": { soft: 0.55, sf: 2200, grit: 0.2, gf: 4500, cr: 0, cf: 3000, ring: 0, rf: 1000, vib: "light" },
+      "물":     { soft: 0.6,  sf: 700,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0.3,  rf: 900,  vib: "none" }
+    };
     function startTouchSound() {
       stopTouchSound();
       const ctx = getAudio();
@@ -2175,8 +2270,23 @@
       const crF = ctx.createBiquadFilter(); crF.type = "bandpass"; crF.frequency.value = 2500; crF.Q.value = 0.7;
       const gCr = ctx.createGain(); gCr.gain.value = 0;
       cr.connect(crF); crF.connect(gCr); gCr.connect(move);
+      // 유리·금속·고무: 아주 좁게 걸러 낸 '삐익·뽀득'
+      const ring = ctx.createBiquadFilter(); ring.type = "bandpass"; ring.frequency.value = 2600; ring.Q.value = 14;
+      const gRing = ctx.createGain(); gRing.gain.value = 0;
+      src.connect(ring); ring.connect(gRing); gRing.connect(move);
       src.start(t); cr.start(t);
+      // [수정 6-8] 배경 화음: 작품 전체 분위기를 아주 작게 (팀 결정으로 시험 중 — 별로면 BG_IN_TOUCH = false)
+      const padBus = ctx.createGain(), padSrc = []; padBus.gain.value = 0;
+      padBus.connect(master);
+      if (BG_IN_TOUCH) {
+        const P = planOf(touchSense()), pe = { ctx: ctx, mix: padBus, send: null, P: P, srcList: padSrc };
+        const tones = chordTones(P, 0, false).map((x) => semi(P.root / 2, x + 12 * (x < 5 ? 1 : 0)));
+        if (sampleBank[INST_FILE.pad]) tones.forEach((f) => playSample(pe, INST_FILE.pad, f, t + 0.05, 20, 0.5, 1.0));
+        else tones.forEach((f) => { const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = f; const og = ctx.createGain(); og.gain.value = 0.15; o.connect(og); og.connect(padBus); o.start(t); o.stop(t + 20); padSrc.push(o); });
+        padBus.gain.setTargetAtTime(senseOutputs(clamp01(Number(P && touchSense().intensity) || 0.5)).gain * 1.4, t, 0.6);
+      }
       tSyn = { ctx: ctx, master: master, comp: comp, move: move, src: src, cr: cr, soft: soft, gSoft: gSoft, grit: grit, gGrit: gGrit,
+               ring: ring, gRing: gRing, padBus: padBus, padSrc: padSrc,
                crF: crF, gCr: gCr, segRough: 0, base: 0, mat: "" };
       tSyn.still = setInterval(() => {                             // 손가락을 멈추면(0.08초 동안 움직임 신호 없음) 조용히
         if (tSyn && (!tPrev || performance.now() - tPrev.t > 80)) tSyn.move.gain.setTargetAtTime(0, tSyn.ctx.currentTime, 0.05);
@@ -2188,7 +2298,7 @@
       clearInterval(s.still);
       s.master.gain.cancelScheduledValues(t);
       s.master.gain.setTargetAtTime(0, t, 0.05);
-      [s.src, s.cr].forEach((o) => { try { o.stop(t + 0.3); } catch (x) {} });
+      [s.src, s.cr].concat(s.padSrc || []).forEach((o) => { try { o.stop(t + 0.3); } catch (x) {} });
       setTimeout(() => { try { s.comp.disconnect(); } catch (x) {} }, 600);
       tSyn = null;
     }
@@ -2196,20 +2306,31 @@
     function touchSegSound(k, gain) {
       if (!tSyn || k < 0) return;
       tSyn.segRough = touchMap.seg.st[k].rough;
+      tSyn.material = touchMap.seg.st[k].material || "";
       tSyn.base = gain;
     }
     // 손가락이 움직일 때마다: 재질(덩어리 거칠기 60% + 손가락 아래 결 40%)과 속도로 소리 정하기
     function touchFriction(m, moving) {
       const s = tSyn, t = s.ctx.currentTime;
       const r = clamp01(0.6 * s.segRough + 0.4 * m.rough);
-      s.mat = r < 0.3 ? "매끈(스-)" : r < 0.55 ? "중간(쓱)" : "거침(사각사각)";
-      s.gSoft.gain.setTargetAtTime(0.9 * (1 - r), t, 0.05);
-      s.soft.frequency.setTargetAtTime(250 + 900 * moving + 250 * m.lum, t, 0.05);            // 빨리 문지르면 조금 높게
-      s.gGrit.gain.setTargetAtTime(0.5 * r, t, 0.05);
-      s.grit.frequency.setTargetAtTime(1100 + 2200 * moving, t, 0.05);
-      s.gCr.gain.setTargetAtTime(r > 0.3 ? 2.2 * (r - 0.3) : 0, t, 0.05);
+      let p = MAT_SOUND[s.material];
+      if (p) s.mat = s.material + " 소리";
+      else {                                                       // 재질을 모르면(아직 AI 답이 없거나 '모름') 픽셀의 거칠기로
+        p = { soft: 0.9 * (1 - r), sf: 300, grit: 0.5 * r, gf: 1100, cr: r > 0.3 ? 1.3 * (r - 0.3) : 0, cf: 2500, ring: 0, rf: 1000 };
+        s.mat = (r < 0.3 ? "매끈(스-)" : r < 0.55 ? "중간(쓱)" : "거침(사각사각)") + " · 픽셀로 추정";
+      }
+      const k = 0.8 + 0.4 * m.rough;                               // 손가락 바로 아래 결이 거칠면 조금 더 까칠하게
+      s.gSoft.gain.setTargetAtTime(p.soft, t, 0.05);
+      s.soft.frequency.setTargetAtTime(p.sf * (1 + 1.2 * moving), t, 0.05);           // 빨리 문지르면 조금 높게
+      s.gGrit.gain.setTargetAtTime(p.grit * k, t, 0.05);
+      s.grit.frequency.setTargetAtTime(p.gf * (1 + 0.8 * moving), t, 0.05);
+      s.gCr.gain.setTargetAtTime(Math.min(1.3, p.cr * k), t, 0.05);                  // [수정 6-8] 알갱이 소리 상한 (자극 줄이기)
+      s.crF.frequency.setTargetAtTime(p.cf, t, 0.05);
       s.cr.playbackRate.setTargetAtTime(0.6 + 1.6 * moving, t, 0.05);
-      s.move.gain.setTargetAtTime(s.base * 6 * moving * (0.55 + 0.45 * r), t, 0.03);   // 매끈한 곳은 더 작게
+      s.gRing.gain.setTargetAtTime(p.ring * 6, t, 0.05);                               // 좁게 거르면 작아져서 키움
+      s.ring.frequency.setTargetAtTime(p.rf * (1 + 0.35 * moving), t, 0.04);          // 빨리 문지르면 '삐익'이 올라감
+      s.move.gain.setTargetAtTime(Math.min(0.5, s.base * 5 * moving), t, 0.03);
+      return p;
     }
 
     function startTouch() {
@@ -2219,6 +2340,7 @@
       renderButtons();
       tPrev = null; curSeg = -1;
       touchMap = buildTouchMap();
+      if (touchMap) requestMaterials();
       $("sceneBar").textContent = touchMap
         ? "✋ 색·밝기가 비슷한 곳끼리 " + touchMap.seg.n + "덩어리로 나눴어요. 천천히 문질러 보세요"
         : "✋ 이 사진은 픽셀을 읽을 수 없어요";
@@ -2250,8 +2372,9 @@
         touchSegSound(m.seg, out.gain);
         if (tPrev && canBuzz) { navigator.vibrate(Math.round(30 + 25 * out.vibe)); vibeAt = now; }
         const st = touchMap.seg.st[m.seg];
-        $("sceneBar").textContent = "✋ " + touchMap.seg.n + "덩어리 중 하나 · " + LV(st.lum, "어두운 곳", "중간 밝기", "밝은 곳") +
-          " · " + LV(st.rough, "매끈해요", "조금 오돌토돌", "거칠어요");
+        $("sceneBar").textContent = "✋ " + (st.material && st.material !== "모름"
+          ? "AI가 본 재질: " + st.material + (st.thing ? " (" + st.thing + ")" : "")
+          : (touchMap.matState === "asking" ? "재질을 알아보는 중… · " : "") + LV(st.rough, "매끈해 보여요", "조금 오돌토돌해 보여요", "거칠어 보여요"));
       }
       // 2) 👁 손가락 둘레 빛
       if (profile.visual.on) {
@@ -2260,17 +2383,19 @@
         ring.style.borderColor = touchMap.seg.st[m.seg].color;
       }
       // 3) 👂 문지르는 소리: 움직일 때만, 재질에 따라
-      if (tSyn) touchFriction(m, moving);
+      const p = tSyn ? touchFriction(m, moving) : null;
+      const vibKind = (MAT_SOUND[touchMap.seg.st[m.seg].material] || {}).vib || (m.rough > 0.55 ? "grain" : m.rough > 0.25 ? "light" : "none");
       // 4) ✋ 결: 거친 곳만 오돌토돌 진동 (매끈한 곳은 진동 없음) — 지난번 좋았던 방식 그대로
       if (!changed && canBuzz && moving > 0.1 && now - vibeAt > 110) {
         const k = 0.75 + 0.5 * out.vibe;
-        if (m.rough > 0.55) { navigator.vibrate([Math.round(22 * k), 16, Math.round(22 * k), 16, Math.round(22 * k)]); vibeAt = now; }
-        else if (m.rough > 0.25) { navigator.vibrate(Math.round(20 * k)); vibeAt = now; }
+        if (vibKind === "grain") { navigator.vibrate([Math.round(20 * k), 18, Math.round(20 * k), 18, Math.round(20 * k)]); vibeAt = now; }
+        else if (vibKind === "light") { navigator.vibrate(Math.round(16 * k)); vibeAt = now; }
       }
       tPrev = { x: e.clientX, y: e.clientY, t: now, vibeAt: vibeAt };
       const st = touchMap.seg.st[m.seg];
       touchInfo = { n: touchMap.seg.n, k: m.seg, part: st.part, segLum: st.lum, segRough: st.rough, rank: st.rank,
-                    rough: m.rough, moving: moving, mat: tSyn ? tSyn.mat : "(소리 꺼짐)" };
+                    rough: m.rough, moving: moving, mat: tSyn ? tSyn.mat : "(소리 꺼짐)", vib: vibKind,
+                    material: st.material || "", thing: st.thing || "", matState: touchMap.matState, matMs: touchMap.matMs };
     }
     $("art").addEventListener("contextmenu", (e) => e.preventDefault());   // 길게 누를 때 메뉴 막기
     $("art").addEventListener("pointerdown", onTouchMove);
@@ -2368,28 +2493,43 @@
       else if (mi >= 3)              { prog = [0, 5, 2, 6]; progName = "i–VI–III–VII (어스름·슬픔)"; }
       else if (a < 0.4)              { prog = [0, 5, 3, 4]; progName = "I–vi–IV–V (잔잔함)"; }
       else                           { prog = [0, 4, 5, 3]; progName = "I–V–vi–IV (밝음)"; }
-      // 악기(음색): 사진의 밝기·무게·거칠기·흐름으로 고름
+      // [수정 6-8] 사진에서 직접 잰 특징 (있을 때만) — AI 수치만으로는 평범한 물건들이 비슷해져서
+      //   근거: 교차감각 대응 — 밝기↔음 높이, 색의 진하기↔음색의 또렷함, 명암 대비↔소리 크기 차이, 복잡함↔음의 많고 적음
+      const px = s.px || null;
+      const pLum = px ? clamp01((px.lum - 0.12) / 0.6) : null;          // 사진 평균 밝기 → 0~1
+      const pCol = px ? clamp01(px.color / 0.3) : 0.5;                   // 색이 진한 정도 (흑백 = 0)
+      const pCon = px ? clamp01((px.contrast - 0.08) / 0.2) : 0.5;       // 명암 차이
+      const pCx = px ? clamp01(px.complexity) : null;                    // 복잡도
+      const bEff = pLum === null ? b : 0.4 * b + 0.6 * pLum;             // 음 높이 = AI 밝기 40% + 사진 밝기 60%
+      const aEff = pCx === null ? a : 0.65 * a + 0.35 * pCx;            // 음 개수 = AI 활기 65% + 복잡도 35%
+      // 악기(음색): 주인공 재질을 알면 재질로, 모르면 밝기·무게·거칠기·흐름으로 고름
+      const MAT_INST = { "유리": "bell", "금속": "bell", "물": "bell", "나무": "pluck", "종이": "pluck", "돌": "reed", "흙": "reed",
+                         "천": "flute", "털·머리카락": "flute", "피부": "flute", "잎·풀": "flute", "플라스틱": "epiano", "고무": "epiano" };
       let inst;
-      if (r > 0.6) inst = "reed";
+      if (s.material && MAT_INST[s.material]) inst = MAT_INST[s.material];
+      else if (r > 0.6) inst = "reed";
       else if (b > 0.65 && w < 0.45) inst = "bell";
       else if (f > 0.65 && r < 0.4) inst = "flute";
       else if (a > 0.65 && f < 0.4) inst = "pluck";
       else inst = "epiano";
       const INST_KO = { reed: "리드(거친 관악 느낌)", bell: "종소리", flute: "부드러운 피리", pluck: "튕기는 현", epiano: "전자 피아노" };
       // 리듬: 활기가 높을수록 한 마디 안의 음이 많음 (1·2·3·4개, 모두 박자 위)
-      const rhythm = RHYTHMS[a < 0.3 ? 0 : a < 0.55 ? 1 : a < 0.8 ? 2 : 3];
+      const rhythm = RHYTHMS[aEff < 0.3 ? 0 : aEff < 0.55 ? 1 : aEff < 0.8 ? 2 : 3];
       return {
         c: c, mode: mode, scale: mode.s, scaleName: mode.name, prog: prog, progName: progName,
         inst: inst, instName: (INST_NAME[INST_FILE[inst]] || INST_KO[inst]), rhythm: rhythm,
-        root: 196 * Math.pow(2, b * 1.0),                  // 멜로디 기준음 196~392Hz (폰 스피커가 잘 내는 높이)
+        root: 196 * Math.pow(2, bEff * 1.0),               // 멜로디 기준음 196~392Hz (폰 스피커가 잘 내는 높이)
         bpm: 64 + a * 44,                                  // 64~108 BPM
         barsPerChord: a < 0.35 ? 2 : 1,                    // 잔잔하면 화음이 천천히 바뀜
         padLevel: 0.5 + (1 - a) * 0.5,
-        padCut: 500 + b * 2600,
-        bass: w > 0.35, bass2: w > 0.65,                   // 무게 → 베이스(두 번째 박에도)
+        padCut: 400 + bEff * 1800 + pCol * 1500,          // 색이 진할수록 배경 화음이 또렷
+        rich: pCol > 0.5 || f > 0.6,                      // 색이 진하면 화음에 음 하나 더 (7화음)
+        accentGap: 0.45 + 0.45 * pCon,                    // 명암 차이가 크면 센 박과 여린 박의 차이가 큼
+        px: px, pLum: pLum, pCol: pCol, pCon: pCon, pCx: pCx, material: s.material || "",
+        bass: w > 0.35 || pCon > 0.7, bass2: w > 0.65,     // 무게(또는 강한 명암) → 베이스
         echo: f > 0.55 ? (f > 0.8 ? 2 : 1) : 0,
         trem: r > 0.6 ? 5 + r * 3 : (f > 0.7 ? 0.35 : 0),
-        seed: seedOf(s)
+        seed: seedOf(s) ^ (px ? Math.round(px.lum * 1000 + px.complexity * 7919) : 0)
       };
     }
 
@@ -2485,6 +2625,7 @@
         g.gain.linearRampToValueAtTime(0, end + (end >= t + total ? release : 0));
         src.connect(g); g.connect(out);
         src.start(st, smp.off); src.stop(end + release + 0.05);
+        if (e.srcList) e.srcList.push(src);                      // (만져보기에서 손을 떼면 바로 멈추려고 기억)
       }
       out.gain.value = peak * SAMPLE_GAIN;
       return true;
@@ -2582,7 +2723,7 @@
       const ctx = e.ctx, P = e.P;
       if (sampleBank[INST_FILE.pad]) {                             // 현악 합주 녹음으로 배경 화음
         const att = 0.3 + (1 - P.c.arousal) * 0.9;
-        chordTones(P, deg, P.c.flow > 0.6).forEach((x) => playSample(e, INST_FILE.pad, semi(P.root / 2, x + 12 * (x < 5 ? 1 : 0)), t, durSec + 0.2, 0.2 * P.padLevel, att));
+        chordTones(P, deg, P.rich).forEach((x) => playSample(e, INST_FILE.pad, semi(P.root / 2, x + 12 * (x < 5 ? 1 : 0)), t, durSec + 0.2, 0.2 * P.padLevel, att));
         return;
       }
       const tones = chordTones(P, deg, P.c.flow > 0.6);
@@ -2625,7 +2766,7 @@
       const ctx = e.ctx, P = e.P;
       const freq = semi(P.root, st);
       const file = INST_FILE[P.inst];                              // 실제 악기 녹음이 준비됐으면 그걸로
-      if (playSample(e, file, freq, t, SUSTAINED[file] ? len : len * 1.6, (accent ? 0.55 : 0.43) * (SUSTAINED[file] ? 0.8 : 1), SUSTAINED[file] ? 0.04 : 0)) return;
+      if (playSample(e, file, freq, t, SUSTAINED[file] ? len : len * 1.6, 0.55 * (accent ? 1 : 1 - (P.accentGap || 0.22)) * (SUSTAINED[file] ? 0.8 : 1), SUSTAINED[file] ? 0.04 : 0)) return;
       const g = ctx.createGain();
       const peak = 0.16 * (accent ? 1 : 0.78);
       g.connect(e.mix);
@@ -2732,17 +2873,18 @@
     //   세기(스티븐스로 정한 값) → 길이 + 아주 약할 때는 켜짐 비율(PWM)
     //   ※ 폰 진동은 '켜기/끄기'만 되므로 세기 흉내는 폰마다 다를 수 있음
     function vibeForNote(c, strength, noteMs, accent) {
-      let total = noteMs * (0.3 + 0.55 * c.flow) * (0.75 + 0.5 * strength) * (accent ? 1.15 : 1);
-      total = Math.max(70, Math.min(1400, total));
+      // [수정 6-8] 너무 세다는 의견 → 한 음의 진동을 0.4초 이하로, 전체 길이도 줄임
+      let total = noteMs * (0.15 + 0.25 * c.flow) * (0.6 + 0.4 * strength) * (accent ? 1.15 : 1);
+      total = Math.max(50, Math.min(400, total));
       const parts = c.arousal > 0.7 ? 3 : c.arousal > 0.45 ? 2 : 1;
       const gap = 70;
       const each = Math.max(40, (total - gap * (parts - 1)) / parts);
-      const grain = c.roughness > 0.5, weak = strength < 0.2;
+      const grain = c.roughness > 0.5, weak = strength < 0.35;
       const pat = [];
       for (let i = 0; i < parts; i++) {
         if (grain || weak) {
           const on = grain ? 22 : 20;
-          const off = grain ? Math.round(14 + 16 * c.roughness) : Math.round(8 + 60 * (0.2 - strength));
+          const off = grain ? Math.round(14 + 16 * c.roughness) : Math.round(10 + 40 * (0.35 - strength));
           for (let used = 0; used + on <= each + 1; used += on + off) pat.push(on, off);
           if (!pat.length) pat.push(Math.round(each), 0);
           pat[pat.length - 1] = gap;
@@ -2898,6 +3040,8 @@
       return esc(s.emotion) + " " + swatch(s.colors) +
         "<br>&nbsp;&nbsp;&nbsp;기분 " + f(s.valence) + " · 활기 " + f(s.arousal) + " · 밝기 " + f(s.brightness) +
         " · 무게 " + f(s.weight) + " · 거칠기 " + f(s.roughness) + " · 흐름 " + f(s.flow) +
+        (P.px ? "<br>&nbsp;&nbsp;&nbsp;사진에서 잰 값 → 밝기 " + f(P.pLum) + " · 색 진하기 " + f(P.pCol) + " · 명암 차이 " + f(P.pCon) + " · 복잡도 " + f(P.pCx) +
+          (P.material ? " · 주인공 재질 " + esc(P.material) : "") : "") +
         "<br>&nbsp;&nbsp;&nbsp;눈금 적용 → 기분 " + f(P.c.valence) + " · 활기 " + f(P.c.arousal) + " · 무게 " + f(P.c.weight) +
         " · 거칠기 " + f(P.c.roughness) + " · 흐름 " + f(P.c.flow) +
         "<br>&nbsp;&nbsp;&nbsp;→ " + P.scaleName + " · 코드 " + P.progName + " · " + P.instName + " · " + Math.round(P.bpm) + "BPM · 기준음 " + Math.round(P.root) + "Hz" +
@@ -2922,7 +3066,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-7 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-8 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -2955,8 +3099,10 @@
       const f = (x) => Number(x).toFixed(2);
       return "사진을 색·밝기가 비슷한 곳끼리 " + touchInfo.n + "덩어리로 나눔 (색 " + SEG_K + "가지로 묶기 → 떨어진 곳은 따로 → 1.5%보다 작은 조각은 합침 → 최대 " + SEG_MAX + "개)" +
         "<br>만진 덩어리: 사진의 " + (touchInfo.part * 100).toFixed(1) + "% · 평균 밝기 " + f(touchInfo.segLum) + " · 덩어리 거칠기 " + f(touchInfo.segRough) + "<br>" +
-        "문지르는 소리 재질: " + esc(touchInfo.mat) +
-        "<br>손가락 아래 결 " + f(touchInfo.rough) + (touchInfo.rough > 0.55 ? " (거침 → 오돌토돌 진동)" : touchInfo.rough > 0.25 ? " (중간)" : " (매끈 → 진동 없음)") +
+        "AI가 본 재질: " + (touchInfo.material ? esc(touchInfo.material) + (touchInfo.thing ? " (" + esc(touchInfo.thing) + ")" : "") : "-") +
+        " · 재질 묻기 " + ({ asking: "진행 중", done: "완료" + (touchInfo.matMs ? " " + (touchInfo.matMs / 1000).toFixed(1) + "초" : ""), fail: "실패 → 픽셀로" }[touchInfo.matState] || "-") +
+        "<br>문지르는 소리: " + esc(touchInfo.mat) + " · 진동: " + ({ none: "없음", light: "가볍게", grain: "오돌토돌" }[touchInfo.vib] || "-") +
+        "<br>손가락 아래 결 " + f(touchInfo.rough) + (touchInfo.rough > 0.55 ? " (거침)" : touchInfo.rough > 0.25 ? " (중간)" : " (매끈)") +
         " · 손 속도 " + f(touchInfo.moving);
     }
     $("devBody").addEventListener("click", (e) => {

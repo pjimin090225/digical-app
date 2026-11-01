@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-3";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-4";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -34,6 +34,9 @@ const JUDGE_WORDS = ["멋지", "멋진", "아름다", "아름답", "훌륭", "�
 const FEEL_WORDS = ["같아요", "같은 느낌", "느껴", "느낌", "기분", "마음", "분위기", "행복", "즐거", "슬픈", "슬퍼", "무서", "외로", "신나", "설레", "포근", "것 같", "듯해", "듯이"];
 // 흑백 사진에서 쓰면 안 되는 색 낱말 (흰·검은·회색은 괜찮음)
 const COLOR_WORDS = ["빨간", "빨강", "붉은", "파란", "파랑", "푸른", "노란", "노랑", "초록", "녹색", "분홍", "보라", "주황", "갈색", "금빛", "황금", "화려한 색", "알록달록", "색깔", "컬러", "다채로운 색"];
+
+// [수정 6-4] 재질 목록 — 만져보기의 문지르는 소리와 전체 느끼기의 악기를 고르는 데 씀
+const MATERIALS = ["유리", "금속", "나무", "돌", "천", "피부", "종이", "플라스틱", "고무", "흙", "잎·풀", "털·머리카락", "물", "모름"];
 
 const TEMPOS = ["느림", "보통", "빠름"];
 const PITCHES = ["낮음", "중간", "높음"];
@@ -78,6 +81,8 @@ function textPrompt(type, explain, target, cropped, pixel) {
     "- is_artwork: 문화예술 작품이면 true, 일상 물건·풍경이면 false. false여도 그 장면의 분위기와 느낌을 해설한다.",
     "- summary: 무엇이 보이는지 1문장. (사실만)",
     "- interpretation: 눈에 띄는 모습을 1~2문장 더. 자세·표정·움직임·밝고 어두움·크기처럼 사진에서 확인할 수 있는 것만. (이름은 예전 그대로지만 '해석'이 아니라 '더 자세한 해설'이다)",
+    "- mood_line: AI가 느낀 분위기 1문장 (12어절 이하). 이것만 느낌을 써도 된다. 화면에는 'AI의 느낌(정답 아님)'으로 따로 표시된다.",
+    "- material: 가장 중심이 되는 대상의 재질 하나. 다음 중에서 고른다: " + MATERIALS.join(", "),
     "- scenes: 눈에 띄는 부분 " + RULES.minScenes + "~" + RULES.maxScenes + "개. 각 부분에 '무엇이 어떻게 보이는지'만 쓴다.",
     "- 각 장면의 look: 감각으로 바꿀 재료. 실제로 보이는 색 이름·밝기·크기·움직임·표면을 20자 안팎으로 (사용자에게 보이지 않음. 이 칸은 쉬운 말 규칙 검사를 하지 않음).",
     type === "photo"
@@ -107,7 +112,7 @@ function textPrompt(type, explain, target, cropped, pixel) {
     "- 사람이 보이면 누구인지 추측하지 않고, 얼굴 생김새를 자세히 묘사하지 않는다.",
     "",
     "[좋은 예 — 밤하늘 그림]",
-    '{"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"candidates":[],"frame_cells":[작품이 있는 칸 번호들],',
+    '{"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"material":"천","mood_line":"조용한 밤에 마음이 들뜨는 느낌이에요.","candidates":[],"frame_cells":[작품이 있는 칸 번호들],',
     ' "summary":"밤하늘과 작은 마을을 그린 그림이에요.",',
     ' "interpretation":"하늘에 소용돌이 모양이 크게 그려져 있어요. 마을은 화면 아래에 작게 있어요.",',
     ' "scenes":[{"name":"하늘","text":"하늘에 굵은 선이 빙글빙글 돌아요.","look":"짙은 파랑, 크게 휘도는 붓질","cells":[하늘이 보이는 칸 번호들]},',
@@ -232,7 +237,11 @@ function checkRules(d, explain, type, pixel) {
     if (ss.length > perScene) v.push((i + 1) + "번 장면이 " + ss.length + "문장이에요 (" + perScene + "문장 이하)");
     ss.forEach((s) => { if (wordsOf(s) > RULES.maxWords) v.push((i + 1) + "번 장면에 " + wordsOf(s) + "어절 문장이 있어요 (" + RULES.maxWords + "어절 이하)"); });
   });
-  const all = [d.summary, d.interpretation].concat(scenes.map((s) => s.text)).join(" ");
+  const all = [d.summary, d.interpretation].concat(scenes.map((s) => s.text)).join(" ");   // mood_line은 느낌 칸이라 해석 낱말 검사에서 뺌
+  const ml = sentencesOf(d.mood_line);
+  if (ml.length > 1) v.push("mood_line이 " + ml.length + "문장이에요 (1문장)");
+  ml.forEach((x) => { if (wordsOf(x) > RULES.maxWords) v.push("mood_line이 " + wordsOf(x) + "어절이에요 (" + RULES.maxWords + "어절 이하)"); });
+  JUDGE_WORDS.forEach((w) => { if (String(d.mood_line || "").includes(w)) v.push("mood_line에 평가하는 말 '" + w + "…'을 썼어요"); });
   HARD_WORDS.forEach((w) => { if (all.includes(w)) v.push("어려운 낱말 '" + w + "'을 썼어요"); });
   JUDGE_WORDS.forEach((w) => { if (all.includes(w)) v.push("평가하는 말 '" + w + "…'을 썼어요. 보이는 모습으로 바꿔 주세요"); });
   FEEL_WORDS.forEach((w) => { if (all.includes(w)) v.push("해석하는 말 '" + w + "'을 썼어요. 느낌은 빼고 보이는 것만 써 주세요"); });
@@ -374,6 +383,26 @@ module.exports = async (req, res) => {
     if (type !== "sound" && images.length === 0) return res.status(400).json({ error: "no_image" });
 
     // ---------- 0) 작품 테두리만 찾기 (앱이 이걸로 사진을 잘라 다시 보냄) ----------
+    // ---------- [수정 6-4] 만져보기: 앱이 나눈 덩어리(번호가 그려진 사진)마다 재질 이름 붙이기 ----------
+    if (body.task === "materials") {
+      const n = Math.max(1, Math.min(12, Number(body.n) || 1));
+      const sys = [
+        "너는 사진 속 물체의 재질을 알아보는 도우미다.",
+        "사진에는 앱이 색·밝기로 나눈 영역들이 색 테두리와 1~" + n + "번 번호로 표시되어 있다.",
+        "각 번호 영역이 실제로 무엇으로 되어 있는지(손으로 만지면 어떤 재질일지) 고른다.",
+        "재질은 다음 중 하나만: " + MATERIALS.join(", ") + ".",
+        "영역에 여러 재질이 섞여 있으면 가장 넓은 것. 하늘·흐린 배경처럼 만질 수 없는 곳은 '모름'.",
+        "번호와 테두리는 표시일 뿐 재질이 아니다. 유리처럼 비치는 물체는 뒤에 비친 것이 아니라 '유리'로 고른다.",
+        '[출력] JSON만: {"regions":[{"n":1,"material":"유리","thing":"화분"}, ...]} (thing은 무엇인지 5자 안팎)'
+      ].join("\n");
+      const first = await callAI([{ role: "system", content: sys },
+        { role: "user", content: [{ type: "text", text: "영역 수: " + n }, { type: "image_url", image_url: { url: images[0], detail: "high" } }] }], 0.2);
+      const regs = (Array.isArray(first.data.regions) ? first.data.regions : []).map((r) => ({
+        n: Math.round(Number(r.n)), material: MATERIALS.includes(r.material) ? r.material : "모름", thing: String(r.thing || "").slice(0, 12)
+      })).filter((r) => r.n >= 1 && r.n <= n);
+      return res.status(200).json({ ok: true, version: SERVER_VERSION, model: first.model, regions: regs, ms: { total: Date.now() - t0 } });
+    }
+
     if (body.task === "frame") {          // (예전 방식, 지금 앱은 쓰지 않음)
       const frame = await findFrame(images[0]);
       return res.status(200).json({ ok: true, version: SERVER_VERSION, frame: frame, ms: { total: Date.now() - t0 } });
@@ -454,6 +483,8 @@ module.exports = async (req, res) => {
       target: target,
       summary: text.summary || "",
       interpretation: text.interpretation || "",
+      mood_line: String(text.mood_line || "").slice(0, 80),
+      material: MATERIALS.includes(text.material) ? text.material : "모름",
       whole: cleanSense(sense.data.whole),
       senseMethod: "사진 직접 보기 + 눈금 예시 + " + senseTries + "번 평균",
       scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), look: s.look || "", sense: sScenes[i] })),
