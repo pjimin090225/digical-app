@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-8";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-9";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -40,6 +40,58 @@ const COLOR_WORDS = ["빨간", "빨강", "붉은", "파란", "파랑", "푸른",
 const MOOD_TAGS = ["평화로운", "고요한", "따뜻한", "포근한", "그리운", "쓸쓸한", "외로운", "슬픈", "우울한", "긴장된", "불안한", "무서운",
   "신비로운", "몽환적인", "웅장한", "엄숙한", "경쾌한", "신나는", "힘찬", "귀여운", "사랑스러운", "낭만적인", "관능적인",
   "세련된", "까리한", "차가운", "강렬한", "거친", "화난", "장난스러운"];
+// [수정 6-9] 분위기 낱말의 위치 (러셀의 감정 원형 모형: 가로 = 기분, 세로 = 활기) — 우리 팀이 정한 대략의 자리
+//   쓰임 ① 낱말과 수치가 어긋날 때 맞추기: '강렬한'이라고 해 놓고 활기 0.30이면 → 음악·진동이 잔잔해지는 문제
+//        → AI가 매긴 기분·활기를 낱말 자리 쪽으로 절반만큼 옮김 (원래 값과 옮긴 값을 개발용 정보에 공개)
+const TAG_VA = {
+  "평화로운": [0.75, 0.2], "고요한": [0.6, 0.12], "따뜻한": [0.75, 0.35], "포근한": [0.75, 0.25], "그리운": [0.4, 0.3],
+  "쓸쓸한": [0.3, 0.25], "외로운": [0.25, 0.25], "슬픈": [0.15, 0.3], "우울한": [0.15, 0.2], "긴장된": [0.3, 0.75],
+  "불안한": [0.25, 0.7], "무서운": [0.15, 0.8], "신비로운": [0.55, 0.4], "몽환적인": [0.6, 0.3], "웅장한": [0.6, 0.75],
+  "엄숙한": [0.4, 0.35], "경쾌한": [0.8, 0.7], "신나는": [0.9, 0.85], "힘찬": [0.7, 0.85], "귀여운": [0.85, 0.55],
+  "사랑스러운": [0.85, 0.5], "낭만적인": [0.75, 0.45], "관능적인": [0.6, 0.55], "세련된": [0.6, 0.5], "까리한": [0.55, 0.65],
+  "차가운": [0.35, 0.4], "강렬한": [0.45, 0.85], "거친": [0.35, 0.75], "화난": [0.15, 0.9], "장난스러운": [0.8, 0.7]
+};
+//   쓰임 ② AI가 낱말을 빠뜨렸을 때: 'AI가 느낀 분위기' 문장과 감정 낱말에서 찾아 채움 (예: '강한 느낌' → 강렬한)
+const TAG_STEMS = [
+  [/강렬|강한|강하게|압도/, "강렬한"], [/긴장/, "긴장된"], [/불안/, "불안한"], [/무섭|무서|공포|섬뜩|으스스/, "무서운"],
+  [/평화/, "평화로운"], [/고요|조용|잔잔/, "고요한"], [/따뜻|따스/, "따뜻한"], [/포근|아늑/, "포근한"], [/그리운|그리움|향수/, "그리운"],
+  [/쓸쓸/, "쓸쓸한"], [/외로/, "외로운"], [/슬프|슬픈|슬픔/, "슬픈"], [/우울|어두운 기분/, "우울한"], [/신비/, "신비로운"],
+  [/몽환|꿈같|꿈 같/, "몽환적인"], [/웅장|장엄/, "웅장한"], [/엄숙|경건/, "엄숙한"], [/경쾌|발랄/, "경쾌한"], [/신나|신난|흥겨/, "신나는"],
+  [/힘찬|힘차|활기찬/, "힘찬"], [/귀여/, "귀여운"], [/사랑스/, "사랑스러운"], [/낭만/, "낭만적인"], [/관능|매혹/, "관능적인"],
+  [/세련|고급/, "세련된"], [/까리|당당|카리스마|멋스러/, "까리한"], [/차갑|차가운|냉정/, "차가운"], [/거친|거칠/, "거친"],
+  [/화난|분노|화가/, "화난"], [/장난/, "장난스러운"]
+];
+// [수정 6-9] 물건 이름 ↔ 재질이 어긋날 때 바로잡는 규칙 (AI가 '식물'이라고 해 놓고 재질을 '털'로 고른 경우 등)
+const GLASS_RE = /유리|와인잔|술잔|물잔|유리병|안경|거울|창문|어항|전구/;
+function matFromThing(thing, mat) {
+  const t = thing.replace(/\s/g, "");
+  if (!t) return null;
+  if (/식물|나뭇잎|잎사귀|^잎|풀|꽃(?!병)|덩굴|이끼|잔디|민들레|나뭇가지|화초/.test(t) && !/화분|꽃병|화병|무늬|자수|그림/.test(t)
+      && ["털·머리카락", "천", "피부", "모름"].includes(mat)) return "잎·풀";
+  if (/머리카락|머리털|머릿결|앞머리|뒷머리|수염|갈기|동물털|털$|^털/.test(t) && !/모자|털실|붓|목도리|담요/.test(t)
+      && ["잎·풀", "천", "피부", "모름", "흙"].includes(mat)) return "털·머리카락";
+  if (GLASS_RE.test(t) && ["모름", "플라스틱", "얼음", "물"].includes(mat)) return "유리";
+  if (/^(얼굴|손|왼손|오른손|팔|다리|목|어깨|이마|볼|뺨|피부|맨발|발|가슴)$/.test(t) && ["천", "모름", "털·머리카락"].includes(mat)) return "피부";
+  return null;
+}
+function tagsFromText(text) {
+  const out = [];
+  TAG_STEMS.forEach(([re, t]) => { const m = re.exec(text); if (m && !out.some((x) => x.t === t)) out.push({ t: t, at: m.index }); });
+  return out.sort((a, b) => a.at - b.at).map((x) => x.t).slice(0, 3);
+}
+function alignToTags(o, tags, k) {
+  const vs = tags.filter((t) => TAG_VA[t]);
+  if (!vs.length) return null;
+  const wts = [1.5, 1, 0.7];
+  let sw = 0, v = 0, a = 0;
+  vs.forEach((t, i) => { sw += wts[i]; v += wts[i] * TAG_VA[t][0]; a += wts[i] * TAG_VA[t][1]; });
+  v /= sw; a /= sw;
+  const from = { valence: o.valence, arousal: o.arousal };
+  o.valence = +(o.valence + (v - o.valence) * k).toFixed(2);
+  o.arousal = +(o.arousal + (a - o.arousal) * k).toFixed(2);
+  return { from: from, to: { valence: o.valence, arousal: o.arousal }, word: { valence: +v.toFixed(2), arousal: +a.toFixed(2) } };
+}
+
 const MATERIALS = ["유리", "도자기", "금속", "나무", "돌", "대리석", "천", "가죽", "피부", "종이", "플라스틱", "고무", "흙", "모래", "잎·풀", "털·머리카락", "물", "얼음", "물감·붓질", "모름"];   // [수정 6-7] 도자기·가죽·모래·얼음·물감 추가
 
 const TEMPOS = ["느림", "보통", "빠름"];
@@ -178,11 +230,12 @@ function sensePrompt() {
     "- 눈금 예시와 비교해서 가장 가까운 위치를 고른다. 근거 없이 0.5를 고르지 않는다.",
     "- valence(기분)는 '작품이 잘 만들어졌는지'가 아니라 '보이는 장면의 기분'이다. 기쁨이 분명히 보일 때만 0.8 이상.",
     "  싸움, 고통, 죽음, 슬픔이 보이면 이겼거나 영웅적이어도 0.4 아래. 엄숙하거나 무표정이면 0.5 근처.",
-    "- arousal(활기)은 움직임이 실제로 보일 때만 높게. 멈춰 있는 조각·정물은 주제가 격해도 0.6을 넘기지 않는다.",
+    "- arousal(활기)은 '감정의 에너지'다. 움직임이 보이거나, 멈춰 있어도 눈빛·표정·강한 명암 대비·긴장감이 강렬하면 높게.",
+    "  잔잔한 정물·풍경, 편안한 표정은 낮게. 분위기 낱말(mood_tags)과 숫자가 어긋나지 않게 한다(예: '강렬한'인데 활기 0.3은 안 됨).",
     "- 장면마다 사진에서 그 부분만 보고 매긴다. 장면 순서와 개수는 입력과 똑같이.",
     "- whole은 사진 전체를 처음 봤을 때의 종합적인 느낌이다.",
     "",
-    '[출력] JSON만: {"whole":{..., "mood_tags":["…"]}, "scenes":[{...}, ...]}  (각 {...}는 위 9가지 값을 모두 가짐)'
+    '[출력] JSON만: {"whole":{"mood_tags":["…"], ...}, "scenes":[{...}, ...]}  (whole에는 mood_tags를 꼭 넣는다. 각 {...}는 위 9가지 값을 모두 가짐)'
   ].join("\n");
 }
 
@@ -411,27 +464,45 @@ module.exports = async (req, res) => {
     // ---------- 0) 작품 테두리만 찾기 (앱이 이걸로 사진을 잘라 다시 보냄) ----------
     // ---------- [수정 6-4] 만져보기: 앱이 나눈 덩어리(번호가 그려진 사진)마다 재질 이름 붙이기 ----------
     if (body.task === "materials") {
-      const n = Math.max(1, Math.min(16, Number(body.n) || 1));   // [수정 6-7] 앱이 최대 16덩어리를 보내는데 12까지만 받던 문제 고침
+      // [수정 6-9] 최대 24영역 (앱이 더 잘게 나눈 뒤, AI가 '같은 물건'이라고 한 이웃끼리 합침)
+      //   + imp(감상에서 중요한 정도) → 눈길 안내가 '의자 천'처럼 덜 중요한 곳을 고르지 않게
+      //   + heavy(가벼운/묵직한) → 같은 금속이라도 얇은 장신구와 묵직한 조각상의 소리를 다르게
+      const n = Math.max(1, Math.min(24, Number(body.n) || 1));
       const sys = [
-        "너는 사진 속 물체의 재질을 알아보는 도우미다.",
-        "사진에는 앱이 색·밝기로 나눈 영역들이 색 테두리와 1~" + n + "번 번호로 표시되어 있다.",
-        "각 번호 영역이 실제로 무엇으로 되어 있는지(손으로 만지면 어떤 재질일지) 고른다.",
-        "재질은 다음 중 하나만: " + MATERIALS.join(", ") + ".",
-        "영역에 여러 재질이 섞여 있으면 가장 넓은 것. 하늘·흐린 배경처럼 만질 수 없는 곳은 '모름'.",
-        "번호와 테두리는 표시일 뿐 재질이 아니다.",
-        "'유리'는 투명하거나 반투명해서 뒤가 비쳐 보이는 것(컵, 병, 창문, 유리 화분)만 고른다. 반짝이거나 매끈하다고 유리가 아니다. 반짝이는 그릇·화분은 대개 '도자기'다.",
-        "매끈하게 다듬은 조각상·기둥의 돌은 '대리석', 울퉁불퉁한 바위·벽돌·시멘트는 '돌'. 사람 머리털·동물 털은 '털·머리카락'.",
-        "그림(회화) 사진이면 그림 속 물체의 재질을 고른다. 그림 속 물체를 알아보기 어렵고 붓 자국만 보이면 '물감·붓질'.",
-        "sure: 재질이 확실하면 true, 조금이라도 헷갈리면 false.",
-        '[출력] JSON만: {"regions":[{"n":1,"material":"도자기","thing":"화분","sure":true}, ...]} (thing은 무엇인지 5자 안팎)'
+        "너는 사진 속 물체와 재질을 알아보는 도우미다.",
+        "사진에는 앱이 색·밝기로 나눈 영역들이 색 테두리와 1~" + n + "번 번호로 표시되어 있다. 번호와 테두리는 표시일 뿐 재질이 아니다.",
+        "먼저 seen에 사진 전체에 보이는 주요 물체를 한 줄로 적는다. 그다음 각 번호 영역마다:",
+        "- thing: 그 영역이 무엇인지 5자 안팎 (같은 물건이면 여러 영역에 똑같은 이름을 쓴다. 예: '의자 등받이' 둘이면 둘 다 '의자 등받이')",
+        "- material: 손으로 만지면 어떤 재질일지. 다음 중 하나만: " + MATERIALS.join(", ") + ".",
+        "- heavy: 그 물체가 묵직하면 true(큰 조각상, 두꺼운 돌, 철 덩어리, 큰 가구), 얇고 가벼우면 false(장신구, 얇은 판, 단추, 작은 소품)",
+        "- imp: 이 작품을 감상할 때 눈여겨볼 정도. 3 = 주인공(인물의 얼굴, 중심 물체), 2 = 중요한 소품·특징(손에 든 물건, 상징), 1 = 보조, 0 = 배경·바닥·벽·빈 곳",
+        "- sure: 재질이 확실하면 true, 헷갈리면 false (그래도 가장 그럴듯한 재질을 고른다)",
+        "[재질 규칙]",
+        "- 그림·포스터·사진 속 물체도 '그 물체'의 재질을 고른다 (인쇄물이라서 종이로 고르지 않는다).",
+        "- '천'은 옷, 커튼, 쿠션, 의자 등받이의 천처럼 부드러운 것만. 조각이 새겨진 의자 틀·팔걸이·액자·가구 장식은 단단하니 '나무' 또는 '금속'(은빛·반짝이면 금속).",
+        "- '유리': 투명하거나 반투명해서 뒤가 비쳐 보이는 것, 또는 유리잔·병·창문·유리 꽃병·안경알·거울. 반짝이기만 하는 불투명한 그릇·화분은 '도자기'.",
+        "- 매끈하게 다듬은 조각상·기둥은 '대리석', 울퉁불퉁한 바위·벽돌·시멘트는 '돌'.",
+        "- '털·머리카락'은 사람의 머리털·수염, 동물의 털·갈기에만. 식물·꽃·풀·나뭇잎은 털처럼 보여도 '잎·풀'.",
+        "- 하늘·흐린 배경·빛처럼 만질 수 없는 곳은 '모름'.",
+        "- 그림 속 물체를 알아보기 어렵고 붓 자국만 보이면 '물감·붓질'.",
+        '[출력] JSON만: {"seen":"…","regions":[{"n":1,"thing":"얼굴","material":"피부","heavy":false,"imp":3,"sure":true}, ...]} (1~' + n + '번 모두)'
       ].join("\n");
       const first = await callAI([{ role: "system", content: sys },
         { role: "user", content: [{ type: "text", text: "영역 수: " + n }, { type: "image_url", image_url: { url: images[0], detail: "high" } }] }], 0.2);
-      const regs = (Array.isArray(first.data.regions) ? first.data.regions : []).map((r) => ({
-        n: Math.round(Number(r.n)), material: MATERIALS.includes(r.material) && r.sure !== false ? r.material : "모름",   // 헷갈린다고 하면 '모름' → 앱이 픽셀로 추정
-        thing: String(r.thing || "").slice(0, 12), sure: r.sure !== false
-      })).filter((r) => r.n >= 1 && r.n <= n);
-      return res.status(200).json({ ok: true, version: SERVER_VERSION, model: first.model, regions: regs, ms: { total: Date.now() - t0 } });
+      let fixed = 0;
+      const regs = (Array.isArray(first.data.regions) ? first.data.regions : []).map((r) => {
+        const thing = String(r.thing || "").slice(0, 12);
+        let material = MATERIALS.includes(r.material) ? r.material : "모름";
+        const sure = r.sure !== false;
+        // 이름과 재질이 서로 어긋나면 이름을 따름 (예: thing '식물'인데 재질 '털·머리카락' → 잎·풀)
+        const want = matFromThing(thing, material);
+        if (want && want !== material) { material = want; fixed++; }
+        if (!sure && material === "유리" && !GLASS_RE.test(thing)) material = "모름";   // 유리는 확실할 때만 (아닌 것을 유리로 듣는 게 더 어색함)
+        return { n: Math.round(Number(r.n)), material: material, thing: thing, sure: sure,
+                 heavy: r.heavy === true, imp: Math.max(0, Math.min(3, Math.round(Number(r.imp) || 0))) };
+      }).filter((r) => r.n >= 1 && r.n <= n);
+      return res.status(200).json({ ok: true, version: SERVER_VERSION, model: first.model, seen: String(first.data.seen || "").slice(0, 120),
+                                    regions: regs, fixed: fixed, ms: { total: Date.now() - t0 } });
     }
 
     if (body.task === "frame") {          // (예전 방식, 지금 앱은 쓰지 않음)
@@ -504,7 +575,16 @@ module.exports = async (req, res) => {
     const senseTries = okRuns.length;
     const senseMs = Date.now() - tSense;
 
-    const sScenes = scenes.map((_, i) => cleanSense((sense.data.scenes || [])[i]));
+    // [수정 6-9] 분위기 낱말이 비었으면 문장에서 찾아 채우고, 기분·활기를 낱말 자리 쪽으로 절반 옮김 (낱말 ↔ 숫자 일치)
+    const W0 = sense.data.whole;
+    let tagFrom = "AI가 고름";
+    if (!Array.isArray(W0.mood_tags) || !W0.mood_tags.length) {
+      W0.mood_tags = tagsFromText([text.mood_line || "", W0.emotion || ""].join(" "));
+      tagFrom = W0.mood_tags.length ? "분위기 문장에서 찾음" : "없음";
+    }
+    const tagAlign = alignToTags(W0, W0.mood_tags, 0.5);
+    const wholeOut = Object.assign(cleanSense(W0), { tag_from: tagFrom, tag_align: tagAlign });
+    const sScenes = scenes.map((_, i) => Object.assign(cleanSense((sense.data.scenes || [])[i]), { mood_tags: wholeOut.mood_tags || [] }));
     // [수정 5-1] 대비 강조는 끔: AI가 '비슷하다'고 본 장면을 일부러 다르게 만들면 없는 차이를 지어내는 것이 됨
     //            (장면끼리 구분되는지는 베버의 '알아챌 수 있는 최소 차이' 기준으로 소리·빛 쪽에서 설계)
     const CONTRAST_ON = false;
@@ -527,7 +607,7 @@ module.exports = async (req, res) => {
         main: String(text.think.main || "").slice(0, 80), easy: String(text.think.easy || "").slice(0, 80)
       } : null,
       material: MATERIALS.includes(text.material) ? text.material : "모름",
-      whole: cleanSense(sense.data.whole),
+      whole: wholeOut,
       senseMethod: "사진 직접 보기 + 눈금 예시 + " + senseTries + "번 평균",
       scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), look: s.look || "", sense: sScenes[i] })),
       contrast: contrast,

@@ -51,6 +51,50 @@
     :root[data-theme="atelier"] .card, :root[data-theme="atelier"] details.card { border-radius: 18px; border-width: 1.5px; }
     :root[data-theme="atelier"] .big { font-weight: 600; border-width: 1.5px; }
     :root[data-theme="atelier"] .art { border-radius: 14px; }
+    /* [수정 6-15] 작품 만나기(카메라) 화면 — 세 칸 줄: 갤러리 · 찍기 · 파일 */
+    .cam-h { display: none; }
+    .cam-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; margin: calc(var(--gap) * 2) 0; }
+    .cam-side-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 12px; }
+    .cam-side { width: 64px; height: 64px; border-radius: 16px; border: 2px solid var(--border); background: var(--card); font-size: 28px; padding: 0; overflow: hidden; }
+    .cam-side img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .side-label { font-weight: 700; margin-top: var(--gap); font-size: 16px; text-align: center; }
+    /* 아틀리에: 어두운 '촬영실' — 작품이 돋보이게 주변을 어둡게, 모드는 카메라 앱처럼 글자 탭, 찍기는 하얀 고리 */
+    :root[data-theme="atelier"] body[data-screen="camera"] { background: #15120F; }
+    :root[data-theme="atelier"] #camera { --text: #F3EDE4; --sub: #B9AFA2; --border: #F3EDE4; --card: #24201B; --accent: #E8DFD2; --gold: #E6C38F; color: var(--text); }
+    :root[data-theme="atelier"] #camera .topbar { margin-bottom: calc(var(--gap) * 1.5); }
+    :root[data-theme="atelier"] #camera .back { background: rgba(255,255,255,0.08); border: 1px solid rgba(243,237,228,0.45); }
+    :root[data-theme="atelier"] #camera .cam-h { display: block; margin: 0; font-size: 22px; color: var(--text); }
+    :root[data-theme="atelier"] #camera .stage { border-radius: 22px; max-height: 60vh; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    :root[data-theme="atelier"] #camera .guide {
+      inset: 9%; border: none; border-radius: 0;
+      --c: rgba(255,255,255,0.95); --l: 34px; --w: 4px;
+      background:
+        linear-gradient(var(--c), var(--c)) top left / var(--l) var(--w) no-repeat, linear-gradient(var(--c), var(--c)) top left / var(--w) var(--l) no-repeat,
+        linear-gradient(var(--c), var(--c)) top right / var(--l) var(--w) no-repeat, linear-gradient(var(--c), var(--c)) top right / var(--w) var(--l) no-repeat,
+        linear-gradient(var(--c), var(--c)) bottom left / var(--l) var(--w) no-repeat, linear-gradient(var(--c), var(--c)) bottom left / var(--w) var(--l) no-repeat,
+        linear-gradient(var(--c), var(--c)) bottom right / var(--l) var(--w) no-repeat, linear-gradient(var(--c), var(--c)) bottom right / var(--w) var(--l) no-repeat;
+    }
+    :root[data-theme="atelier"] #camera .guide span { background: rgba(21,18,15,0.6); font-family: var(--font-title); letter-spacing: 0.02em; margin-top: 14px; }
+    :root[data-theme="atelier"] #camera .modebar { gap: 0; margin: calc(var(--gap) * 2) 0 0; justify-content: space-between; }
+    :root[data-theme="atelier"] #camera .modebar button {
+      border: none; background: transparent; color: var(--sub); font-weight: 600; min-height: 52px; position: relative; letter-spacing: 0.02em;
+    }
+    :root[data-theme="atelier"] #camera .modebar button[aria-pressed="true"] { color: var(--gold); background: transparent; }
+    :root[data-theme="atelier"] #camera .modebar button[aria-pressed="true"]::after {
+      content: ""; position: absolute; left: 50%; bottom: 4px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--gold);
+    }
+    :root[data-theme="atelier"] #camera .hint { color: var(--sub); font-size: 17px; margin: 4px 0 0; }
+    :root[data-theme="atelier"] #camera .shutter {
+      width: 84px; height: 84px; border: 4px solid #F3EDE4; background: #F3EDE4; box-shadow: inset 0 0 0 4px #15120F; font-size: 30px;
+    }
+    :root[data-theme="atelier"] #camera .shutter.recording { background: var(--rec); border-color: #F3EDE4; }
+    :root[data-theme="atelier"] #camera .cam-side { border: 1.5px solid rgba(243,237,228,0.6); border-radius: 14px; }
+    :root[data-theme="atelier"] #camera .shutter-label, :root[data-theme="atelier"] #camera .side-label { font-weight: 600; color: var(--text); }
+    :root[data-theme="atelier"] #camera .cam-note { color: #8E857A; font-size: 14px; text-align: center; }
+    :root[data-theme="atelier"] #camera .card { background: var(--card); color: var(--text); border-color: rgba(243,237,228,0.35); }
+    :root[data-theme="atelier"] #camera textarea { background: #15120F; color: var(--text); border-color: rgba(243,237,228,0.5); }
+    :root[data-theme="atelier"] #camera .big { background: transparent; color: var(--text); border-color: rgba(243,237,228,0.6); }
+    :root[data-theme="atelier"] body[data-screen="camera"] footer, :root[data-theme="atelier"] body[data-screen="camera"] .foot { color: #8E857A; }
     :root[data-theme="contrast"] {      /* 시안 2: 고대비 다크 — 저시력·고령자, 어두운 전시장 */
       --bg: #000000; --card: #121212; --text: #FFFFFF; --sub: #D0D0D0; --border: #FFFFFF;
       --accent: #8FE3FF; --primary: #FFD23F; --primary-text: #000000; --off: #444444; --warn-bg: #3A3000;
@@ -376,6 +420,7 @@
   <section id="camera" class="screen" hidden>
     <div class="topbar">
       <button class="back" id="btnCamHome">← 처음으로</button>
+      <h2 class="cam-h">작품 만나기</h2>
     </div>
 
     <div class="stage">
@@ -408,13 +453,22 @@
     </div>
     <p class="hint" id="camHint"></p>
 
-    <div class="shutter-wrap">
-      <button class="shutter" id="shutter" aria-label="찍기"><span id="shutterIcon">📷</span></button>
-      <div class="shutter-label" id="shutterLabel">찍기</div>
+    <!-- [수정 6-15] 카메라 앱처럼: 왼쪽 = 내 갤러리(최근 작품), 가운데 = 찍기, 오른쪽 = 파일 올리기 -->
+    <div class="cam-row">
+      <div class="cam-side-wrap">
+        <button class="cam-side" id="btnCamGal" aria-label="내 갤러리 보기"><img id="camGalImg" alt="" hidden><span id="camGalIc">📚</span></button>
+        <div class="side-label">갤러리</div>
+      </div>
+      <div class="shutter-wrap">
+        <button class="shutter" id="shutter" aria-label="찍기"><span id="shutterIcon">📷</span></button>
+        <div class="shutter-label" id="shutterLabel">찍기</div>
+      </div>
+      <div class="cam-side-wrap">
+        <button class="cam-side" id="btnFile" aria-label="파일 올리기">📁</button>
+        <div class="side-label" id="fileLabel">파일 올리기</div>
+      </div>
     </div>
-
-    <button class="big ghost" id="btnFile">📁 파일 올리기</button>
-    <p class="note">찍은 사진·영상 장면은 AI 분석을 위해 잠깐 보내고, 어디에도 저장하지 않아요. 소리는 폰 안에서만 분석해요.</p>
+    <p class="note cam-note">찍은 사진·영상 장면은 AI 분석을 위해 잠깐 보내고, 어디에도 저장하지 않아요. 소리는 폰 안에서만 분석해요.</p>
 
     <!-- 숨겨 둔 파일 고르기 (버튼이 대신 눌러 줌) -->
     <input type="file" id="fileCapture" accept="image/*" capture="environment" hidden>
@@ -511,7 +565,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-14: 장르 15가지(분위기 낱말로 고름) + 전체 화면 빛 그림 + 내 갤러리<br>
+    6단계 · 앱 6-15: 더 정확한 나누기·볼 곳 + 재질 소리 다듬기 + 촬영실 디자인<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -530,6 +584,7 @@
       if (currentScreen === "view" && id !== "view") { stopSense(); stopVoice(); clearTimeout(wholeTimer); analyzeSeq++; }
       if (currentScreen === "note" && id !== "note") { stopSense(); abState = null; }
       document.querySelectorAll(".screen").forEach((s) => { s.hidden = (s.id !== id); });
+      document.body.dataset.screen = id;                            // [수정 6-15] 화면마다 배경을 다르게 (카메라 = 어두운 촬영실)
       const entering = (id === "camera" && currentScreen !== "camera");
       currentScreen = id;
       window.scrollTo(0, 0);
@@ -1041,6 +1096,9 @@
     function enterCamera() {
       if (!profile) profile = makeRecommendation({});
       $("camMsg").textContent = "";
+      const gl = galleryList()[0];                                  // 갤러리 칸: 가장 최근 작품의 작은 그림
+      $("camGalImg").hidden = !gl; $("camGalIc").hidden = !!gl;
+      if (gl) $("camGalImg").src = gl.thumb;
       applyMode();
     }
 
@@ -1093,7 +1151,8 @@
       stopQR();
 
       // [새로] 파일 올리기: 모드에 맞는 파일만 고를 수 있게
-      $("btnFile").textContent = "📁 파일 올리기 (" + info.file + ")";
+      $("fileLabel").textContent = "파일 (" + info.file + ")";
+      $("btnFile").setAttribute("aria-label", "파일 올리기 (" + info.file + ")");
       $("filePick").accept = info.accept;
       $("fileCapture").accept = mode === "video" ? "video/*" : "image/*";
       $("btnCapFallback").textContent = mode === "video" ? "🎬 폰 카메라로 직접 찍기" : "📷 폰 카메라로 직접 찍기";
@@ -1429,6 +1488,7 @@
       }
     }
     $("btnFile").onclick = () => $("filePick").click();
+    $("btnCamGal").onclick = () => openGallery();
     // [수정 6-10] 글 파일(.txt)과 QR이 찍힌 사진도 올릴 수 있게 (아래 기존 처리보다 먼저 가로챔)
     $("filePick").addEventListener("change", async (e) => {
       const f = e.target.files && e.target.files[0];
@@ -2046,6 +2106,7 @@
       stopSense(); stopVoice();
       setViewParts("wait");
       if (d.type === "photo") startWaitArt();   // [수정 6-12] 분석을 기다리는 10초 남짓 동안: 작품이 빛 알갱이로 반짝임
+      if (d.type === "photo") prepareParts();   // [수정 6-15] 덩어리 나누기 + 재질·볼 곳 묻기를 해설과 '동시에
       const stop = waitStages($("viewWait"));
       const tStart = performance.now();
       try {
@@ -2200,26 +2261,39 @@
     //   부분은 AI가 지어낸 칸이 아니라, 픽셀로 나눈 실제 덩어리에 AI가 이름(얼굴, 옷…)만 붙인 것
     // ==========================================================
     let tourTimers = [], tourParts = [];
+    // [수정 6-15] 볼 곳 고르기: 예전에는 '이름이 붙은 덩어리 중 큰 것'이라 의자 천처럼 덜 중요한 곳이 뽑혔음
+    //   지금: AI가 매긴 '감상 중요도(imp: 3 주인공, 2 중요한 소품, 1 보조, 0 배경)'가 높은 순서
+    //         + 같은 이름(얼굴, 왕관…)의 덩어리는 떨어져 있어도 한 부분으로 묶어서 보여 줌 (얼굴이 두 조각이어도 한 번에)
     function pickTourParts() {
       const M = lastData && lastData.touchMap;
       if (!M) return [];
-      const st = M.seg.st.map((s, k) => Object.assign({ k: k }, s)).filter((s) => s.part > 0.02 && s.part < 0.45);
-      const named = st.filter((s) => s.material && s.material !== "모름" && s.thing);
-      const pool = (named.length ? named : st).sort((a, b) => b.part - a.part);
-      const seen = new Set(), out = [];
-      for (const s of pool) {                                     // 같은 이름은 한 번만
-        const key = s.thing || ("부분" + s.k);
-        if (seen.has(key)) continue;
-        seen.add(key); out.push(s);
-        if (out.length >= 3) break;
-      }
-      return out;
+      const groups = new Map();
+      M.seg.st.forEach((s, k) => {
+        if (!s.thing || !s.material) return;
+        const key = s.thing;
+        let gp = groups.get(key);
+        if (!gp) { gp = { thing: key, ks: [], part: 0, imp: -1, x0: 1e9, y0: 1e9, x1: -1, y1: -1 }; groups.set(key, gp); }
+        gp.ks.push(k); gp.part += s.part; gp.imp = Math.max(gp.imp, s.imp === undefined ? -1 : s.imp);
+        gp.x0 = Math.min(gp.x0, s.x0); gp.y0 = Math.min(gp.y0, s.y0); gp.x1 = Math.max(gp.x1, s.x1); gp.y1 = Math.max(gp.y1, s.y1);
+      });
+      let list = [...groups.values()].filter((g) => g.part > 0.008 && g.part < 0.5);
+      const hasImp = list.some((g) => g.imp >= 0);
+      if (hasImp) list = list.filter((g) => g.imp >= 2).sort((a, b) => b.imp - a.imp || b.part - a.part);
+      else list = list.filter((g) => !/배경|벽|바닥|하늘|어둠|그림자/.test(g.thing)).sort((a, b) => b.part - a.part);   // (예전 서버: 중요도 없음)
+      return list.slice(0, 3);
     }
-    function drawTourMask(k) {
-      const cv = $("tourMask"), M = lastData.touchMap, W = M.W, H = M.H, comp = M.seg.comp;
+    function drawTourMask(ks) {
+      const cv = $("tourMask"), M = lastData.touchMap, set = new Set(ks);
+      const W = M.hi ? M.hi.W : M.W, H = M.hi ? M.hi.H : M.H, lab = M.hi ? M.hi.lab : M.seg.comp;
       cv.width = W; cv.height = H;
       const g = cv.getContext("2d"), im = g.createImageData(W, H);
-      for (let i = 0; i < W * H; i++) if (comp[i] !== k) im.data[i * 4 + 3] = 175;   // 그 부분 말고는 어둡게
+      const d = im.data;
+      for (let i = 0; i < W * H; i++) {
+        if (!set.has(lab[i])) { d[i * 4 + 3] = 185; continue; }              // 그 부분 말고는 어둡게
+        // [수정 6-15] 어두운 작품에서는 '어둡게'만으로 잘 안 보여서 → 그 부분의 테두리에 은은한 빛(조명) 선
+        const x = i % W, edge = (x > 0 && !set.has(lab[i - 1])) || (x < W - 1 && !set.has(lab[i + 1])) || (i >= W && !set.has(lab[i - W])) || (i + W < W * H && !set.has(lab[i + W]));
+        if (edge) { d[i * 4] = 255; d[i * 4 + 1] = 236; d[i * 4 + 2] = 200; d[i * 4 + 3] = 230; }
+      }
       g.putImageData(im, 0, 0);
       cv.hidden = false;
       cv.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 700, fill: "forwards" });
@@ -2227,12 +2301,13 @@
     function tourFocus(i) {
       const p = tourParts[i], wrap = $("artWrap");
       if (!p) return;
-      drawTourMask(p.k);
+      drawTourMask(p.ks);
       if (!reduceMotion()) {
-        const bw = (p.x1 - p.x0) / lastData.touchMap.W, bh = (p.y1 - p.y0) / lastData.touchMap.H;
+        const M = lastData.touchMap;
+        const bw = (p.x1 - p.x0 + 1) / M.W, bh = (p.y1 - p.y0 + 1) / M.H;
         const z = Math.max(1, Math.min(1.7, 0.75 / Math.max(bw, bh)));
         const lim = 0.5 - 0.5 / z;
-        const cx = (p.x0 + p.x1) / 2 / lastData.touchMap.W, cy = (p.y0 + p.y1) / 2 / lastData.touchMap.H;
+        const cx = (p.x0 + p.x1 + 1) / 2 / M.W, cy = (p.y0 + p.y1 + 1) / 2 / M.H;
         const dx = Math.max(-lim, Math.min(lim, 0.5 - cx)), dy = Math.max(-lim, Math.min(lim, 0.5 - cy));
         wrap.style.transform = "scale(" + z.toFixed(3) + ") translate(" + (dx * 100).toFixed(1) + "%," + (dy * 100).toFixed(1) + "%)";
       }
@@ -2258,11 +2333,32 @@
       tourTimers.push(setTimeout(() => { tourReset(); $("sceneBar").textContent = "👀 다시 전체를 봐요"; }, lat + barMs * (2 + 2 * tourParts.length)));
     }
     // 분석이 끝나면 미리 덩어리를 나누고 이름(재질 묻기)을 받아 둠 → ▶ 눈길 안내와 ✋ 만져보기에 같이 씀
+    // [수정 6-15] 사진을 받자마자(해설을 기다리는 동안) 같이 시작 → 해설이 끝날 때쯤 재질·볼 곳도 준비됨
+    //   (예전: 해설이 끝난 뒤에 시작해서 5초 넘게 더 걸림 → 그 사이 만지면 재질을 몰라 '사포' 같은 소리가 났음)
     function prepareParts() {
       if (!lastData || lastData.type !== "photo") return;
+      const d = lastData;
+      if (d.partsStarted) return;
+      d.partsStarted = true;
       const img = $("artImg");
-      const go2 = () => { touchMap = buildTouchMap(); lastData.touchMap = touchMap; if (touchMap) requestMaterials(); };
-      if (img.complete && img.naturalWidth) go2(); else img.onload = go2;
+      const go2 = () => {
+        if (lastData !== d) return;
+        touchMap = buildTouchMap(); d.touchMap = touchMap;
+        if (touchMap) requestMaterials();
+      };
+      if (img.complete && img.naturalWidth && img.src === d.images[0]) go2(); else img.addEventListener("load", go2, { once: true });
+    }
+    // 볼 곳(재질 묻기)이 아직 준비 중이면 조금 기다림 (최대 ms)
+    function waitParts(ms) {
+      return new Promise((res) => {
+        const t0 = performance.now();
+        const tick = () => {
+          const M = lastData && lastData.touchMap;
+          if (!M || M.matState !== "asking" || performance.now() - t0 > ms) return res();
+          setTimeout(tick, 150);
+        };
+        tick();
+      });
     }
 
     // ==========================================================
@@ -2375,8 +2471,13 @@
       $("touchLabel").hidden = true;
       $("sceneBar").textContent = "전체 느끼기";
       renderButtons();
-      const begin = () => {
+      const begin = async () => {
         clearTimeout(wholeTimer);
+        if (lastData.touchMap && lastData.touchMap.matState === "asking") {
+          $("sceneBar").textContent = "👀 볼 곳을 고르는 중…";
+          await waitParts(8000);
+          if (viewState !== "whole") return;
+        }
         setMood(lastResult.whole);
         if (!viewLight) viewLight = buildLight(lastResult.whole);
         tourParts = pickTourParts();
@@ -2478,7 +2579,8 @@
     let touchMap = null, tSyn = null, tPrev = null, touchInfo = null, curSeg = -1, tapDist = 0;
     const TMAP_W = 260;                 // [수정 6-12] 200 → 260 (더 촘촘히 나눔)                 // 계산용으로 줄인 사진 가로 칸 수
     // [수정 6-11] 잘못 엮이는 일을 줄이려고 '먼저 잘게(최대 16) 나누고 → AI가 같은 물건이라고 한 것끼리만 합침'
-    const SEG_K_FH = 0.55, SEG_MAX = 16, SEG_MIN = 0.006;   // 나누기 기준(클수록 큰 덩어리), 최대 16덩어리, 0.6%보다 작은 조각은 합침
+    const SEG_MAX = 24, SEG_MIN = 0.004;
+    const SEGP = { K: 0.45, eq: 0.85, tex: 0.3, ch: 1.5 };   // 나누기 기준 K(클수록 큰 덩어리), 밝기 평활화 비율, 결 비중, 색 비중   // [수정 6-15] 16 → 24덩어리 (AI가 같은 물건끼리 다시 합침)
     const ROUGH_LO = 0.006, ROUGH_HI = 0.055;        // 결(잔무늬) 세기 눈금: 흐린 배경 ≈ 0.002, 수놓은 옷 ≈ 0.06
 
     function boxBlur(src, W, H, r) {    // 주변 (2r+1)×(2r+1)칸 평균
@@ -2513,23 +2615,38 @@
       const col = [0, 1, 2].map((ch) => { const a = new Float32Array(N); for (let i = 0; i < N; i++) a[i] = px[i * 4 + ch] / 255; return boxBlur(a, W, H, 2); });
       const M = { W: W, H: H, px: px, lum: lum, rough: rough, col: col };
       M.seg = segmentImage(M);
+      refineSeg(M);
       return M;
     }
 
     // 덩어리 나누기
-    function segmentImage(M) {
-      const W = M.W, H = M.H, N = W * H, C = M.col;
-      // [수정 6-9] ①② 그래프 기반 영역 나누기 (Felzenszwalb–Huttenlocher, 2004)
-      //   예전(색 5가지 묶기)은 '색이 같으면 같은 덩어리'라서, 색이 비슷한 다른 물체가 붙고 한 물체가 잘게 나뉘었음
-      //   지금: 이웃한 칸끼리 색 차이를 '다리'로 보고, 차이가 작은 다리부터 이어 붙이되
-      //         '덩어리 안의 색 차이'보다 '덩어리 사이의 차이'가 충분히 클 때는 붙이지 않음 → 경계가 물체 테두리를 따라감
-      const nbr = [], wts = [];
-      // 색 차이: 밝기 차이를 2배로 중요하게 (사람 눈은 색보다 밝기 경계를 더 잘 봄) — 밝기(Y)·색(Cb, Cr)으로 바꿔 비교
+    // [수정 6-15] 나누기 정확도 높이기 (의견: '의자 천과 검은 옷, 배경이 한 덩어리', '부분을 나누는 정확도를 아주 높여야')
+    //   ① 어두운 사진에서도 차이가 보이게: 밝기를 '히스토그램 평활화'(밝기 순위로 다시 펴기)해서 섞어 씀
+    //      (검은 옷 0.05와 검은 의자 0.09처럼 아주 작은 차이도 경계로 잡힘)
+    //   ② 색은 덜 흐리게(3×3) → 약한 경계가 뭉개지지 않게, 결(잔무늬) 차이의 비중을 키움
+    //   ③ 그래프 기반 영역 나누기(Felzenszwalb–Huttenlocher, 2004)로 먼저 '잘게' 나눔
+    //   ④ 합칠 때: 예전에는 '평균 색이 비슷한 덩어리'부터 합쳐서, 색이 같은 다른 물건(검은 옷 + 검은 의자)이 붙었음
+    //      → 지금은 '두 덩어리 사이 경계가 약하고(경계선 위의 색 차이가 작고) 평균 색도 비슷한 것'부터 합침 (경계가 뚜렷하면 안 합침)
+    //   ⑤ 최대 24덩어리 → AI가 '같은 물건'이라고 한 이웃끼리 다시 합침
+    function segFeatures(M) {
+      const W = M.W, H = M.H, N = W * H, px = M.px;
+      const r1 = [0, 1, 2].map((ch) => { const a = new Float32Array(N); for (let i = 0; i < N; i++) a[i] = px[i * 4 + ch] / 255; return boxBlur(a, W, H, 1); });
       const Y = new Float32Array(N), Cb = new Float32Array(N), Cr = new Float32Array(N);
-      for (let i = 0; i < N; i++) { Y[i] = 0.299 * C[0][i] + 0.587 * C[1][i] + 0.114 * C[2][i]; Cb[i] = C[2][i] - Y[i]; Cr[i] = C[0][i] - Y[i]; }
-      // [수정 6-12] + 결(잔무늬) 차이도 더함: 색이 비슷해도 매끈한 얼굴과 오돌토돌한 머리카락·옷을 나누려고
-      const RG = M.rough;
-      const cd = (i, j) => Math.sqrt(2 * (Y[i] - Y[j]) ** 2 + (Cb[i] - Cb[j]) ** 2 + (Cr[i] - Cr[j]) ** 2) + 0.06 * Math.abs(RG[i] - RG[j]);
+      for (let i = 0; i < N; i++) { Y[i] = 0.299 * r1[0][i] + 0.587 * r1[1][i] + 0.114 * r1[2][i]; Cb[i] = r1[2][i] - Y[i]; Cr[i] = r1[0][i] - Y[i]; }
+      const hist = new Float32Array(256);                           // ① 밝기 평활화
+      for (let i = 0; i < N; i++) hist[Math.min(255, Math.round(Y[i] * 255))]++;
+      for (let k = 1; k < 256; k++) hist[k] += hist[k - 1];
+      const Ye = new Float32Array(N);
+      for (let i = 0; i < N; i++) Ye[i] = SEGP.eq * hist[Math.min(255, Math.round(Y[i] * 255))] / N + (1 - SEGP.eq) * Y[i];
+      const T = M.rough;
+      return { Y: Ye, Cb: Cb, Cr: Cr, T: T, rgb: r1 };
+    }
+    function segmentImage(M) {
+      const W = M.W, H = M.H, N = W * H;
+      const F = segFeatures(M), Y = F.Y, Cb = F.Cb, Cr = F.Cr, T = F.T;
+      M.feat = F;
+      const cd = (i, j) => Math.sqrt(2 * (Y[i] - Y[j]) ** 2 + SEGP.ch * (Cb[i] - Cb[j]) ** 2 + SEGP.ch * (Cr[i] - Cr[j]) ** 2) + SEGP.tex * Math.abs(T[i] - T[j]);
+      const nbr = [], wts = [];
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
         const i = y * W + x;
         if (x < W - 1) { nbr.push(i, i + 1); wts.push(cd(i, i + 1)); }
@@ -2543,7 +2660,7 @@
       const par = new Int32Array(N), sz = new Int32Array(N).fill(1), inner = new Float32Array(N);
       for (let i = 0; i < N; i++) par[i] = i;
       const find = (i) => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
-      const K = SEG_K_FH;
+      const K = SEGP.K;
       for (let e2 = 0; e2 < E; e2++) {
         const e = ord[e2], a = find(nbr[2 * e]), b = find(nbr[2 * e + 1]), w = wts[e];
         if (a === b) continue;
@@ -2553,59 +2670,106 @@
         }
       }
       const comp = new Int32Array(N);
-      let nComp = 0;
-      { const re = new Map(); for (let i = 0; i < N; i++) { const r = find(i); if (!re.has(r)) re.set(r, nComp++); comp[i] = re.get(r); } }
-      // ③ 작은 조각은 가장 많이 맞닿은 옆 덩어리에 합치기 → ④ 그래도 많으면 가장 작은 것부터 합쳐 최대 8개
-      const sizes = () => { const z = new Int32Array(nComp); for (let i = 0; i < N; i++) z[comp[i]]++; return z; };
-      const mergeInto = (pick) => {     // pick(크기) → 합칠 덩어리 표시 배열
-        const z = sizes(), small = pick(z);
-        const adj = new Map();
-        for (let i = 0; i < N; i++) {
-          const a = comp[i]; if (!small[a]) continue;
-          const x = i % W;
-          for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) {
-            if (j < 0 || j >= N || comp[j] === a) continue;
-            let m = adj.get(a); if (!m) { m = new Map(); adj.set(a, m); }
-            m.set(comp[j], (m.get(comp[j]) || 0) + 1);
-          }
-        }
-        const to = new Int32Array(nComp).map((_, k) => k);
-        let changed = false;
-        adj.forEach((m, a) => {
-          let best = -1, bc = -1;
-          m.forEach((c, b) => { if (c > bc || (c === bc && z[b] > z[best])) { bc = c; best = b; } });
-          if (best >= 0) { to[a] = best; changed = true; }
-        });
-        const root = (k) => { let r = k, n = 0; while (to[r] !== r && n++ < 50) r = to[r]; return r; };
-        for (let i = 0; i < N; i++) comp[i] = root(comp[i]);
-        // 번호 다시 붙이기
-        const re = new Map(); let n = 0;
-        for (let i = 0; i < N; i++) { if (!re.has(comp[i])) re.set(comp[i], n++); comp[i] = re.get(comp[i]); }
-        nComp = n;
-        return changed;
+      let n = 0;
+      { const re = new Map(); for (let i = 0; i < N; i++) { const r = find(i); if (!re.has(r)) re.set(r, n++); comp[i] = re.get(r); } }
+      // ④ 영역 인접 그래프(RAG): 덩어리마다 평균 특징, 맞닿은 두 덩어리마다 '경계 길이'와 '경계 위 색 차이 합'
+      const R = Array.from({ length: n }, () => ({ n: 0, y: 0, cb: 0, cr: 0, t: 0, alive: true, nb: new Map() }));
+      for (let i = 0; i < N; i++) { const r = R[comp[i]]; r.n++; r.y += Y[i]; r.cb += Cb[i]; r.cr += Cr[i]; r.t += T[i]; }
+      const addB = (a, b, w) => {
+        let e = R[a].nb.get(b); if (!e) { e = { len: 0, sum: 0 }; R[a].nb.set(b, e); R[b].nb.set(a, e); }
+        e.len++; e.sum += w;
       };
-      for (let p = 0; p < 8; p++) if (!mergeInto((z) => z.map((v) => v < SEG_MIN * N ? 1 : 0)) ) break;
-      // ④ 그래도 많으면: 맞닿은 덩어리 중 '평균 색이 가장 비슷한 두 덩어리'부터 합쳐 최대 SEG_MAX개
-      for (let p = 0; p < 60 && nComp > SEG_MAX; p++) {
-        const m = Array.from({ length: nComp }, () => [0, 0, 0, 0]);
-        for (let i = 0; i < N; i++) { const t3 = m[comp[i]]; t3[0] += C[0][i]; t3[1] += C[1][i]; t3[2] += C[2][i]; t3[3]++; }
-        m.forEach((t3) => { t3[0] /= t3[3]; t3[1] /= t3[3]; t3[2] /= t3[3]; });
-        let bestA = -1, bestB = -1, bd = 1e9;
-        for (let i = 0; i < N; i++) {
-          const x = i % W, a = comp[i];
-          for (const j of [x < W - 1 ? i + 1 : -1, i + W < N ? i + W : -1]) {
-            if (j < 0 || comp[j] === a) continue;
-            const b2 = comp[j], d = Math.hypot(m[a][0] - m[b2][0], m[a][1] - m[b2][1], m[a][2] - m[b2][2]);
-            if (d < bd) { bd = d; bestA = a; bestB = b2; }
-          }
-        }
-        if (bestA < 0) break;
-        for (let i = 0; i < N; i++) if (comp[i] === bestB) comp[i] = bestA;
-        const re = new Map(); let n2 = 0;
-        for (let i = 0; i < N; i++) { if (!re.has(comp[i])) re.set(comp[i], n2++); comp[i] = re.get(comp[i]); }
-        nComp = n2;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = y * W + x, a = comp[i];
+        if (x < W - 1 && comp[i + 1] !== a) addB(a, comp[i + 1], cd(i, i + 1));
+        if (y < H - 1 && comp[i + W] !== a) addB(a, comp[i + W], cd(i, i + W));
       }
-      return segStats(M, comp, nComp);
+      const to = new Int32Array(n); for (let k = 0; k < n; k++) to[k] = k;
+      const meanD = (a, b) => {
+        const A = R[a], B = R[b];
+        return Math.sqrt(2 * (A.y / A.n - B.y / B.n) ** 2 + SEGP.ch * (A.cb / A.n - B.cb / B.n) ** 2 + SEGP.ch * (A.cr / A.n - B.cr / B.n) ** 2) + SEGP.tex * Math.abs(A.t / A.n - B.t / B.n);
+      };
+      const merge = (a, b) => {                                     // b를 a에 합침
+        const A = R[a], B = R[b];
+        A.n += B.n; A.y += B.y; A.cb += B.cb; A.cr += B.cr; A.t += B.t;
+        B.nb.forEach((e, c) => {
+          R[c].nb.delete(b);
+          if (c === a) return;
+          let f = A.nb.get(c);
+          if (f) { f.len += e.len; f.sum += e.sum; } else { A.nb.set(c, e); R[c].nb.set(a, e); }
+        });
+        A.nb.delete(b); B.alive = false; B.nb = new Map(); to[b] = a;
+      };
+      let alive = n;
+      // 아주 작은 조각(0.4% 미만)은 경계가 가장 약한 이웃에 먼저 합침
+      for (let changed = true; changed;) {
+        changed = false;
+        for (let a = 0; a < n; a++) {
+          if (!R[a].alive || R[a].n >= SEG_MIN * N || !R[a].nb.size) continue;
+          let best = -1, bc = 1e9;
+          R[a].nb.forEach((e, b) => { const c = e.sum / e.len + 0.5 * meanD(a, b); if (c < bc) { bc = c; best = b; } });
+          if (best >= 0) { if (R[best].n >= R[a].n) merge(best, a); else merge(a, best); alive--; changed = true; }
+        }
+      }
+      // 덩어리가 많으면: '경계가 가장 약하고 평균도 비슷한' 짝부터 합침 (작은 덩어리일수록 먼저)
+      while (alive > SEG_MAX) {
+        let bA = -1, bB = -1, bc = 1e9;
+        for (let a = 0; a < n; a++) {
+          if (!R[a].alive) continue;
+          R[a].nb.forEach((e, b) => {
+            if (b < a) return;
+            const small = Math.min(R[a].n, R[b].n) / N;
+            const c = (e.sum / e.len + 0.6 * meanD(a, b)) * (0.35 + Math.sqrt(small * SEG_MAX));
+            if (c < bc) { bc = c; bA = a; bB = b; }
+          });
+        }
+        if (bA < 0) break;
+        if (R[bA].n >= R[bB].n) merge(bA, bB); else merge(bB, bA);
+        alive--;
+      }
+      const root = (k) => { while (to[k] !== k) k = to[k]; return k; };
+      const re = new Map(); let m = 0;
+      for (let i = 0; i < N; i++) { const r = root(comp[i]); if (!re.has(r)) re.set(r, m++); comp[i] = re.get(r); }
+      return segStats(M, comp, m);
+    }
+    // [수정 6-15] 경계 다듬기: 계산은 가로 260칸에서 하지만, 화면에 보여 주고 손가락 위치를 찾을 때는 2배(520칸)로
+    //   경계 근처 칸만 '색이 더 가까운 덩어리'로 다시 정함 → 계단처럼 깨지던 테두리가 물체 모양을 더 잘 따라감
+    function refineSeg(M) {
+      const img = $("artImg"), S = M.seg, W = M.W, H = M.H;
+      const W2 = W * 2, H2 = H * 2;
+      const cv = document.createElement("canvas"); cv.width = W2; cv.height = H2;
+      const g = cv.getContext("2d", { willReadFrequently: true });
+      g.drawImage(img, 0, 0, W2, H2);
+      let d;
+      try { d = g.getImageData(0, 0, W2, H2).data; } catch (e) { M.hi = null; return; }
+      const mean = S.st.map((s) => [s.r / s.n, s.g / s.n, s.b / s.n]);
+      const lab = new Int32Array(W2 * H2);
+      for (let y = 0; y < H2; y++) for (let x = 0; x < W2; x++) {
+        const lx = Math.min(W - 1, x >> 1), ly = Math.min(H - 1, y >> 1), k0 = S.comp[ly * W + lx];
+        let uni = true;
+        for (let dy = -1; dy <= 1 && uni; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const xx = lx + dx, yy = ly + dy;
+          if (xx >= 0 && yy >= 0 && xx < W && yy < H && S.comp[yy * W + xx] !== k0) { uni = false; break; }
+        }
+        const o = y * W2 + x;
+        if (uni) { lab[o] = k0; continue; }
+        const p = o * 4, r = d[p], gg = d[p + 1], b = d[p + 2];
+        let best = k0, bd = 1e9;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const xx = lx + dx, yy = ly + dy;
+          if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+          const k = S.comp[yy * W + xx], mk = mean[k];
+          const dd = (r - mk[0]) ** 2 + (gg - mk[1]) ** 2 + (b - mk[2]) ** 2 + (k === k0 ? 0 : 60);   // 원래 칸을 조금 우선
+          if (dd < bd) { bd = dd; best = k; }
+        }
+        lab[o] = best;
+      }
+      M.hi = { W: W2, H: H2, lab: lab };
+    }
+    // 화면 위 위치(0~1) → 덩어리 번호 (다듬은 2배 지도가 있으면 그것으로)
+    function segAt(M, u, v) {
+      if (M.hi) return M.hi.lab[Math.min(M.hi.H - 1, Math.max(0, Math.floor(v * M.hi.H))) * M.hi.W + Math.min(M.hi.W - 1, Math.max(0, Math.floor(u * M.hi.W)))];
+      return M.seg.comp[Math.min(M.H - 1, Math.floor(v * M.H)) * M.W + Math.min(M.W - 1, Math.floor(u * M.W))];
     }
     // ⑤ 덩어리마다 평균 밝기·결·색  ⑥ 번호를 적을 자리
     function segStats(M, comp, nComp) {
@@ -2648,7 +2812,8 @@
                         "#A2845E", "#64D2FF", "#BF5AF2", "#30D158", "#FFD60A", "#FF453A"];
     function makeSegImage() {
       const img = $("artImg"), M = touchMap, S = M.seg;
-      const OW = 768, OH = Math.round(OW * M.H / M.W), sx = OW / M.W, sy = OH / M.H;
+      const sc0 = 1024 / Math.max(M.W, M.H);                       // [수정 6-15] 긴 쪽 1024px (24덩어리 번호가 잘 보이게)
+      const OW = Math.round(M.W * sc0), OH = Math.round(M.H * sc0), sx = OW / M.W, sy = OH / M.H;
       const cv = document.createElement("canvas"); cv.width = OW; cv.height = OH;
       const g = cv.getContext("2d");
       g.drawImage(img, 0, 0, OW, OH);
@@ -2658,10 +2823,10 @@
           g.fillStyle = SEG_COLORS[k % SEG_COLORS.length]; g.fillRect(x * sx, y * sy, sx + 1, sy + 1);
         }
       }
-      g.font = "bold 26px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.font = "bold 22px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
       S.st.forEach((st, k) => {                                          // 번호 동그라미
         const cx = st.cx * sx, cy = st.cy * sy;
-        g.fillStyle = "rgba(0,0,0,0.8)"; g.beginPath(); g.arc(cx, cy, 19, 0, 7); g.fill();
+        g.fillStyle = "rgba(0,0,0,0.8)"; g.beginPath(); g.arc(cx, cy, 16, 0, 7); g.fill();
         g.strokeStyle = SEG_COLORS[k % SEG_COLORS.length]; g.lineWidth = 4; g.stroke();
         g.fillStyle = "#FFF"; g.fillText(String(k + 1), cx, cy + 1);
       });
@@ -2671,7 +2836,7 @@
       const M = touchMap;
       if (!M) return;
       if (lastData.segMaterials && lastData.segMaterials.length === M.seg.n) {   // 같은 사진이면 다시 묻지 않음
-        lastData.segMaterials.forEach((r, k) => { M.seg.st[k].material = r.material; M.seg.st[k].thing = r.thing; });
+        lastData.segMaterials.forEach((r, k) => Object.assign(M.seg.st[k], r));
         mergeSameThing(M);
         M.matState = "done"; return;
       }
@@ -2680,10 +2845,11 @@
       try {
         const r = await askAI({ type: "photo", task: "materials", images: [makeSegImage()], n: M.seg.n }, false);
         if (M !== touchMap) return;
-        const arr = M.seg.st.map(() => ({ material: "모름", thing: "" }));
-        (r.regions || []).forEach((x) => { if (arr[x.n - 1]) arr[x.n - 1] = { material: x.material, thing: x.thing }; });
-        arr.forEach((x, k) => { M.seg.st[k].material = x.material; M.seg.st[k].thing = x.thing; });
+        const arr = M.seg.st.map(() => ({ material: "모름", thing: "", heavy: false, imp: -1, sure: false }));
+        (r.regions || []).forEach((x) => { if (arr[x.n - 1]) arr[x.n - 1] = { material: x.material, thing: x.thing, heavy: x.heavy === undefined ? undefined : !!x.heavy, imp: x.imp === undefined ? -1 : x.imp, sure: x.sure !== false }; });
+        arr.forEach((x, k) => Object.assign(M.seg.st[k], x));
         lastData.segMaterials = arr;
+        M.matSeen = r.seen || ""; M.matFixed = r.fixed || 0;
         mergeSameThing(M);
         M.matState = "done"; M.matMs = Math.round(performance.now() - t0);
         if (curSeg >= 0 && tSyn) touchSegSound(curSeg, tSyn.base);      // 지금 만지는 덩어리에 바로 적용
@@ -2704,12 +2870,16 @@
         }
       }
       if (S.st.every((_, k) => root(k) === k)) return;                 // 합칠 것 없음
-      const info = S.st.map((t) => ({ material: t.material, thing: t.thing }));
+      const info = S.st.map((t) => ({ material: t.material, thing: t.thing, heavy: t.heavy, imp: t.imp, sure: t.sure }));
       const re = new Map(); let n = 0;
       const nc = new Int32Array(N);
       for (let i = 0; i < N; i++) { const r = root(comp[i]); if (!re.has(r)) re.set(r, n++); nc[i] = re.get(r); }
       M.seg = segStats(M, nc, n);
-      re.forEach((nk, ok) => { M.seg.st[nk].material = info[ok].material; M.seg.st[nk].thing = info[ok].thing; });
+      re.forEach((nk, ok) => Object.assign(M.seg.st[nk], info[ok]));
+      M.seg.st.forEach((st, k) => {                                     // 합친 덩어리의 중요도 = 합쳐진 것 중 가장 큰 값
+        S.st.forEach((o, ok) => { if (re.get(root(ok)) === k && (o.imp || 0) > (st.imp || 0)) st.imp = o.imp; });
+      });
+      if (M.hi) { const L = M.hi.lab; for (let i = 0; i < L.length; i++) L[i] = re.get(root(L[i])); }   // 다듬은 지도도 새 번호로
       M.merged = S.n - n;
       curSeg = -1;                                                      // 지금 표시 중인 덩어리 번호가 바뀌었으니 다시 그리게
     }
@@ -2721,7 +2891,7 @@
       if (u < 0 || u > 1 || v < 0 || v > 1) return null;
       const x = Math.min(touchMap.W - 1, Math.floor(u * touchMap.W)), y = Math.min(touchMap.H - 1, Math.floor(v * touchMap.H));
       const i = y * touchMap.W + x;
-      return { x: x, y: y, i: i, lum: touchMap.lum[i], rough: touchMap.rough[i], seg: touchMap.seg.comp[i] };
+      return { x: x, y: y, i: i, lum: touchMap.lum[i], rough: touchMap.rough[i], seg: segAt(touchMap, u, v) };
     }
 
     // 덩어리 표시: 그 덩어리 말고는 어둡게 + 노란 굵은 테두리
@@ -2732,7 +2902,7 @@
     function drawSeg(k) {
       const cv = $("touchMask");
       if (k < 0 || !touchMap || !profile.visual.on || !showSegLine) { cv.hidden = true; return; }
-      const M = touchMap, W = M.W, H = M.H, comp = M.seg.comp;
+      const M = touchMap, W = M.hi ? M.hi.W : M.W, H = M.hi ? M.hi.H : M.H, comp = M.hi ? M.hi.lab : M.seg.comp;   // [수정 6-15] 다듬은 지도
       cv.width = W; cv.height = H;
       const g = cv.getContext("2d"), im = g.createImageData(W, H), d = im.data;
       const inside = (x, y) => x >= 0 && y >= 0 && x < W && y < H && comp[y * W + x] === k;
@@ -2784,17 +2954,24 @@
       "금속":    { f: [1180, 2790, 4520, 6930], d: [1.1, 0.75, 0.5, 0.35],  gap: 36, hit: 0.9 },
       "나무":    { f: [420, 980, 1850],          d: [0.07, 0.05, 0.03],       gap: 20, hit: 0.9, repeat: true },
       "돌":      { f: [240, 650, 1420, 2800],    d: [0.04, 0.03, 0.02, 0.015], gap: 13, hit: 1.0, repeat: true },
-      "플라스틱": { f: [760, 1720, 3150],         d: [0.06, 0.04, 0.025],      gap: 28, hit: 0.7 },
+      // [수정 6-15] 플라스틱이 플라스틱 같지 않다는 의견 → 속이 빈 '톡': 가운데 높이, 아주 짧게, 부딪히는 '딱' 소리를 크게
+      "플라스틱": { f: [1180, 2470, 3900],        d: [0.03, 0.02, 0.012],      gap: 34, hit: 0.8, click: 0.8 },
       "고무":    { f: [180, 430],                d: [0.035, 0.025],           gap: 40, hit: 0.5 },
       "종이":    { f: [1900, 4200],              d: [0.012, 0.008],           gap: 16, hit: 0.4, repeat: true },
-      "물":      { f: [520],                     d: [0.12],                   gap: 60, hit: 0.5, drop: true },
+      // [수정 6-15] 물방울: 물속에 생긴 작은 공기 방울이 울리는 소리는 높이가 '위로' 올라감 (민네르트 공명) → '퐁'
+      "물":      { f: [620],                     d: [0.09],                   gap: 60, hit: 0.5, drop: true },
       "도자기":  { f: [1650, 3900, 6100],        d: [0.3, 0.2, 0.12],         gap: 50, hit: 0.9 },
       "대리석":  { f: [1100, 2600, 4900],        d: [0.1, 0.07, 0.04],        gap: 60, hit: 0.8 },
       "얼음":    { f: [2800, 5200, 8100],        d: [0.15, 0.1, 0.06],        gap: 40, hit: 0.7 }
     };
-    function modalTap(ctx, dest, mat, t, amp, pan) {
-      const m = MAT_MODES[mat];
-      if (!m || amp <= 0.001) return;
+    // [수정 6-15] 같은 재질이라도 '묵직한 것'(큰 조각상·철 덩어리)은 낮고 길게, '가벼운 것'(장신구·얇은 판)은 높고 짧게
+    //   (물체가 크고 두꺼울수록 고유 진동수가 낮아지고 오래 울림 — 모달 합성에서 높이와 길이에 곱하는 배율)
+    const HEAVY_SCALE = { true: { f: 0.5, d: 1.7 }, false: { f: 1.45, d: 0.55 } };
+    function modalTap(ctx, dest, mat, t, amp, pan, heavy) {
+      const m0 = MAT_MODES[mat];
+      if (!m0 || amp <= 0.001) return;
+      const hs = heavy === undefined || mat === "물" ? { f: 1, d: 1 } : HEAVY_SCALE[!!heavy];
+      const m = Object.assign({}, m0, { f: m0.f.map((x) => x * hs.f), d: m0.d.map((x) => x * hs.d) });
       const out = ctx.createGain(); out.gain.value = amp;
       let end = out;
       if (pan !== undefined && ctx.createStereoPanner) { const pn = ctx.createStereoPanner(); pn.pan.value = pan; out.connect(pn); end = pn; }
@@ -2803,7 +2980,7 @@
         const o = ctx.createOscillator(), g = ctx.createGain();
         const f = f0 * (0.985 + Math.random() * 0.03);             // 같은 물체도 칠 때마다 아주 조금씩 다름
         o.frequency.setValueAtTime(f, t);
-        if (m.drop) o.frequency.exponentialRampToValueAtTime(f * 0.45, t + m.d[k]);   // 물방울: 음이 뚝 떨어짐
+        if (m.drop) o.frequency.exponentialRampToValueAtTime(f * 1.9, t + m.d[k]);    // 물방울: 음이 '퐁' 하고 올라감
         const lv = 0.5 / (k + 1);
         g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(lv, t + 0.002);
         g.gain.exponentialRampToValueAtTime(0.0003, t + m.d[k]);
@@ -2811,7 +2988,7 @@
       });
       const nb = ctx.createBufferSource(), nf = ctx.createBiquadFilter(), ng = ctx.createGain();   // 부딪히는 순간의 '틱'
       nb.buffer = getNoise(ctx); nf.type = "bandpass"; nf.frequency.value = m.f[Math.min(1, m.f.length - 1)]; nf.Q.value = 1.5;
-      ng.gain.setValueAtTime(0.35, t); ng.gain.exponentialRampToValueAtTime(0.0003, t + 0.006);
+      ng.gain.setValueAtTime(0.35 * (m.click || 1) * (m.drop ? 0.2 : 1), t); ng.gain.exponentialRampToValueAtTime(0.0003, t + 0.006);
       nb.connect(nf); nf.connect(ng); ng.connect(out); nb.start(t, Math.random()); nb.stop(t + 0.01);
     }
     // [수정 6-8] 재질별 문지르는 소리 (모두 '잡음'을 걸러서 만든 소리)
@@ -2820,23 +2997,28 @@
     const MAT_SOUND = {
       // [수정 6-9] 유리가 '휘파람' 같다는 의견 → 좁게 거른 '삐익'을 빼고, 아주 작고 높은 '스스'(손끝이 미끄러지는 소리)로
       "유리":   { soft: 0.12, sf: 6000, grit: 0,    gf: 2000, cr: 0,   cf: 3000, ring: 0,    rf: 2600, vib: "none", quiet: 0.6 },
-      "금속":   { soft: 0.15, sf: 4000, grit: 0.1,  gf: 3500, cr: 0,   cf: 3000, ring: 0,    rf: 3200, vib: "light", quiet: 0.6 },
-      "나무":   { soft: 0.3,  sf: 600,  grit: 0.5,  gf: 900,  cr: 0.3, cf: 1200, ring: 0,    rf: 1000, vib: "grain" },
+      // [수정 6-15] 금속: 매끈한 '스-' 위에 금속 고유의 울림(공명)이 은은하게 섞임 → '사포'가 아니라 '쇠를 쓸어내리는' 소리
+      "금속":   { soft: 0.12, sf: 5000, grit: 0.05, gf: 3500, cr: 0,   cf: 3000, ring: 0,    rf: 3200, res: 0.9, resQ: 28, vib: "light", quiet: 0.7 },
+      "나무":   { soft: 0.3,  sf: 600,  grit: 0.45, gf: 900,  cr: 0.25, cf: 1200, ring: 0,   rf: 1000, res: 0.5, resQ: 6, vib: "grain" },
       // [수정 6-11] 돌이 '사포'처럼 들린다는 의견 → 높은 알갱이를 줄이고, 낮고 드문드문한 '덜컥·사각'으로 (알갱이 빠르기 crr 0.45)
       "돌":     { soft: 0.3,  sf: 260,  grit: 0.3,  gf: 650,  cr: 0.5, cf: 900,  crr: 0.45, ring: 0, rf: 1000, vib: "grain" },
       "천":     { soft: 0.9,  sf: 450,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 1000, vib: "none" },
       "피부":   { soft: 0.7,  sf: 350,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 1000, vib: "none" },
       "종이":   { soft: 0.2,  sf: 800,  grit: 0.5,  gf: 3200, cr: 0.3, cf: 3500, ring: 0,    rf: 1000, vib: "light" },
-      "플라스틱": { soft: 0.45, sf: 1000, grit: 0.1, gf: 1500, cr: 0,   cf: 2000, ring: 0.2,  rf: 1600, vib: "none" },
+      // [수정 6-15] 플라스틱: 마른 '슥슥'(가운데~높은 소리) + 속이 빈 듯한 낮은 공명. 예전의 '삐익'(좁은 울림)은 뺌
+      "플라스틱": { soft: 0.15, sf: 1800, grit: 0.35, gf: 2600, cr: 0,   cf: 2000, ring: 0,    rf: 1600, res: 0.6, resQ: 8, vib: "light", quiet: 0.75 },
       "고무":   { soft: 0.55, sf: 300,  grit: 0.1,  gf: 700,  cr: 0,   cf: 2000, ring: 0.3,  rf: 650,  vib: "light" },
       "흙":     { soft: 0.2,  sf: 500,  grit: 0.4,  gf: 700,  cr: 0.9, cf: 1000, ring: 0,    rf: 1000, vib: "grain" },
-      "잎·풀":  { soft: 0.3,  sf: 900,  grit: 0.35, gf: 2600, cr: 0.45, cf: 3800, ring: 0,   rf: 1000, vib: "light" },
+      // [수정 6-15] 잎·풀: 마른 잎이 스치는 '바스락'(알갱이를 성기고 가운데 높이로) — 머리카락과 구별되게
+      "잎·풀":  { soft: 0.25, sf: 1200, grit: 0.3,  gf: 2200, cr: 0.6, cf: 2600, crr: 0.7, ring: 0, rf: 1000, vib: "light" },
       // [수정 6-14] 머리카락: 가는 털이 스치는 '사르륵' — 아주 높은 바람 소리 + 아주 촘촘하고 작은 알갱이(털 한 올 한 올)
-      "털·머리카락": { soft: 0.3, sf: 3200, grit: 0.15, gf: 5500, cr: 0.35, cf: 6500, crr: 2.5, ring: 0, rf: 1000, vib: "light", quiet: 0.8 },
-      "대리석": { soft: 0.25, sf: 2500, grit: 0.05, gf: 1500, cr: 0, cf: 2000, ring: 0, rf: 1000, vib: "none", quiet: 0.7 },
-      "물":     { soft: 0.6,  sf: 700,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 900,  vib: "none" },
+      // [수정 6-15] 머리카락이 '사포' 같다는 의견 → 알갱이('사각')를 모두 빼고, 부드러운 '스르르'가 가늘게 떨리게(한 올 한 올 스치는 느낌)
+      "털·머리카락": { soft: 0.55, sf: 2600, grit: 0.06, gf: 6000, cr: 0, cf: 6500, ring: 0, rf: 1000, am: 0.55, amf: 17, vib: "none", quiet: 0.7 },
+      "대리석": { soft: 0.25, sf: 2500, grit: 0.05, gf: 1500, cr: 0, cf: 2000, ring: 0, rf: 1000, res: 0.35, resQ: 14, vib: "none", quiet: 0.7 },
+      // [수정 6-15] 물: 낮은 '촤-' + 손가락이 지나갈 때 생기는 작은 물방울 소리('퐁퐁', bubbles = 1초에 몇 개)
+      "물":     { soft: 0.45, sf: 550,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 900,  am: 0.35, amf: 3, bubbles: 22, vib: "none" },
       // [수정 6-13] 재질 추가: 도자기·가죽·모래·얼음·물감(붓질)
-      "도자기": { soft: 0.15, sf: 3500, grit: 0.05, gf: 2500, cr: 0,   cf: 2000, ring: 0,    rf: 1000, vib: "none", quiet: 0.6 },
+      "도자기": { soft: 0.15, sf: 3500, grit: 0.05, gf: 2500, cr: 0,   cf: 2000, ring: 0,    rf: 1000, res: 0.45, resQ: 20, vib: "none", quiet: 0.6 },
       "가죽":   { soft: 0.5,  sf: 400,  grit: 0.25, gf: 900,  cr: 0.1, cf: 1500, crr: 0.6, ring: 0, rf: 1000, vib: "light" },
       "모래":   { soft: 0.2,  sf: 800,  grit: 0.4,  gf: 2500, cr: 1.2, cf: 4000, crr: 1.6, ring: 0, rf: 1000, vib: "grain" },
       "얼음":   { soft: 0.15, sf: 6000, grit: 0,    gf: 2000, cr: 0.1, cf: 5000, ring: 0,    rf: 1000, vib: "none", quiet: 0.6 },
@@ -2855,13 +3037,27 @@
       if (panner) { move.connect(panner); panner.connect(master); } else move.connect(master);
       const src = ctx.createBufferSource(); src.buffer = getNoise(ctx); src.loop = true;
       // 매끈: 낮게 걸러 낸 '스-'
+      // [수정 6-15] '떨림'(flut): 머리카락 한 올 한 올, 물이 출렁이는 느낌 — 아주 낮게 거른 잡음으로 소리 크기를 불규칙하게 흔듦
+      const flut = ctx.createGain(); flut.gain.value = 1; flut.connect(move);
+      const modSrc = ctx.createBufferSource(); modSrc.buffer = getNoise(ctx); modSrc.loop = true;
+      const modLP = ctx.createBiquadFilter(); modLP.type = "lowpass"; modLP.frequency.value = 15; modLP.Q.value = 0.7;
+      const modG = ctx.createGain(); modG.gain.value = 0;
+      modSrc.connect(modLP); modLP.connect(modG); modG.connect(flut.gain);
       const soft = ctx.createBiquadFilter(); soft.type = "lowpass"; soft.frequency.value = 500; soft.Q.value = 0.5;
       const gSoft = ctx.createGain(); gSoft.gain.value = 0;
-      src.connect(soft); soft.connect(gSoft); gSoft.connect(move);
+      src.connect(soft); soft.connect(gSoft); gSoft.connect(flut);
       // 거침 ①: 가운데 높이를 걸러 낸 '쓱'
       const grit = ctx.createBiquadFilter(); grit.type = "bandpass"; grit.frequency.value = 1800; grit.Q.value = 1;
       const gGrit = ctx.createGain(); gGrit.gain.value = 0;
-      src.connect(grit); grit.connect(gGrit); gGrit.connect(move);
+      src.connect(grit); grit.connect(gGrit); gGrit.connect(flut);
+      // [수정 6-15] 재질의 공명: 문지르는 잡음이 물체의 고유 진동수(MAT_MODES)를 살짝 울림 → 금속은 '쇠', 도자기는 '사기', 나무는 '통' 느낌
+      const resBus = ctx.createGain(); resBus.gain.value = 0; resBus.connect(move);
+      const resF = [], resG = [];
+      for (let k = 0; k < 4; k++) {
+        const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1000 * (k + 1); f.Q.value = 10;
+        const g = ctx.createGain(); g.gain.value = 0;
+        src.connect(f); f.connect(g); g.connect(resBus); resF.push(f); resG.push(g);
+      }
       // 거침 ②: 알갱이 '사각사각' — 빨리 문지르면 빨리 재생해서 알갱이가 촘촘해짐
       const cr = ctx.createBufferSource(); cr.buffer = getCrackle(ctx); cr.loop = true;
       const crF = ctx.createBiquadFilter(); crF.type = "bandpass"; crF.frequency.value = 2500; crF.Q.value = 0.7;
@@ -2871,7 +3067,7 @@
       const ring = ctx.createBiquadFilter(); ring.type = "bandpass"; ring.frequency.value = 2600; ring.Q.value = 6;
       const gRing = ctx.createGain(); gRing.gain.value = 0;
       src.connect(ring); ring.connect(gRing); gRing.connect(move);
-      src.start(t); cr.start(t);
+      src.start(t); cr.start(t); modSrc.start(t, Math.random());
       // [수정 6-8] 배경 화음: 작품 전체 분위기를 아주 작게 (팀 결정으로 시험 중 — 별로면 BG_IN_TOUCH = false)
       const padBus = ctx.createGain(), padSrc = []; padBus.gain.value = 0;
       padBus.connect(master);
@@ -2883,7 +3079,8 @@
         padBus.gain.setTargetAtTime(senseOutputs(clamp01(Number(P && touchSense().intensity) || 0.5)).gain * 1.4, t, 0.6);
       }
       tSyn = { ctx: ctx, master: master, comp: comp, move: move, panner: panner, src: src, cr: cr, soft: soft, gSoft: gSoft, grit: grit, gGrit: gGrit,
-               ring: ring, gRing: gRing, padBus: padBus, padSrc: padSrc,
+               ring: ring, gRing: gRing, padBus: padBus, padSrc: padSrc, flut: flut, modSrc: modSrc, modLP: modLP, modG: modG,
+               resBus: resBus, resF: resF, resG: resG, heavy: undefined, bubT: 0,
                crF: crF, gCr: gCr, segRough: 0, base: 0, mat: "" };
       tSyn.still = setInterval(() => {                             // 손가락을 멈추면(0.08초 동안 움직임 신호 없음) 조용히
         if (tSyn && (!tPrev || performance.now() - tPrev.t > 80)) tSyn.move.gain.setTargetAtTime(0, tSyn.ctx.currentTime, 0.05);
@@ -2895,16 +3092,36 @@
       clearInterval(s.still);
       s.master.gain.cancelScheduledValues(t);
       s.master.gain.setTargetAtTime(0, t, 0.05);
-      [s.src, s.cr].concat(s.padSrc || []).forEach((o) => { try { o.stop(t + 0.3); } catch (x) {} });
+      [s.src, s.cr, s.modSrc].concat(s.padSrc || []).forEach((o) => { try { o.stop(t + 0.3); } catch (x) {} });
       setTimeout(() => { try { s.comp.disconnect(); } catch (x) {} }, 600);
       tSyn = null;
     }
     // 새 덩어리에 들어갔을 때: 그 덩어리의 재질로 바꿈
     function touchSegSound(k, gain) {
       if (!tSyn || k < 0) return;
-      tSyn.segRough = touchMap.seg.st[k].rough;
-      tSyn.material = touchMap.seg.st[k].material || "";
+      const st = touchMap.seg.st[k];
+      tSyn.segRough = st.rough;
+      tSyn.material = st.material || "";
+      tSyn.heavy = st.heavy;
       tSyn.base = gain;
+      // 공명 높이 = 그 재질의 고유 진동수 × (묵직하면 낮게 / 가벼우면 높게)
+      const mm = MAT_MODES[tSyn.material], p = MAT_SOUND[tSyn.material] || {}, t = tSyn.ctx.currentTime;
+      const hs = st.heavy === undefined ? { f: 1 } : HEAVY_SCALE[!!st.heavy];
+      tSyn.resF.forEach((f, i) => {
+        const on = mm && p.res && i < mm.f.length;
+        if (on) { f.frequency.setValueAtTime(mm.f[i] * hs.f, t); f.Q.setValueAtTime(p.resQ || 10, t); }
+        tSyn.resG[i].gain.setTargetAtTime(on ? p.res * Math.sqrt(p.resQ || 10) * 0.45 / (i + 1) : 0, t, 0.03);
+      });
+    }
+    // [수정 6-15] 물방울 하나: 작은 공기 방울이 울리는 '퐁' (높이가 위로 미끄러지며 빨리 사라짐)
+    function bubble(ctx, dest, t, amp, pan) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      const f0 = 380 + Math.random() * 900, dur = 0.035 + Math.random() * 0.06;
+      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * (1.5 + Math.random() * 0.8), t + dur);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0002, t + dur);
+      let end = g;
+      if (pan !== undefined && ctx.createStereoPanner) { const pn = ctx.createStereoPanner(); pn.pan.value = pan; g.connect(pn); end = pn; }
+      o.connect(g); end.connect(dest); o.start(t); o.stop(t + dur + 0.02);
     }
     // 손가락이 움직일 때마다: 재질(덩어리 거칠기 60% + 손가락 아래 결 40%)과 속도로 소리 정하기
     function touchFriction(m, moving) {
@@ -2913,7 +3130,8 @@
       let p = MAT_SOUND[s.material];
       if (p) s.mat = s.material + " 소리";
       else {                                                       // 재질을 모르면(아직 AI 답이 없거나 '모름') 픽셀의 거칠기로
-        p = { soft: 0.9 * (1 - r), sf: 300, grit: 0.5 * r, gf: 1100, cr: r > 0.3 ? 1.3 * (r - 0.3) : 0, cf: 2500, ring: 0, rf: 1000 };
+        // [수정 6-15] 알갱이('사각')를 줄여 '사포' 같은 소리가 나지 않게 — 모를 때는 부드럽고 중립적인 소리
+        p = { soft: 0.8 * (1 - r) + 0.15, sf: 350, grit: 0.35 * r, gf: 1100, cr: r > 0.45 ? 0.5 * (r - 0.45) : 0, cf: 2000, ring: 0, rf: 1000 };
         s.mat = (r < 0.3 ? "매끈(스-)" : r < 0.55 ? "중간(쓱)" : "거침(사각사각)") + " · 픽셀로 추정";
       }
       const k = 0.8 + 0.4 * m.rough;                               // 손가락 바로 아래 결이 거칠면 조금 더 까칠하게
@@ -2927,6 +3145,9 @@
       s.gRing.gain.setTargetAtTime(p.ring * 3, t, 0.05);                               // 좁게 거르면 작아져서 키움
       s.ring.frequency.setTargetAtTime(p.rf * (1 + 0.35 * moving), t, 0.04);          // 빨리 문지르면 '삐익'이 올라감
       s.move.gain.setTargetAtTime(Math.min(0.5, s.base * 5 * moving) * (p.quiet || 1), t, 0.03);   // 유리·금속은 더 작게
+      s.modG.gain.setTargetAtTime((p.am || 0) * 28, t, 0.05);                      // 떨림 세기 (머리카락·물)
+      s.modLP.frequency.setTargetAtTime(p.amf || 15, t, 0.05);
+      s.resBus.gain.setTargetAtTime(p.res ? 1 : 0, t, 0.05);
       return p;
     }
 
@@ -2972,7 +3193,7 @@
         if (tPrev && canBuzz) { buzz(Math.round(30 + 25 * out.vibe)); vibeAt = now; }
         const st = touchMap.seg.st[m.seg];
         $("sceneBar").textContent = "✋ " + (st.material && st.material !== "모름"
-          ? "AI가 본 재질: " + st.material + (st.thing ? " (" + st.thing + ")" : "")
+          ? "AI가 본 재질: " + (st.sure === false ? "아마 " : "") + st.material + (st.heavy !== undefined && MAT_MODES[st.material] && st.material !== "물" ? (st.heavy ? " · 묵직한" : " · 가벼운") : "") + (st.thing ? " (" + st.thing + ")" : "")
           : (touchMap.matState === "asking" ? "재질을 알아보는 중… · " : "") + LV(st.rough, "매끈해 보여요", "조금 오돌토돌해 보여요", "거칠어 보여요"));
       }
       // 2) 👁 손가락 둘레 빛
@@ -2993,6 +3214,13 @@
       }
       // 🔔 재질의 울림: 새 덩어리에 닿으면 한 번, 문지르는 동안 gap 픽셀마다 한 번 (빠를수록 크게)
       const segMat = touchMap.seg.st[m.seg].material;
+      // [수정 6-15] 💧 물: 문지르는 빠르기만큼 작은 물방울 소리
+      if (tSyn && p && p.bubbles && moving > 0.05) {
+        const dt = tPrev ? Math.min(0.1, (now - tPrev.t) / 1000) : 0;
+        let want = p.bubbles * moving * dt;
+        const pan = ((m.x + 0.5) / touchMap.W * 2 - 1) * 0.85;
+        while (want > 0) { if (Math.random() < want) bubble(tSyn.ctx, tSyn.master, tSyn.ctx.currentTime + Math.random() * 0.03, Math.min(0.35, tSyn.base * 4) * (0.4 + 0.6 * Math.random()), pan); want -= 1; }
+      }
       if (tSyn && MAT_MODES[segMat]) {
         const mm = MAT_MODES[segMat], dist = tPrev ? Math.hypot(e.clientX - tPrev.x, e.clientY - tPrev.y) : 0;
         tapDist += dist;
@@ -3002,10 +3230,10 @@
         //            ② 유리·금속처럼 매끈한 재질은 '처음 닿을 때'와 '멈췄다가 다시 움직일 때'만 울림 (계속 문지를 때 톡톡거리던 것 고침)
         //               돌·나무·종이처럼 결이 있는 재질만 문지르는 동안 계속 '툭·톡' (결을 지나가는 느낌)
         const restart = !tPrev || now - tPrev.t > 400;
-        if (restart && moving < 0.3) { modalTap(tSyn.ctx, tSyn.master, segMat, tSyn.ctx.currentTime, base * mm.hit * 0.8, pan); tapDist = 0; }
+        if (restart && moving < 0.3) { modalTap(tSyn.ctx, tSyn.master, segMat, tSyn.ctx.currentTime, base * mm.hit * 0.8, pan, touchMap.seg.st[m.seg].heavy); tapDist = 0; }
         else if (changed) tapDist = 0;
         else if (mm.repeat && tapDist >= mm.gap && moving > 0.05) {
-          modalTap(tSyn.ctx, tSyn.master, segMat, tSyn.ctx.currentTime, base * (0.25 + 0.55 * moving) * (0.8 + 0.4 * m.rough), pan);
+          modalTap(tSyn.ctx, tSyn.master, segMat, tSyn.ctx.currentTime, base * (0.25 + 0.55 * moving) * (0.8 + 0.4 * m.rough), pan, touchMap.seg.st[m.seg].heavy);
           tapDist = 0;
         }
       }
@@ -3132,7 +3360,7 @@
       "엄숙한": { classic: 2, cinema: 1 }, "경쾌한": { pop: 2, folk: 1, musicbox: 1 }, "신나는": { pop: 2, festival: 1, rock: 1, electro: 1 },
       "힘찬": { rock: 2, festival: 2 }, "귀여운": { musicbox: 3, pop: 1 }, "사랑스러운": { pop: 2, musicbox: 1, rnb: 1 },
       "낭만적인": { jazz: 2, rnb: 1, classic: 1 }, "관능적인": { rnb: 3, jazz: 1 }, "세련된": { electro: 2, jazz: 1, hiphop: 1 },
-      "까리한": { hiphop: 3, rnb: 1 }, "차가운": { electro: 2, calm: 1 }, "강렬한": { rock: 2, metal: 1, hiphop: 1 },
+      "까리한": { hiphop: 3, rnb: 1 }, "차가운": { electro: 2, calm: 1 }, "강렬한": { rock: 2, cinema: 1.5, metal: 1, hiphop: 1 },
       "거친": { rock: 2, metal: 2, hiphop: 1 }, "화난": { metal: 3, rock: 1 }, "장난스러운": { pop: 1, musicbox: 1, jazz: 1 }
     };
     const HIGH_ENERGY = ["rock", "metal", "electro", "festival", "pop", "hiphop"], LOW_ENERGY = ["calm", "ballad", "musicbox"];
@@ -3951,20 +4179,28 @@
           g.lineWidth = wdt; g.lineCap = "round";
           g.beginPath(); g.moveTo(x - Math.cos(a2) * len / 2, y - Math.sin(a2) * len / 2); g.lineTo(x + Math.cos(a2) * len / 2, y + Math.sin(a2) * len / 2); g.stroke();
         } else if (style === "mosaic") {
-          const fl = 0.85 + 0.15 * Math.sin(time * 1.3 + p.ph);                 // 타일마다 아주 살짝 밝기가 숨 쉼
-          g.globalAlpha = alpha * fl;
-          const sz = step * 0.86;
-          g.fillRect(p.x0 - sz / 2, p.y0 - sz / 2, sz, sz);
+          // [수정 6-15] 모자이크만 덜 움직여 어색하다는 의견 → 다른 그림체처럼 떠다니고(x, y), 대각선으로 '물결'이 지나가며
+          //   타일이 커졌다 작아지고 살짝 기울었다 돌아옴 (물결 = 화면을 가로지르는 사인파, 3초에 한 번쯤)
+          const rm = reduceMotion() ? 0 : 1;
+          const wave = Math.sin(time * 2.1 - (p.x0 + p.y0) / (step * 7));
+          const sz = step * 0.86 * (1 - rm * 0.2 + rm * 0.2 * wave);
+          const rot = rm * (0.32 * wave * (0.6 + 0.4 * Math.sin(p.ph)) + 0.08 * Math.sin(time * 0.9 + p.ph));
+          g.globalAlpha = alpha * (0.72 + 0.28 * (0.5 + 0.5 * wave));
+          const cs = Math.cos(rot) * P.dpr, sn = Math.sin(rot) * P.dpr;
+          g.setTransform(cs, sn, -sn, cs, x * P.dpr, (y - rm * step * 0.35 * wave) * P.dpr);
+          g.fillRect(-sz / 2, -sz / 2, sz, sz);
         } else {                                                               // 별빛
-          if (p.l < 0.42) { g.globalAlpha = alpha * 0.25; g.fillRect(p.x0 - 1, p.y0 - 1, 2, 2); continue; }
+          // [수정 6-15] 빛이 너무 세다는 의견 → 하얀 가운데를 흐리게, 크기·반짝임 폭을 줄이고 어두운 곳은 더 흐리게
+          if (p.l < 0.45) { g.globalAlpha = alpha * 0.16; g.fillRect(p.x0 - 1, p.y0 - 1, 2, 2); continue; }
           const tw = 0.5 + 0.5 * Math.sin(time * (1.5 + p.ph % 1.5) + p.ph);
-          g.globalAlpha = alpha * (0.3 + 0.7 * tw);
-          const rr = step * (0.15 + 0.5 * p.l) * (0.7 + 0.6 * tw);
-          const gr = g.createRadialGradient(p.x0, p.y0, 0, p.x0, p.y0, rr * 2.4);
-          gr.addColorStop(0, "rgba(255,255,255,0.95)"); gr.addColorStop(0.35, p.c); gr.addColorStop(1, "rgba(0,0,0,0)");
-          g.fillStyle = gr; g.beginPath(); g.arc(p.x0, p.y0, rr * 2.4, 0, 6.283); g.fill();
+          g.globalAlpha = alpha * (0.18 + 0.4 * tw);
+          const rr = step * (0.15 + 0.4 * p.l) * (0.75 + 0.4 * tw);
+          const gr = g.createRadialGradient(p.x0, p.y0, 0, p.x0, p.y0, rr * 1.8);
+          gr.addColorStop(0, "rgba(255,255,255,0.55)"); gr.addColorStop(0.35, p.c); gr.addColorStop(1, "rgba(0,0,0,0)");
+          g.fillStyle = gr; g.beginPath(); g.arc(p.x0, p.y0, rr * 1.8, 0, 6.283); g.fill();
         }
       }
+      g.setTransform(P.dpr, 0, 0, P.dpr, 0, 0);                              // (모자이크가 돌린 좌표를 되돌림)
     }
     function drawArt(ts) {
       if (!artMode) return;
@@ -4162,6 +4398,8 @@
         " · 거칠기 " + f(P.c.roughness) + " · 흐름 " + f(P.c.flow) +
         "<br>&nbsp;&nbsp;&nbsp;→ 장르 '" + P.genreName + "' (" + esc(P.genreWhy) + ") · 성격 '" + P.styleName + "' · " + P.scaleName + (P.avoid && P.avoid.length ? "(5음)" : "") + " · 코드 " + P.progName + " · " + P.instName + " · " + Math.round(P.bpm) + "BPM · 기준음 " + Math.round(P.root) + "Hz" +
         "<br>&nbsp;&nbsp;&nbsp;→ 리듬(한 마디) [" + P.rhythm.join(" ") + "] · 진동(첫 음) [" + vibeForNote(P.c, lastOut ? lastOut.vibe : 0.6, noteAt(P, 0) * 60000 / P.bpm, true).join(", ") + "]ms" +
+        (s.tag_from ? "<br>&nbsp;&nbsp;&nbsp;분위기 낱말: " + esc((s.mood_tags || []).join("·") || "-") + " (" + esc(s.tag_from) + ")" +
+          (s.tag_align ? " · 낱말 자리 쪽으로 맞춤: 기분 " + f(s.tag_align.from.valence) + "→" + f(s.tag_align.to.valence) + ", 활기 " + f(s.tag_align.from.arousal) + "→" + f(s.tag_align.to.arousal) : "") : "") +
         (s.spread ? "<br>&nbsp;&nbsp;&nbsp;3번 매긴 값의 흔들림: 평균 ±" + spreadAvg(s.spread).toFixed(3) : "") +
         (s.why ? "<br>&nbsp;&nbsp;&nbsp;근거: " + esc(s.why) : "");
     }
@@ -4182,7 +4420,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-14 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-15 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -4207,7 +4445,7 @@
         "<br><br><b>👁 감정 색</b>: <span class='sw' style='background:" + emotionColor(r.whole || {}) + "'></span> (기분·활기 → 색) · 빛 세기 = 스티븐스 자극을 화면 밝기(감마 2.2)로 변환" +
         "<br><br><b>🎻 악기 소리</b><br><span id='sampleNow'>" + sampleText() + "</span><br><span class='note'>출처: FluidR3_GM 사운드폰트 (CC BY 3.0)</span>" +
         "<br><br><b>🔊 소리 크기 자동 맞춤</b><br><span id='levelNow'>" + levelText() + "</span>" +
-        "<br><br><b>✋ 만져보기 (마지막으로 만진 곳)</b><br><span id='touchNow'>" + touchText() + "</span>" +
+        "<br><br><b>✋ 나누기·재질 (눈길 안내·만져보기)</b><br><span id='touchNow'>" + touchText() + "</span>" +
         "<br><b>픽셀에서 잰 사실</b>: " + (lastData && lastData.pixel ? (lastData.pixel.gray ? "흑백" : "컬러") + " (색 진하기 평균 " + lastData.pixel.sat + ") · 대표 색 " + swatch(lastData.pixel.hex) + " " + esc(lastData.pixel.names.join(", ")) +
           (r.aiColors && r.aiColors.length ? " · (AI가 고른 색은 쓰지 않음: " + swatch(r.aiColors) + ")" : "") : "-");
     }
@@ -4218,12 +4456,20 @@
         "<br><span class='note'>= 낮은 소리 작품과 높은 소리 작품이 비슷한 크기로 들리도록 자동 조절 (배율 0.3~4 사이)</span>";
     }
     function touchText() {
-      if (!touchInfo) return "아직 만지지 않음";
       const f = (x) => Number(x).toFixed(2);
-      return "사진을 색·밝기가 비슷한 곳끼리 " + touchInfo.n + "덩어리로 나눔 (이웃 칸끼리 색 차이로 영역 나누기 → 1.2%보다 작은 조각은 합침 → 비슷한 색끼리 합쳐 최대 " + SEG_MAX + "개)" +
-        "<br>만진 덩어리: 사진의 " + (touchInfo.part * 100).toFixed(1) + "% · 평균 밝기 " + f(touchInfo.segLum) + " · 덩어리 거칠기 " + f(touchInfo.segRough) + "<br>" +
+      const M = lastData && lastData.touchMap;
+      // [수정 6-15] 나누기와 AI 이름 붙이기 결과를 만지기 전에도 보여 줌 (심사 설명용)
+      let h = M ? "사진 나누기: 밝기를 고르게 편 뒤(어두운 사진도 차이가 보이게) 이웃 칸끼리 색·결 차이로 영역 나누기 → 경계가 약한 것부터 합쳐 최대 " + SEG_MAX +
+        "개 → AI가 같은 물건이라고 한 이웃끼리 합침 → 지금 " + M.seg.n + "덩어리" + (M.merged ? " (" + M.merged + "번 합침)" : "") +
+        (M.hi ? " · 테두리는 2배 해상도로 다듬음" : "") +
+        "<br>재질·이름 묻기: " + ({ asking: "진행 중", done: "완료" + (M.matMs ? " " + (M.matMs / 1000).toFixed(1) + "초" : ""), fail: "실패 → 픽셀로" }[M.matState] || "-") +
+        (M.matFixed ? " · 이름과 어긋난 재질 " + M.matFixed + "개를 규칙으로 바로잡음" : "") +
+        (M.matSeen ? "<br>AI가 본 것: " + esc(M.matSeen) : "") +
+        (M.matState === "done" ? "<br>덩어리별: " + M.seg.st.map((s, k) => (k + 1) + "." + esc(s.thing || "?") + "/" + esc(s.material || "-") + (s.heavy ? "·묵직" : "") + (s.imp >= 0 ? "·중요" + s.imp : "")).join(" ") : "") +
+        (tourParts.length ? "<br>👀 눈길 안내로 고른 곳: " + tourParts.map((p) => esc(p.thing) + "(중요" + p.imp + ")").join(" → ") : "") : "아직 나누지 않음";
+      if (!touchInfo) return h + "<br>(아직 만지지 않음)";
+      return h + "<br><b>마지막으로 만진 곳</b>: 사진의 " + (touchInfo.part * 100).toFixed(1) + "% · 평균 밝기 " + f(touchInfo.segLum) + " · 덩어리 거칠기 " + f(touchInfo.segRough) + "<br>" +
         "AI가 본 재질: " + (touchInfo.material ? esc(touchInfo.material) + (touchInfo.thing ? " (" + esc(touchInfo.thing) + ")" : "") : "-") +
-        " · 재질 묻기 " + ({ asking: "진행 중", done: "완료" + (touchInfo.matMs ? " " + (touchInfo.matMs / 1000).toFixed(1) + "초" : ""), fail: "실패 → 픽셀로" }[touchInfo.matState] || "-") +
         "<br>문지르는 소리: " + esc(touchInfo.mat) + " · 진동: " + ({ none: "없음", light: "가볍게", grain: "오돌토돌" }[touchInfo.vib] || "-") +
         "<br>손가락 아래 결 " + f(touchInfo.rough) + (touchInfo.rough > 0.55 ? " (거침)" : touchInfo.rough > 0.25 ? " (중간)" : " (매끈)") +
         " · 손 속도 " + f(touchInfo.moving);
