@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "4-5";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "5-1";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -26,6 +26,9 @@ const HARD_WORDS = [
   "사실주의", "서사", "내면", "정체성", "모티프", "조형", "미학", "대비를 이루", "형상화",
   "은유", "함축", "역동적", "정적인", "몽환적", "서정적", "비장", "해학", "풍자", "조화를 이루"
 ];
+
+// 평가하는 말 (근거 없이 좋다·나쁘다를 정해 버리는 말) — 쉬운 정보에서는 피함
+const JUDGE_WORDS = ["멋지", "멋진", "아름다", "아름답", "훌륭", "대단", "예쁘", "예쁜", "완벽", "걸작", "명작", "최고"];
 
 const TEMPOS = ["느림", "보통", "빠름"];
 const PITCHES = ["낮음", "중간", "높음"];
@@ -86,6 +89,7 @@ function textPrompt(type, explain, target, cropped) {
     "3. 초등학생도 아는 낱말만. 미술·음악 전문 용어(구도, 질감, 명암, 상징 등)는 쓰지 않는다.",
     "4. 느낌은 일상 물건이나 몸의 느낌으로 비유한다. (예: '이불 속처럼 포근해요')",
     "5. 주어를 분명히, '~요'로 끝나는 부드러운 존댓말.",
+    "6. '멋진, 아름다운, 훌륭한, 대단한, 예쁜' 같은 평가하는 말을 쓰지 않는다. 대신 무엇이 보이는지와, 그래서 어떤 느낌이 드는지를 근거와 함께 쓴다. (나쁜 예: '멋진 그림이에요' / 좋은 예: '노란 별이 반짝여서 설레는 느낌이 들어요')",
     "",
     "[정직 규칙]",
     "- 작품 이름은 확실할 때만 title_guess에, 아니면 빈 문자열.",
@@ -212,6 +216,7 @@ function checkRules(d, explain, type) {
   });
   const all = [d.summary, d.interpretation].concat(scenes.map((s) => s.text)).join(" ");
   HARD_WORDS.forEach((w) => { if (all.includes(w)) v.push("어려운 낱말 '" + w + "'을 썼어요"); });
+  JUDGE_WORDS.forEach((w) => { if (all.includes(w)) v.push("평가하는 말 '" + w + "…'을 썼어요. 보이는 것과 느낌의 근거로 바꿔 주세요"); });
   if (type === "video" && (all.match(/보여/g) || []).length > 2) v.push("'보여요/보여줘요'를 너무 많이 썼어요. 무엇이 일어나는지를 말해 주세요");
   if (/^사진$/.test(String(d.kind || ""))) v.push("kind를 '사진'이라고 했어요. 찍힌 대상의 종류를 써 주세요");
   return v;
@@ -386,7 +391,10 @@ module.exports = async (req, res) => {
     const senseMs = Date.now() - tSense;
 
     const sScenes = scenes.map((_, i) => cleanSense((sense.data.scenes || [])[i]));
-    const contrast = spreadScenes(sScenes);
+    // [수정 5-1] 대비 강조는 끔: AI가 '비슷하다'고 본 장면을 일부러 다르게 만들면 없는 차이를 지어내는 것이 됨
+    //            (장면끼리 구분되는지는 베버의 '알아챌 수 있는 최소 차이' 기준으로 소리·빛 쪽에서 설계)
+    const CONTRAST_ON = false;
+    const contrast = CONTRAST_ON ? spreadScenes(sScenes) : {};
     return res.status(200).json({
       ok: true,
       version: SERVER_VERSION,
