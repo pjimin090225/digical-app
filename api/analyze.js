@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-7";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-8";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -36,7 +36,11 @@ const FEEL_WORDS = ["같아요", "같은 느낌", "느껴", "느낌", "기분", 
 const COLOR_WORDS = ["빨간", "빨강", "붉은", "파란", "파랑", "푸른", "노란", "노랑", "초록", "녹색", "분홍", "보라", "주황", "갈색", "금빛", "황금", "화려한 색", "알록달록", "색깔", "컬러", "다채로운 색"];
 
 // [수정 6-4] 재질 목록 — 만져보기의 문지르는 소리와 전체 느끼기의 악기를 고르는 데 씀
-const MATERIALS = ["유리", "도자기", "금속", "나무", "돌", "천", "가죽", "피부", "종이", "플라스틱", "고무", "흙", "모래", "잎·풀", "털·머리카락", "물", "얼음", "물감·붓질", "모름"];   // [수정 6-7] 도자기·가죽·모래·얼음·물감 추가
+// [수정 6-8] 분위기 낱말 30가지 — '더 다양하게(까리한, 관능적인, 차가운…)' 의견. 감각 수치를 매기는 같은 AI가 함께 고름 → 음악 장르와 어긋나지 않게
+const MOOD_TAGS = ["평화로운", "고요한", "따뜻한", "포근한", "그리운", "쓸쓸한", "외로운", "슬픈", "우울한", "긴장된", "불안한", "무서운",
+  "신비로운", "몽환적인", "웅장한", "엄숙한", "경쾌한", "신나는", "힘찬", "귀여운", "사랑스러운", "낭만적인", "관능적인",
+  "세련된", "까리한", "차가운", "강렬한", "거친", "화난", "장난스러운"];
+const MATERIALS = ["유리", "도자기", "금속", "나무", "돌", "대리석", "천", "가죽", "피부", "종이", "플라스틱", "고무", "흙", "모래", "잎·풀", "털·머리카락", "물", "얼음", "물감·붓질", "모름"];   // [수정 6-7] 도자기·가죽·모래·얼음·물감 추가
 
 const TEMPOS = ["느림", "보통", "빠름"];
 const PITCHES = ["낮음", "중간", "높음"];
@@ -165,6 +169,10 @@ function sensePrompt() {
     "- emotion: 감정 한 낱말",
     "- colors: 사진에서 실제로 보이는 대표 색 1~3개 (#RRGGBB)",
     "- why: 가장 중요한 근거 15자 안팎 (사진에서 본 것)",
+    "- (whole에만) mood_tags: 아래 목록에서 이 작품의 분위기에 가장 맞는 낱말 1~3개. 가장 강한 것을 맨 앞에.",
+    "  목록: " + MOOD_TAGS.join(", "),
+    "  ('까리한' = 멋스럽고 당당한, '세련된' = 깔끔하고 도시적인, '관능적인' = 부드러운 곡선과 은은한 매혹. 아이·학생 사진에는 '관능적인'을 쓰지 않는다)",
+    "  입력에 'AI가 느낀 분위기' 문장이 있으면 그 문장과 어긋나지 않게 고른다.",
     "",
     "[규칙]",
     "- 눈금 예시와 비교해서 가장 가까운 위치를 고른다. 근거 없이 0.5를 고르지 않는다.",
@@ -174,7 +182,7 @@ function sensePrompt() {
     "- 장면마다 사진에서 그 부분만 보고 매긴다. 장면 순서와 개수는 입력과 똑같이.",
     "- whole은 사진 전체를 처음 봤을 때의 종합적인 느낌이다.",
     "",
-    '[출력] JSON만: {"whole":{...}, "scenes":[{...}, ...]}  (각 {...}는 위 9가지 값을 모두 가짐)'
+    '[출력] JSON만: {"whole":{..., "mood_tags":["…"]}, "scenes":[{...}, ...]}  (각 {...}는 위 9가지 값을 모두 가짐)'
   ].join("\n");
 }
 
@@ -298,6 +306,7 @@ function cleanSense(s) {
   };
   DIMS.forEach((k) => { o[k] = n01(s[k], 0.5); });
   if (s.spread) o.spread = s.spread;
+  if (Array.isArray(s.mood_tags)) o.mood_tags = s.mood_tags.filter((t) => MOOD_TAGS.includes(t)).slice(0, 3);
   return labelsOf(o);
 }
 
@@ -336,7 +345,14 @@ function averageSense(list, n) {
   };
   const scenes = [];
   for (let i = 0; i < n; i++) scenes.push(avgOne(list.map((d) => (d.scenes || [])[i] || {})));
-  return { whole: avgOne(list.map((d) => d.whole || {})), scenes: scenes };
+  const whole = avgOne(list.map((d) => d.whole || {}));
+  // 분위기 낱말: 3번 중 많이 나온 순서 (같으면 앞에 놓인 것 우선) → 최대 3개
+  const votes = new Map();
+  list.forEach((d) => ((d.whole && d.whole.mood_tags) || []).forEach((t, i) => {
+    if (MOOD_TAGS.includes(t)) votes.set(t, (votes.get(t) || 0) + 1 + (2 - Math.min(2, i)) * 0.1);
+  }));
+  whole.mood_tags = [...votes.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map((x) => x[0]);
+  return { whole: whole, scenes: scenes };
 }
 
 function senseProblems(d, n) {
@@ -404,6 +420,7 @@ module.exports = async (req, res) => {
         "영역에 여러 재질이 섞여 있으면 가장 넓은 것. 하늘·흐린 배경처럼 만질 수 없는 곳은 '모름'.",
         "번호와 테두리는 표시일 뿐 재질이 아니다.",
         "'유리'는 투명하거나 반투명해서 뒤가 비쳐 보이는 것(컵, 병, 창문, 유리 화분)만 고른다. 반짝이거나 매끈하다고 유리가 아니다. 반짝이는 그릇·화분은 대개 '도자기'다.",
+        "매끈하게 다듬은 조각상·기둥의 돌은 '대리석', 울퉁불퉁한 바위·벽돌·시멘트는 '돌'. 사람 머리털·동물 털은 '털·머리카락'.",
         "그림(회화) 사진이면 그림 속 물체의 재질을 고른다. 그림 속 물체를 알아보기 어렵고 붓 자국만 보이면 '물감·붓질'.",
         "sure: 재질이 확실하면 true, 조금이라도 헷갈리면 false.",
         '[출력] JSON만: {"regions":[{"n":1,"material":"도자기","thing":"화분","sure":true}, ...]} (thing은 무엇인지 5자 안팎)'
@@ -470,6 +487,7 @@ module.exports = async (req, res) => {
     const senseIn = (pixel && pixel.gray ? "(앱이 잰 사실: 흑백 사진)\n" : "") +
       (type === "text" ? "(사진 없음 — 아래 글과 원래 글만 보고 매긴다. 밝기·무게·거칠기·흐름은 글이 그리는 장면을 떠올려서)\n원래 글: " + inText.slice(0, 800) + "\n" : "") +
       "종류: " + text.kind + "\n요약: " + text.summary + "\n자세한 해설: " + text.interpretation + "\n" +
+      (text.mood_line ? "AI가 느낀 분위기: " + text.mood_line + "\n" : "") +
       scenes.map((s, i) => "장면 " + (i + 1) + " (" + s.name + "): " + s.text + " / 보이는 모습: " + (s.look || "-")).join("\n") + "\n" + audioText(body.audio);
     // 감각 단계에는 번호 칸이 없는 원래 사진을 보냄 (칸 선이 색 판단을 방해하지 않게)
     const raw = type === "text" ? [] : (typeof body.rawImage === "string" && body.rawImage.startsWith("data:image/") && body.rawImage.length < 2000000) ? [body.rawImage] : images;

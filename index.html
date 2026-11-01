@@ -6,6 +6,9 @@
   <!-- 휴대폰 화면 폭에 맞추는 설정 -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>디지컬</title>
+  <!-- [수정 6-14] '아틀리에' 시안의 제목 글꼴 (Noto Serif KR, SIL Open Font License) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet">
 
   <style>
     /* ==========================================================
@@ -37,6 +40,17 @@
 
     /* [수정 6-10] 디자인 시안 3가지 — 주소 끝에 ?theme=museum / contrast / pastel (개발용 정보에서도 바꿀 수 있음)
        팀원 B: 고른 시안의 색을 여기서 조금씩 바꾸면 앱 전체가 바뀜 */
+    :root { --font-title: inherit; }
+    /* 시안 4: 아틀리에 — 미술관 홈페이지처럼 돌·베이지 색, 제목은 명조(세리프) 글꼴, 테두리만 있는 둥근 버튼 */
+    :root[data-theme="atelier"] {
+      --bg: #F4F1EC; --card: #FBF9F5; --text: #2B2622; --sub: #5E554D; --border: #2B2622;
+      --accent: #E8DFD2; --primary: #4A4039; --primary-text: #FFFFFF; --off: #DDD5CA; --warn-bg: #EFE8DD;
+      --radius: 999px; --font-title: "Noto Serif KR", "Nanum Myeongjo", serif;
+    }
+    :root[data-theme="atelier"] h1, :root[data-theme="atelier"] h2 { font-family: var(--font-title); font-weight: 600; letter-spacing: -0.01em; }
+    :root[data-theme="atelier"] .card, :root[data-theme="atelier"] details.card { border-radius: 18px; border-width: 1.5px; }
+    :root[data-theme="atelier"] .big { font-weight: 600; border-width: 1.5px; }
+    :root[data-theme="atelier"] .art { border-radius: 14px; }
     :root[data-theme="contrast"] {      /* 시안 2: 고대비 다크 — 저시력·고령자, 어두운 전시장 */
       --bg: #000000; --card: #121212; --text: #FFFFFF; --sub: #D0D0D0; --border: #FFFFFF;
       --accent: #8FE3FF; --primary: #FFD23F; --primary-text: #000000; --off: #444444; --warn-bg: #3A3000;
@@ -233,6 +247,37 @@
     .art.mooded { box-shadow: 0 0 0 6px var(--mood); }
     .light-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; mix-blend-mode: screen; pointer-events: none; }
     .art-canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
+    /* ---- 📚 내 갤러리: 따뜻한 조명 아래 액자가 걸린 벽 ---- */
+    #gallery { margin: calc(var(--gap) * -2); padding: 0; }
+    .gal-room { min-height: 70vh; padding: calc(var(--gap) * 2); color: #F3EDE4;
+      background: radial-gradient(120% 60% at 50% 0%, #6B5D50 0%, #4A4038 45%, #2E2722 100%); }
+    .gal-room .back { color: #F3EDE4; border-color: #F3EDE4; background: transparent; }
+    .gal-kicker { letter-spacing: 0.3em; font-size: 13px; opacity: 0.75; margin: 16px 0 0; }
+    .gal-h { font-family: var(--font-title); font-weight: 600; font-size: 40px; margin: 4px 0; }
+    .gal-sub { opacity: 0.8; margin: 0 0 16px; }
+    .gal-wall { display: flex; gap: 28px; overflow-x: auto; padding: 28px 8px 8px; scroll-snap-type: x mandatory; }
+    .gal-item { flex: 0 0 62%; max-width: 280px; scroll-snap-align: center; position: relative; background: none; border: 0; color: inherit; text-align: center; padding: 0; }
+    .gal-light { position: absolute; left: 10%; right: 10%; top: -30px; height: 120px; background: radial-gradient(50% 60% at 50% 0%, rgba(255,236,200,0.45), transparent 70%); pointer-events: none; }
+    .gal-frame { display: block; padding: 10px; background: linear-gradient(135deg, #C9A86A, #8A6A35 45%, #D8BC82 70%, #7A5A28);
+      box-shadow: 0 18px 30px rgba(0,0,0,0.55), inset 0 0 0 2px rgba(0,0,0,0.25); }
+    .gal-frame img { display: block; width: 100%; height: 220px; object-fit: cover; border: 8px solid #F4EFE6; box-sizing: border-box; }
+    .gal-plate { display: inline-block; margin-top: 14px; padding: 6px 12px; background: #EDE6DA; color: #3A322C; font-size: 14px; line-height: 1.4; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+    .gal-empty { padding: 40px 8px; text-align: center; opacity: 0.85; }
+    .gal-floor { height: 40px; margin: 24px calc(var(--gap) * -2) 0; background: linear-gradient(#5A4632, #3C2E21); }
+    .hero { position: relative; border-radius: var(--radius-card, 18px); overflow: hidden; margin: 8px 0 12px; background: #111; }
+    .hero img { display: block; width: 100%; height: 34vh; object-fit: cover; opacity: 0.88; }
+    .hero-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 16px 14px; color: #FFF; background: linear-gradient(transparent, rgba(0,0,0,0.65)); }
+    .hero-cap span { display: block; font-size: 14px; letter-spacing: 0.08em; opacity: 0.85; }
+    .hero-cap b { font-family: var(--font-title); font-size: 26px; font-weight: 600; }
+    .gal-detail { padding: calc(var(--gap) * 2); background: var(--bg); }
+    .gal-big img { width: 100%; max-height: 60vh; object-fit: contain; background: #111; border-radius: 6px; }
+    .gal-title { font-family: var(--font-title); font-size: 30px; margin: 12px 0 4px; }
+    .gal-meta { color: var(--sub); margin: 0 0 8px; }
+    .gal-label { font-weight: 800; margin: 16px 0 4px; letter-spacing: 0.02em; }
+    .wait-full { position: fixed; inset: 0; z-index: 100; background: #000; }
+    .wait-full canvas { position: absolute; left: 0; top: 0; }
+    .wait-info { position: absolute; left: 0; right: 0; bottom: 6vh; text-align: center; color: #FFF; font-size: 22px; font-weight: 800; line-height: 1.5; text-shadow: 0 0 8px #000; }
+    .wait-style { font-size: 16px; opacity: 0.75; font-weight: 600; }
     .art-wrap { transition: transform 1.4s cubic-bezier(.4,0,.2,1); transform-origin: 50% 50%; }
     .tour-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; filter: blur(3px); }
     .tour-cap { position: absolute; left: 12px; bottom: 12px; background: rgba(0,0,0,0.78); color: #FFF; font-size: 24px; font-weight: 800; padding: 6px 16px; border-radius: 999px; pointer-events: none; line-height: 1.4; }
@@ -245,6 +290,7 @@
     .scene-bar { margin: calc(var(--gap) * 1.5) 0 0; font-weight: 800; font-size: 20px; }
     .row2 { display: flex; gap: var(--gap); }
     .measured { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--warn-bg); line-height: 1.7; }
+    .chip { display: inline-block; margin: 4px 4px 0 0; padding: 2px 10px; border-radius: 999px; background: #FFF; border: 2px solid #8A7FB8; font-weight: 800; font-size: 0.9em; }
     .ai-mood { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #F1EEF8; border: 2px dashed #8A7FB8; }
     .mini { padding: 4px 10px; border: 2px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font-weight: 800; }
     /* 탐구 노트 */
@@ -406,6 +452,25 @@
     </div>
   </section>
 
+  <!-- [수정 6-14] 📚 내 갤러리 — 미술관 벽처럼 -->
+  <section id="gallery" class="screen" hidden>
+    <div class="gal-room">
+      <div class="topbar"><button class="back" id="btnGalHome">← 처음으로</button></div>
+      <p class="gal-kicker">MY GALLERY</p>
+      <h1 class="gal-h">내 갤러리</h1>
+      <p class="gal-sub" id="galCount"></p>
+      <div class="gal-wall" id="galWall"></div>
+      <div class="gal-floor"></div>
+    </div>
+    <div class="gal-detail" id="galDetail" hidden></div>
+  </section>
+
+  <!-- [수정 6-14] 기다리는 동안 전체 화면 빛 그림 -->
+  <div class="wait-full" id="waitFull" hidden>
+    <canvas id="waitCanvas"></canvas>
+    <div class="wait-info"><div class="wait-style" id="waitStyle"></div><div id="waitMsg">AI가 작품을 천천히 보고 있어요</div></div>
+  </div>
+
   <!-- ===================== ⑧ 아직 만들지 않은 화면 ===================== -->
   <!-- ===================== ⑨ 🔬 탐구 노트 ===================== -->
   <section id="note" class="screen" hidden>
@@ -446,7 +511,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-13: 장르 9가지 + 재질 5가지 추가 + 소리 출렁임 줄임<br>
+    6단계 · 앱 6-14: 장르 15가지(분위기 낱말로 고름) + 전체 화면 빛 그림 + 내 갤러리<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1864,10 +1929,12 @@
       const stages = ["👀 보고 있어요", "✂️ 장면을 나누고 있어요", "🎨 감각을 고르고 있어요"];
       let i = 0;
       el.innerHTML = '<div class="feel-area"><div class="feel-box breath"></div></div><p class="q-mid" id="waitText">' + stages[0] + "</p>";
+      const wm0 = document.getElementById("waitMsg"); if (wm0) wm0.textContent = stages[0];
       const t = setInterval(() => {
         i = Math.min(i + 1, stages.length - 1);
         const w = document.getElementById("waitText");
         if (w) w.textContent = stages[i];
+        const wm = document.getElementById("waitMsg"); if (wm) wm.textContent = stages[i];   // 전체 화면 빛 그림 아래 글도 같이
       }, 2500);
       return () => clearInterval(t);
     }
@@ -2013,6 +2080,7 @@
         renderTexts(r);
         endWaitArt();                   // [수정 6-12] 기다리는 동안 보이던 빛 그림이 사라지며 원래 작품이 드러남
         prepareParts();                 // [수정 6-12] 눈길 안내·만져보기용 덩어리와 이름을 미리 준비
+        if (d.type === "photo" || d.type === "text") addToGallery(d, r);   // [수정 6-14] 📚 내 갤러리에 걸기
         showReady();                    // [수정 6-4] 바로 소리를 내지 않고 '준비됐어요' → ▶ 버튼
       } catch (e) {
         if (seq !== analyzeSeq) return;
@@ -2118,7 +2186,8 @@
           "<p class='note'>눈에 띄는 부분</p>" +
           (r.scenes || []).map((s, i) => "<p>" + (i + 1) + ". <b>" + esc(s.name) + "</b> — " + esc(s.text) + "</p>").join("") +
           measuredHTML(r) +
-          (r.mood_line ? '<p class="ai-mood">🤖 AI가 느낀 분위기 <span class="note">(정답 아님 · 사람마다 달라요)</span><br>' + esc(r.mood_line) + "</p>" : "");
+          (r.mood_line ? '<p class="ai-mood">🤖 AI가 느낀 분위기 <span class="note">(정답 아님 · 사람마다 달라요)</span><br>' + esc(r.mood_line) +
+            ((r.whole && r.whole.mood_tags && r.whole.mood_tags.length) ? "<br>" + r.whole.mood_tags.map((t) => '<span class="chip">#' + esc(t) + "</span>").join(" ") : "") + "</p>" : "");
       $("devBody").innerHTML = devInfoHTML(r);
     }
 
@@ -2194,6 +2263,105 @@
       const img = $("artImg");
       const go2 = () => { touchMap = buildTouchMap(); lastData.touchMap = touchMap; if (touchMap) requestMaterials(); };
       if (img.complete && img.naturalWidth) go2(); else img.onload = go2;
+    }
+
+    // ==========================================================
+    // [수정 6-14] 📚 내 갤러리 — 감상한 작품을 '미술관 벽'처럼 다시 보기
+    //   분석이 끝날 때마다 작은 그림(가로 360px)과 해설·분위기·장르·감각 수치를 폰 안(브라우저 저장소)에만 저장 (최대 24개)
+    //   다시 느끼기: AI를 다시 부르지 않고 저장해 둔 수치로 바로 소리·빛·진동을 냄
+    // ==========================================================
+    const KEY_GALLERY = "digical.gallery.v1", GALLERY_MAX = 24;
+    function galleryList() { try { return JSON.parse(localStorage.getItem(KEY_GALLERY) || "[]"); } catch (e) { return []; } }
+    function gallerySave(list) {
+      for (let n = list.length; n >= 0; n--) {                     // 저장 공간이 모자라면 오래된 것부터 지우며 다시 시도
+        try { localStorage.setItem(KEY_GALLERY, JSON.stringify(list.slice(0, n))); return true; } catch (e) { /* 다음 */ }
+      }
+      return false;
+    }
+    function thumbOf(dataURL) {
+      return new Promise((res) => {
+        const im = new Image();
+        im.onload = () => {
+          const s = Math.min(1, 360 / Math.max(im.naturalWidth, im.naturalHeight));
+          const cv = document.createElement("canvas"); cv.width = Math.round(im.naturalWidth * s); cv.height = Math.round(im.naturalHeight * s);
+          cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+          res(cv.toDataURL("image/jpeg", 0.72));
+        };
+        im.onerror = () => res(null);
+        im.src = dataURL;
+      });
+    }
+    async function addToGallery(d, r) {
+      if (!d || !r || !d.images || !d.images[0]) return;
+      const thumb = await thumbOf(d.images[0]);
+      if (!thumb) return;
+      const P = planOf(r.whole || {});
+      const title = (d.work && d.work.title) || r.title_guess || String(r.summary || "작품").replace(/(이에요|예요|입니다)\.?$/, "").slice(0, 24);
+      const item = {
+        id: Date.now(), t: new Date().toISOString(), type: d.type, title: title, artist: (d.work && d.work.artist) || "",
+        kind: r.kind || "", summary: r.summary || "", interpretation: r.interpretation || "", mood_line: r.mood_line || "",
+        tags: (r.whole && r.whole.mood_tags) || [], genre: P.genreName, material: r.material || "",
+        scenes: (r.scenes || []).map((s) => ({ name: s.name, text: s.text })), whole: r.whole, pixel: d.pixel || null, thumb: thumb, text: d.text || ""
+      };
+      const list = galleryList();
+      list.unshift(item);
+      gallerySave(list.slice(0, GALLERY_MAX));
+    }
+    function fmtDate(iso) { const d = new Date(iso); return (d.getMonth() + 1) + "월 " + d.getDate() + "일"; }
+    function openGallery() {
+      renderGallery();
+      go("gallery");
+    }
+    function renderGallery() {
+      const list = galleryList();
+      $("galCount").textContent = list.length ? list.length + "점의 작품" : "";
+      $("galWall").innerHTML = list.length ? list.map((it, i) =>
+        '<button class="gal-item" data-i="' + i + '"><span class="gal-light"></span><span class="gal-frame"><img alt="" src="' + it.thumb + '"></span>' +
+        '<span class="gal-plate"><b>' + esc(it.title) + "</b><br>" + esc(fmtDate(it.t)) + (it.genre ? " · " + esc(it.genre) : "") + "</span></button>").join("")
+        : '<p class="gal-empty">아직 감상한 작품이 없어요.<br>작품을 만나면 여기에 차례로 걸려요.</p>';
+      $("galDetail").hidden = true;
+    }
+    $("galWall") && ($("galWall").onclick = (e) => {
+      const b = e.target.closest(".gal-item"); if (!b) return;
+      const it = galleryList()[Number(b.dataset.i)]; if (!it) return;
+      const dt = $("galDetail");
+      dt.innerHTML = '<div class="gal-big"><img alt="" src="' + it.thumb + '"></div>' +
+        '<h2 class="gal-title">' + esc(it.title) + "</h2>" +
+        '<p class="gal-meta">' + esc([it.artist, it.kind, fmtDate(it.t)].filter(Boolean).join(" · ")) + "</p>" +
+        '<p class="gal-label">해설</p><p>' + esc(it.summary) + " " + esc(it.interpretation) + "</p>" +
+        (it.mood_line ? '<p class="gal-label">AI가 느낀 분위기 (정답 아님)</p><p>' + esc(it.mood_line) + "<br>" + (it.tags || []).map((t) => '<span class="chip">#' + esc(t) + "</span>").join(" ") + "</p>" : "") +
+        '<p class="gal-label">감각으로 바꾼 모습</p><p>음악 ' + esc(it.genre || "-") + (it.material ? " · 재질 " + esc(it.material) : "") +
+        " · 분위기 색 <span class='sw' style='background:" + emotionColor(it.whole || {}) + "'></span></p>" +
+        '<button class="big primary" data-g="replay" data-i="' + b.dataset.i + '">▶ 다시 느끼기</button>' +
+        '<button class="big ghost" data-g="close">← 벽으로 돌아가기</button>' +
+        '<button class="big ghost" data-g="del" data-i="' + b.dataset.i + '">🗑 이 작품 지우기</button>';
+      dt.hidden = false;
+      dt.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    $("galDetail") && ($("galDetail").onclick = (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.g === "close") { $("galDetail").hidden = true; window.scrollTo(0, 0); }
+      if (b.dataset.g === "del") {
+        if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "정말 지울까요? 한 번 더 누르세요"; return; }
+        const list = galleryList(); list.splice(Number(b.dataset.i), 1); gallerySave(list); renderGallery();
+      }
+      if (b.dataset.g === "replay") replayGallery(galleryList()[Number(b.dataset.i)]);
+    });
+    // 저장해 둔 기록으로 감상 화면 열기 (AI를 다시 부르지 않음)
+    function replayGallery(it) {
+      if (!it) return;
+      lastData = { type: it.type === "text" ? "text" : "photo", images: [it.thumb], source: "내 갤러리", pixel: it.pixel, text: it.text, fromGallery: true };
+      lastResult = { summary: it.summary, interpretation: it.interpretation, mood_line: it.mood_line, kind: it.kind, material: it.material,
+                     whole: it.whole, scenes: (it.scenes || []).map((s) => ({ name: s.name, text: s.text, sense: it.whole, cells: [] })),
+                     check: {}, ms: {}, version: "갤러리", model: "-" };
+      clearViewLight(); setArtMode(false); stopTour();
+      $("art").classList.remove("mooded");
+      $("artImg").src = it.thumb;
+      go("view");
+      renderTexts(lastResult);
+      if (lastResult.whole) preloadFor(lastResult.whole);
+      prepareParts();
+      showReady();
     }
 
     // ----- 감상 단계 -----
@@ -2621,6 +2789,7 @@
       "종이":    { f: [1900, 4200],              d: [0.012, 0.008],           gap: 16, hit: 0.4, repeat: true },
       "물":      { f: [520],                     d: [0.12],                   gap: 60, hit: 0.5, drop: true },
       "도자기":  { f: [1650, 3900, 6100],        d: [0.3, 0.2, 0.12],         gap: 50, hit: 0.9 },
+      "대리석":  { f: [1100, 2600, 4900],        d: [0.1, 0.07, 0.04],        gap: 60, hit: 0.8 },
       "얼음":    { f: [2800, 5200, 8100],        d: [0.15, 0.1, 0.06],        gap: 40, hit: 0.7 }
     };
     function modalTap(ctx, dest, mat, t, amp, pan) {
@@ -2662,7 +2831,9 @@
       "고무":   { soft: 0.55, sf: 300,  grit: 0.1,  gf: 700,  cr: 0,   cf: 2000, ring: 0.3,  rf: 650,  vib: "light" },
       "흙":     { soft: 0.2,  sf: 500,  grit: 0.4,  gf: 700,  cr: 0.9, cf: 1000, ring: 0,    rf: 1000, vib: "grain" },
       "잎·풀":  { soft: 0.3,  sf: 900,  grit: 0.35, gf: 2600, cr: 0.45, cf: 3800, ring: 0,   rf: 1000, vib: "light" },
-      "털·머리카락": { soft: 0.55, sf: 2200, grit: 0.2, gf: 4500, cr: 0, cf: 3000, ring: 0, rf: 1000, vib: "light" },
+      // [수정 6-14] 머리카락: 가는 털이 스치는 '사르륵' — 아주 높은 바람 소리 + 아주 촘촘하고 작은 알갱이(털 한 올 한 올)
+      "털·머리카락": { soft: 0.3, sf: 3200, grit: 0.15, gf: 5500, cr: 0.35, cf: 6500, crr: 2.5, ring: 0, rf: 1000, vib: "light", quiet: 0.8 },
+      "대리석": { soft: 0.25, sf: 2500, grit: 0.05, gf: 1500, cr: 0, cf: 2000, ring: 0, rf: 1000, vib: "none", quiet: 0.7 },
       "물":     { soft: 0.6,  sf: 700,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 900,  vib: "none" },
       // [수정 6-13] 재질 추가: 도자기·가죽·모래·얼음·물감(붓질)
       "도자기": { soft: 0.15, sf: 3500, grit: 0.05, gf: 2500, cr: 0,   cf: 2000, ring: 0,    rf: 1000, vib: "none", quiet: 0.6 },
@@ -2926,104 +3097,141 @@
     }
 
     // 수치 → 연주 계획
+    // ==========================================================
+    // [수정 6-14] 장르 15가지 + '분위기 낱말'로 장르 고르기
+    //   예전 문제: 해설의 'AI가 느낀 분위기'(조용하고 긴장감)와 음악(재즈)이 따로 놀았음
+    //     → 원인: 분위기 문장과 음악을 정하는 수치가 서로 다른 AI 호출에서 나왔고, 장르는 수치로만 골랐음
+    //   지금: 감각 수치를 매기는 AI가 같은 자리에서 '분위기 낱말'(30가지 중 1~3개)도 고름(분위기 문장과 어긋나지 않게 지시)
+    //         → 낱말마다 어울리는 장르에 점수 + 수치로 고른 장르에 보너스 + 활기와 안 맞는 장르는 감점 → 가장 높은 장르
+    //   (낱말–장르 짝은 우리 팀이 정한 설계 규칙. 개발용 정보에 점수를 그대로 보여 줌)
+    // ==========================================================
+    const GENRES = {
+      classic:  { ko: "클래식·앰비언트", bpm: [56, 132] },
+      ballad:   { ko: "발라드", bpm: [58, 74], rhythm: [1,0,1,0], inst: "epiano", rich: true },
+      calm:     { ko: "명상", bpm: [48, 68], rhythm: [1,0,0,0], pad: "pad_7_halo", bass: "bowl", echo: 2 },
+      cinema:   { ko: "시네마틱", bpm: [60, 92], rhythm: [1,0,0,0], inst: "reed", drums: "cinema", bass: "ostinato" },
+      musicbox: { ko: "오르골 왈츠", bpm: [96, 126], bpb: 3, rhythm: [1,0,1], inst: "musicbox", bass: "waltz" },
+      festival: { ko: "축제 행진", bpm: [104, 124], rhythm: [1,0,1,1], inst: "brass", pad: "brass_section", drums: "festival", bass: "march" },
+      lofi:     { ko: "로파이", bpm: [72, 88], rhythm: [1,0,1,0], inst: "lofi", drums: "lofi", bass: "soft", swing: 0.6, mixLP: 2600, crackle: true, rich: true },
+      jazz:     { ko: "재즈", bpm: [96, 156], rhythm: [1,0,1,1], inst: "epiano", drums: "jazz", bass: "walk", swing: 0.64, rich: true, prog: [1, 4, 0, 5], progName: "ii–V–I–vi (재즈)" },
+      electro:  { ko: "일렉트로닉", bpm: [112, 128], rhythm: [1,1,1,1], inst: "synth", drums: "electro", bass: "synth" },
+      pop:      { ko: "팝", bpm: [100, 124], rhythm: [1,0,1,1], inst: "epiano", drums: "pop", bass: "pop", modeMax: 2, prog: [0, 4, 5, 3], progName: "I–V–vi–IV (팝)" },
+      rock:     { ko: "록", bpm: [110, 138], rhythm: [1,0,1,1], inst: "dguitar", drums: "rock", bass: "power", modeMin: 2, modeMax: 4, prog: [0, 6, 3, 0], progName: "I–♭VII–IV–I (록)" },
+      metal:    { ko: "메탈", bpm: [132, 160], rhythm: [1,0,0,0], inst: "dguitar", drums: "metal", bass: "power", palm: true, modeMin: 4, modeMax: 5, prog: [0, 5, 6, 0], progName: "i–♭VI–♭VII–i (메탈)" },
+      hiphop:   { ko: "힙합", bpm: [84, 96], rhythm: [1,0,0,1], inst: "lofi", drums: "hiphop", bass: "808", swing: 0.58, modeMin: 3, modeMax: 4, prog: [0, 5, 0, 5], progName: "i–VI 되풀이 (힙합)" },
+      rnb:      { ko: "R&B·소울", bpm: [66, 86], rhythm: [1,0,1,0], inst: "lofi", drums: "rnb", bass: "rnb", swing: 0.58, rich: true, modeMin: 1, modeMax: 3, prog: [1, 4, 0, 5], progName: "ii7–V7–I7–vi7 (소울)" },
+      folk:     { ko: "포크·컨트리", bpm: [92, 116], rhythm: [1,0,1,1], inst: "aguitar", drums: "folk", bass: "strum", modeMax: 2, avoid: true, prog: [0, 3, 0, 4], progName: "I–IV–I–V (포크)" }
+    };
+    // 분위기 낱말 → 어울리는 장르와 점수
+    const TAG_GENRE = {
+      "평화로운": { classic: 2, calm: 1, folk: 1 }, "고요한": { calm: 2, classic: 1 }, "따뜻한": { folk: 2, lofi: 1, rnb: 1 },
+      "포근한": { lofi: 2, folk: 1, musicbox: 1 }, "그리운": { folk: 2, lofi: 1, jazz: 1, ballad: 1 }, "쓸쓸한": { ballad: 2, lofi: 1, jazz: 1 },
+      "외로운": { ballad: 2, lofi: 1 }, "슬픈": { ballad: 3 }, "우울한": { ballad: 2, cinema: 1, lofi: 1 },
+      "긴장된": { cinema: 3, electro: 1, calm: -1.5 }, "불안한": { cinema: 2, electro: 1, calm: -1.5 }, "무서운": { cinema: 3, metal: 1, calm: -1.5, musicbox: -2 },
+      "신비로운": { calm: 2, cinema: 1, electro: 1 }, "몽환적인": { calm: 2, electro: 1, rnb: 1 }, "웅장한": { cinema: 2, classic: 2 },
+      "엄숙한": { classic: 2, cinema: 1 }, "경쾌한": { pop: 2, folk: 1, musicbox: 1 }, "신나는": { pop: 2, festival: 1, rock: 1, electro: 1 },
+      "힘찬": { rock: 2, festival: 2 }, "귀여운": { musicbox: 3, pop: 1 }, "사랑스러운": { pop: 2, musicbox: 1, rnb: 1 },
+      "낭만적인": { jazz: 2, rnb: 1, classic: 1 }, "관능적인": { rnb: 3, jazz: 1 }, "세련된": { electro: 2, jazz: 1, hiphop: 1 },
+      "까리한": { hiphop: 3, rnb: 1 }, "차가운": { electro: 2, calm: 1 }, "강렬한": { rock: 2, metal: 1, hiphop: 1 },
+      "거친": { rock: 2, metal: 2, hiphop: 1 }, "화난": { metal: 3, rock: 1 }, "장난스러운": { pop: 1, musicbox: 1, jazz: 1 }
+    };
+    const HIGH_ENERGY = ["rock", "metal", "electro", "festival", "pop", "hiphop"], LOW_ENERGY = ["calm", "ballad", "musicbox"];
+    const MAT_INST = { "유리": "bell", "금속": "bell", "물": "bell", "나무": "pluck", "종이": "pluck", "돌": "reed", "흙": "reed",
+                       "천": "flute", "털·머리카락": "flute", "피부": "flute", "잎·풀": "flute", "플라스틱": "epiano", "고무": "epiano",
+                       "도자기": "bell", "얼음": "bell", "가죽": "reed", "물감·붓질": "pluck", "모래": "flute", "대리석": "reed" };
+    const INST_KO = { reed: "리드(거친 관악 느낌)", bell: "종소리", flute: "부드러운 피리", pluck: "튕기는 현", epiano: "전자 피아노" };
+    const STYLE_KO = { drone: "잔잔한 울림", song: "노래", dance: "춤", pulse: "맥박" };
+
     function planOf(s) {
       const c = calibAll(s);
       const v = c.valence, a = c.arousal, b = c.brightness, w = c.weight, r = c.roughness, f = c.flow;
-      // 음계: 기분이 높을수록 밝은 선법. 아주 어둡고 들뜨면 불안한 선법
-      // [수정 6-11] 평범한 물건(기분 중간)이 슬픈 단조로 가던 것 → 중간은 믹솔리디안·도리안, 정말 어두울 때만 단조·프리지안
+      // [수정 6-8] 사진에서 직접 잰 특징 (있을 때만)
+      //   근거: 교차감각 대응 — 밝기↔음 높이, 색의 진하기↔음색의 또렷함, 명암 대비↔소리 크기 차이, 복잡함↔음의 많고 적음
+      const px = s.px || null;
+      const pLum = px ? clamp01((px.lum - 0.12) / 0.6) : null;
+      const pCol = px ? clamp01(px.color / 0.3) : 0.5;
+      const pCon = px ? clamp01((px.contrast - 0.08) / 0.2) : 0.5;
+      const pCx = px ? clamp01(px.complexity) : null;
+      const bEff = pLum === null ? b : 0.4 * b + 0.6 * pLum;             // 음 높이 = AI 밝기 40% + 사진 밝기 60%
+      const aEff = pCx === null ? a : 0.65 * a + 0.35 * pCx;            // 음 개수 = AI 활기 65% + 복잡도 35%
+      // 성격(스타일): 잔잔한 울림 / 노래 / 춤 / 맥박
+      const style = aEff < 0.25 ? "drone" : (aEff > 0.62 && v >= 0.5) ? "dance" : (aEff > 0.6 && v < 0.45) ? "pulse" : "song";
+      // ① 수치로 고른 장르 (예전 규칙)
+      const kind = String(s.kind || ""), everyday = s.is_artwork === false || /사진|일상|포스터|영상|물건/.test(kind);
+      let numG = "classic";
+      if (v < 0.3 && aEff < 0.45) numG = "ballad";
+      else if (w > 0.62 && (v < 0.45 || style === "pulse")) numG = "cinema";
+      else if (aEff < 0.22 && v >= 0.35 && !everyday) numG = "calm";
+      else if (v > 0.72 && aEff >= 0.25 && aEff <= 0.6 && w < 0.45) numG = "musicbox";
+      else if (aEff > 0.65 && v > 0.6 && w >= 0.45) numG = "festival";
+      else if (aEff > 0.6 && v >= 0.5 && pCol > 0.3) numG = "electro";
+      else if (f > 0.65 && (pCx === null || pCx > 0.5) && v >= 0.4 && v <= 0.85 && aEff >= 0.3 && aEff <= 0.7) numG = "jazz";
+      else if (aEff < 0.55 && v >= 0.3 && v <= 0.8 && everyday) numG = "lofi";
+      // ② 분위기 낱말 점수 + ③ 수치 보너스 + ④ 활기와 안 맞으면 감점
+      const tags = Array.isArray(s.mood_tags) ? s.mood_tags.filter((t) => TAG_GENRE[t]) : [];
+      const score = {};
+      tags.forEach((t, i) => Object.entries(TAG_GENRE[t]).forEach(([g, pt]) => { score[g] = (score[g] || 0) + pt * [1.5, 1, 0.7][i]; }));
+      score[numG] = (score[numG] || 0) + (tags.length ? 1.2 : 1);
+      if (everyday && aEff < 0.55) score.lofi = (score.lofi || 0) + 0.6;
+      Object.keys(score).forEach((g) => {
+        if (aEff < 0.3 && HIGH_ENERGY.includes(g)) score[g] -= 1.5;
+        if (aEff > 0.7 && LOW_ENERGY.includes(g)) score[g] -= 1.5;
+      });
+      let genre = numG;
+      Object.keys(score).forEach((g) => { if (score[g] > score[genre]) genre = g; });
+      const G = GENRES[genre];
+      const gWhy = (tags.length ? "분위기 낱말 '" + tags.join("·") + "'" : "수치") + " → 점수 " +
+        Object.entries(score).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([g, p]) => GENRES[g].ko + " " + p.toFixed(1)).join(", ");
+      // 음계: 기분이 높을수록 밝은 선법 (장르에 따라 범위를 좁힘: 팝은 밝게, 메탈은 어둡게…)
       let mi = Math.max(0, Math.min(5, Math.round(Math.pow(1 - v, 1.3) * 5.2)));
-      if (v > 0.75 && f > 0.65) mi = 0;                 // 밝고 흐르면 떠오르는 느낌
-      if (v < 0.2 && a > 0.65) mi = 6;                  // 어둡고 긴장되면 불안
+      if (v > 0.75 && f > 0.65) mi = 0;
+      if (v < 0.2 && a > 0.65) mi = 6;
+      if (G.modeMin !== undefined) mi = Math.max(G.modeMin, mi);
+      if (G.modeMax !== undefined) mi = Math.min(G.modeMax, mi);
       const mode = MODES7[mi];
-      // 코드 진행 (음계의 몇 번째 음 위에 화음을 쌓는지)
       let prog, progName;
-      if (mi >= 5 && a > 0.55)      { prog = [0, 1, 0, 6]; progName = "i–II–i–vii (긴장)"; }
+      if (G.prog) { prog = G.prog; progName = G.progName; }
+      else if (mi >= 5 && a > 0.55) { prog = [0, 1, 0, 6]; progName = "i–II–i–vii (긴장)"; }
       else if (mi >= 3)              { prog = [0, 5, 2, 6]; progName = "i–VI–III–VII (어스름·슬픔)"; }
       else if (a < 0.4)              { prog = [0, 5, 3, 4]; progName = "I–vi–IV–V (잔잔함)"; }
       else                           { prog = [0, 4, 5, 3]; progName = "I–V–vi–IV (밝음)"; }
-      // [수정 6-8] 사진에서 직접 잰 특징 (있을 때만) — AI 수치만으로는 평범한 물건들이 비슷해져서
-      //   근거: 교차감각 대응 — 밝기↔음 높이, 색의 진하기↔음색의 또렷함, 명암 대비↔소리 크기 차이, 복잡함↔음의 많고 적음
-      const px = s.px || null;
-      const pLum = px ? clamp01((px.lum - 0.12) / 0.6) : null;          // 사진 평균 밝기 → 0~1
-      const pCol = px ? clamp01(px.color / 0.3) : 0.5;                   // 색이 진한 정도 (흑백 = 0)
-      const pCon = px ? clamp01((px.contrast - 0.08) / 0.2) : 0.5;       // 명암 차이
-      const pCx = px ? clamp01(px.complexity) : null;                    // 복잡도
-      const bEff = pLum === null ? b : 0.4 * b + 0.6 * pLum;             // 음 높이 = AI 밝기 40% + 사진 밝기 60%
-      const aEff = pCx === null ? a : 0.65 * a + 0.35 * pCx;            // 음 개수 = AI 활기 65% + 복잡도 35%
-      // 악기(음색): 주인공 재질을 알면 재질로, 모르면 밝기·무게·거칠기·흐름으로 고름
-      const MAT_INST = { "유리": "bell", "금속": "bell", "물": "bell", "나무": "pluck", "종이": "pluck", "돌": "reed", "흙": "reed",
-                         "천": "flute", "털·머리카락": "flute", "피부": "flute", "잎·풀": "flute", "플라스틱": "epiano", "고무": "epiano",
-                         "도자기": "bell", "얼음": "bell", "가죽": "reed", "물감·붓질": "pluck", "모래": "flute" };
-      let inst;
-      if (s.material && MAT_INST[s.material]) inst = MAT_INST[s.material];
-      else if (r > 0.6) inst = "reed";
-      else if (b > 0.65 && w < 0.45) inst = "bell";
-      else if (f > 0.65 && r < 0.4) inst = "flute";
-      else if (a > 0.65 && f < 0.4) inst = "pluck";
-      else inst = "epiano";
-      const INST_KO = { reed: "리드(거친 관악 느낌)", bell: "종소리", flute: "부드러운 피리", pluck: "튕기는 현", epiano: "전자 피아노" };
-      // 리듬: 활기가 높을수록 한 마디 안의 음이 많음 (1·2·3·4개, 모두 박자 위)
-      // [수정 6-11] '다 비슷하다'는 의견 → 음악의 '성격(스타일)' 4가지를 나눔 (음 개수·박자 모양·베이스·멜로디 움직임이 모두 달라짐)
-      //   잔잔한 울림(활기 낮음) / 노래(보통) / 춤(활기 높고 밝음: 엇박·도약) / 맥박(활기 높고 어두움: 같은 음 되풀이·매 박 베이스)
-      const style = aEff < 0.25 ? "drone" : (aEff > 0.62 && v >= 0.5) ? "dance" : (aEff > 0.6 && v < 0.45) ? "pulse" : "song";
-      const STYLE_KO = { drone: "잔잔한 울림", song: "노래", dance: "춤", pulse: "맥박" };
-      const rhythm = style === "drone" ? [1,0,0,0] : style === "dance" ? [1,0,1,1] : style === "pulse" ? [1,1,1,1] :
-                     RHYTHMS[aEff < 0.4 ? 1 : 2];
-      // [수정 6-12] 장르 5가지 — '클래식 느낌에 갇혀 있다'는 의견. 수치 + 사진 특징 + 재질 + 종류(일상 사진인지)로 고름
-      //   (어떤 수치에 어떤 장르를 짝지을지는 우리 팀이 정한 '설계 규칙'이지 과학적으로 정해진 답은 아님 → 개발용 정보에 근거 표시)
-      const kind = String(s.kind || ""), everyday = s.is_artwork === false || /사진|일상|포스터|영상|물건/.test(kind);
-      let genre = "classic", gWhy = "기본";
-      // [수정 6-13] 분위기를 더 잘 나타내도록 4가지 추가: 발라드·명상·오르골 왈츠·축제 행진 (모두 9가지)
-      if (v < 0.3 && aEff < 0.45) { genre = "ballad"; gWhy = "슬프고 잔잔함(기분↓·활기↓)"; }
-      else if (w > 0.62 && (v < 0.45 || style === "pulse")) { genre = "cinema"; gWhy = "무겁고 어두움(무게↑·기분↓)"; }
-      else if (aEff < 0.22 && v >= 0.35 && !everyday) { genre = "calm"; gWhy = "아주 고요함(활기 매우↓)"; }
-      else if (v > 0.72 && aEff >= 0.25 && aEff <= 0.6 && w < 0.45) { genre = "musicbox"; gWhy = "밝고 가벼움(기분↑·무게↓)"; }
-      else if (aEff > 0.65 && v > 0.6 && w >= 0.45) { genre = "festival"; gWhy = "힘차고 즐거움(활기↑·기분↑·무게↑)"; }
-      if (genre !== "classic") { /* 위에서 정함 */ }
-      else if (aEff > 0.6 && v >= 0.5 && pCol > 0.3) { genre = "electro"; gWhy = "활기↑·밝음 + 색이 진함"; }
-      else if (f > 0.65 && (pCx === null || pCx > 0.5) && v >= 0.4 && v <= 0.85 && aEff >= 0.3 && aEff <= 0.7) { genre = "jazz"; gWhy = "흐름↑(곡선·물결) + 무늬가 복잡 + 기분·활기 중간"; }
-      else if (aEff < 0.55 && v >= 0.3 && v <= 0.8 && everyday) { genre = "lofi"; gWhy = "일상 사진·물건 + 잔잔함"; }
-      const GENRE_KO = { classic: "클래식·앰비언트", lofi: "로파이", jazz: "재즈", electro: "일렉트로닉", cinema: "시네마틱",
-                         ballad: "발라드", calm: "명상", musicbox: "오르골 왈츠", festival: "축제 행진" };
-      // 5음 음계(파·시를 피함): 밝고 잔잔하거나 자연 재질(잎·물·흙·나무)이면 → 동요·민요처럼 단순하고 편안한 소리
+      // 악기: 장르가 정하고, 없으면 주인공 재질 → 없으면 수치
+      let inst = G.inst;
+      if (!inst) {
+        if (s.material && MAT_INST[s.material]) inst = MAT_INST[s.material];
+        else if (r > 0.6) inst = "reed";
+        else if (b > 0.65 && w < 0.45) inst = "bell";
+        else if (f > 0.65 && r < 0.4) inst = "flute";
+        else if (a > 0.65 && f < 0.4) inst = "pluck";
+        else inst = "epiano";
+        if (genre === "calm" && inst !== "bell") inst = "flute";
+      }
+      const rhythm = G.rhythm || (style === "drone" ? [1,0,0,0] : style === "dance" ? [1,0,1,1] : style === "pulse" ? [1,1,1,1] : RHYTHMS[aEff < 0.4 ? 1 : 2]);
       const NATURE = ["잎·풀", "물", "흙", "나무"];
-      const avoid = (v > 0.55 && aEff < 0.5) || NATURE.includes(s.material) ? [3, 6] : [];
-      if (genre === "lofi") inst = "lofi";
-      else if (genre === "jazz") inst = "epiano";
-      else if (genre === "electro") inst = "synth";
-      else if (genre === "cinema") inst = "reed";
-      else if (genre === "ballad") inst = "epiano";
-      else if (genre === "calm") inst = MAT_INST[s.material] === "bell" ? "bell" : "flute";
-      else if (genre === "musicbox") inst = "musicbox";
-      else if (genre === "festival") inst = "brass";
-      const gRhythm = { lofi: [1,0,1,0], jazz: [1,0,1,1], electro: [1,1,1,1], cinema: [1,0,0,0],
-                        ballad: [1,0,1,0], calm: [1,0,0,0], musicbox: [1,0,1], festival: [1,0,1,1] }[genre];
+      const avoid = G.avoid || (v > 0.55 && aEff < 0.5) || NATURE.includes(s.material) ? [3, 6] : [];
+      const instName = inst === "synth" ? "신시사이저" : (INST_NAME[INST_FILE[inst]] || INST_KO[inst]);
       return {
         c: c, mode: mode, scale: mode.s, scaleName: mode.name, prog: prog, progName: progName,
-        inst: inst, instName: inst === "synth" ? "신시사이저" : (INST_NAME[INST_FILE[inst]] || INST_KO[inst]), rhythm: gRhythm || rhythm,
-        root: 196 * Math.pow(2, bEff * 1.3),               // 멜로디 기준음 196~483Hz (폰 스피커가 잘 내는 높이, 예전보다 넓게)
-        bpm: genre === "lofi" ? 72 + aEff * 16 : genre === "jazz" ? 96 + aEff * 60 : genre === "electro" ? 112 + aEff * 16 :
-             genre === "cinema" ? 60 + aEff * 32 : genre === "ballad" ? 58 + aEff * 16 : genre === "calm" ? 48 + aEff * 20 :
-             genre === "musicbox" ? 96 + aEff * 30 : genre === "festival" ? 104 + aEff * 20 : 56 + aEff * 76,   // 장르마다 알맞은 빠르기 범위
-        bpb: genre === "musicbox" ? 3 : 4,                // 오르골 왈츠만 3박자 (쿵-짝-짝)
-        padFile: genre === "calm" ? "pad_7_halo" : genre === "festival" ? "brass_section" : "string_ensemble_1",
-        genre: genre, genreName: GENRE_KO[genre], genreWhy: gWhy,
-        swing: genre === "lofi" ? 0.6 : genre === "jazz" ? 0.64 : 0.5,   // 스윙: 반 박자를 조금 늦게 (재즈·로파이 특유의 출렁임)
-        drums: ["lofi", "jazz", "electro", "cinema", "festival"].includes(genre),
-        mixLP: genre === "lofi" ? 2600 : 0, crackle: genre === "lofi",  // 로파이: 소리를 살짝 먹먹하게 + 레코드판 '지직'
-        bassMode: genre === "jazz" ? "walk" : genre === "lofi" ? "soft" : genre === "electro" ? "synth" : genre === "cinema" ? "ostinato" :
-                  genre === "musicbox" ? "waltz" : genre === "festival" ? "march" : genre === "calm" ? "bowl" : "classic",
+        inst: inst, instName: instName, rhythm: rhythm,
+        root: 196 * Math.pow(2, bEff * 1.3),               // 멜로디 기준음 196~483Hz
+        bpm: G.bpm[0] + (G.bpm[1] - G.bpm[0]) * aEff,      // 장르마다 알맞은 빠르기 범위 안에서 활기만큼
+        bpb: G.bpb || 4,
+        padFile: G.pad || "string_ensemble_1",
+        genre: genre, genreName: G.ko, genreWhy: gWhy, tags: tags,
+        swing: G.swing || 0.5,
+        drums: !!G.drums, drumKit: G.drums || "", palm: !!G.palm,
+        mixLP: G.mixLP || 0, crackle: !!G.crackle,
+        bassMode: G.bass || "classic",
         style: style, styleName: STYLE_KO[style], avoid: avoid,
-        barsPerChord: a < 0.35 ? 2 : 1,                    // 잔잔하면 화음이 천천히 바뀜
+        barsPerChord: a < 0.35 && !G.prog ? 2 : 1,
         padLevel: 0.5 + (1 - a) * 0.5,
-        padCut: 400 + bEff * 1800 + pCol * 1500,          // 색이 진할수록 배경 화음이 또렷
-        rich: pCol > 0.5 || f > 0.6 || genre === "jazz" || genre === "lofi",   // 색이 진하면(또는 재즈·로파이) 7화음
-        accentGap: 0.45 + 0.45 * pCon,                    // 명암 차이가 크면 센 박과 여린 박의 차이가 큼
+        padCut: 400 + bEff * 1800 + pCol * 1500,
+        rich: pCol > 0.5 || f > 0.6 || !!G.rich,
+        accentGap: 0.45 + 0.45 * pCon,
         px: px, pLum: pLum, pCol: pCol, pCon: pCon, pCx: pCx, material: s.material || "",
-        bass: style !== "drone" && (w > 0.35 || pCon > 0.7 || style === "pulse"), bass2: w > 0.65 || style === "dance",   // 무게(또는 강한 명암) → 베이스
-        echo: genre === "calm" ? 2 : f > 0.55 ? (f > 0.8 ? 2 : 1) : 0,
-        // [수정 6-13] 1초에 5~8번 출렁이던 떨림(트레몰로)은 '편안하지 않다'는 의견으로 뺌 → 흐름이 클 때 아주 느린 출렁임(약 3초에 한 번)만
-        trem: f > 0.7 ? 0.35 : 0,
+        bass: style !== "drone" && (w > 0.35 || pCon > 0.7 || style === "pulse"), bass2: w > 0.65 || style === "dance",
+        echo: G.echo || (f > 0.55 ? (f > 0.8 ? 2 : 1) : 0),
+        trem: f > 0.7 ? 0.35 : 0,                          // [수정 6-13] 빠른 떨림은 뺌, 아주 느린 출렁임만
         seed: seedOf(s) ^ (px ? Math.round(px.lum * 1000 + px.complexity * 7919) : 0)
       };
     }
@@ -3056,14 +3264,17 @@
     const INST_FILE = { epiano: "acoustic_grand_piano", bell: "vibraphone", flute: "flute", pluck: "orchestral_harp",
                         reed: "cello", pad: "string_ensemble_1", bass: "cello",
                         lofi: "electric_piano_1", jbass: "acoustic_bass", taiko: "taiko_drum",
-                        musicbox: "music_box", brass: "brass_section", halo: "pad_7_halo" };   // [수정 6-13] 오르골·금관·고요한 배경음   // [수정 6-12] 장르용 3가지 추가
+                        musicbox: "music_box", brass: "brass_section", halo: "pad_7_halo",
+                        dguitar: "distortion_guitar", aguitar: "acoustic_guitar_steel" };   // [수정 6-14] 록·메탈·포크용 기타   // [수정 6-13] 오르골·금관·고요한 배경음   // [수정 6-12] 장르용 3가지 추가
     const INST_NAME = { acoustic_grand_piano: "피아노", vibraphone: "비브라폰", flute: "플루트", orchestral_harp: "하프",
                         cello: "첼로", string_ensemble_1: "현악 합주", electric_piano_1: "전자 피아노", acoustic_bass: "콘트라베이스", taiko_drum: "북(타이코)",
-                        music_box: "오르골", brass_section: "금관 합주", pad_7_halo: "고요한 배경음(헤일로)" };
+                        music_box: "오르골", brass_section: "금관 합주", pad_7_halo: "고요한 배경음(헤일로)",
+                        distortion_guitar: "일렉 기타(찌그러진 소리)", acoustic_guitar_steel: "통기타" };
     const SUSTAINED = { flute: 1, cello: 1, string_ensemble_1: 1, brass_section: 1, pad_7_halo: 1 };      // 길게 이어지는 악기 (나머지는 저절로 사라지는 악기)
     const SAMPLE_NOTES = [];
     for (let o = 2; o <= 6; o++) ["C", "Eb", "Gb", "A"].forEach((n, k) => SAMPLE_NOTES.push({ name: n + o, midi: 12 * (o + 1) + k * 3 }));
     SAMPLE_NOTES.push({ name: "C7", midi: 96 });
+    const FILE_GAIN = { distortion_guitar: 0.4, brass_section: 0.8 };   // [수정 6-14] 원래 녹음이 큰 악기는 줄임
     const SAMPLE_GAIN = 2.5;           // 녹음 파일은 합성음보다 작게 녹음돼 있어서 키움 (최종 크기는 자동 맞춤이 조절)
     const sampleBank = {};              // 악기 → { midi → {buf, off} }
     const sampleState = {};             // 악기 → "loading" | "ready" | "fail"
@@ -3097,7 +3308,9 @@
       [INST_FILE[P.inst], INST_FILE.pad].concat(P.bass ? [INST_FILE.bass] : [])
         .concat(P.bassMode === "walk" || P.bassMode === "soft" ? [INST_FILE.jbass] : [])
         .concat(P.genre === "cinema" ? [INST_FILE.taiko] : []).concat(P.padFile ? [P.padFile] : [])
-        .concat(P.bassMode === "march" ? [INST_FILE.jbass] : []).filter(Boolean).forEach((f) => loadInstrument(f));
+        .concat(["march", "pop", "rnb", "power", "strum"].includes(P.bassMode) ? [INST_FILE.jbass] : [])
+        .concat(P.bassMode === "power" ? [INST_FILE.dguitar] : []).concat(P.bassMode === "strum" ? [INST_FILE.aguitar] : [])
+        .filter(Boolean).forEach((f) => loadInstrument(f));
     }
     // 악기 소리 하나 재생. 준비가 안 됐으면 false (→ 합성음으로 대신)
     // pan: -1(왼쪽 귀) ~ 0(가운데) ~ +1(오른쪽 귀) — 이어폰을 끼면 악기마다 자리가 생김 (폰 스피커는 거의 차이 없음)
@@ -3132,7 +3345,7 @@
         src.start(st, smp.off); src.stop(end + release + 0.05);
         if (e.srcList) e.srcList.push(src);                      // (만져보기에서 손을 떼면 바로 멈추려고 기억)
       }
-      out.gain.value = peak * SAMPLE_GAIN;
+      out.gain.value = peak * SAMPLE_GAIN * (FILE_GAIN[file] || 1);
       return true;
     }
     function sampleText() {
@@ -3439,6 +3652,36 @@
         if (k === 0 || k === 2) { const st = k === 0 ? ct[0] : ct[2]; if (!playSample(e, INST_FILE.jbass, low(st), t, beatSec * 0.7, 0.5, 0.005)) playBass(e, st, t); }
       } else if (P.bassMode === "bowl") {                          // 명상: 두 마디마다 '주발(싱잉볼)' 같은 긴 울림
         if (k === 0 && bar % 2 === 0) singingBowl(e, t, semi(P.root / 2, ct[0]));
+      } else if (P.bassMode === "pop") {                           // 팝: 1박 뿌리음 · 2박 반 박 뒤 5음 · 3박 뿌리음
+        const jb = (st, tt, d) => { if (!playSample(e, INST_FILE.jbass, low(st), tt, d, 0.5, 0.005)) playBass(e, st, tt); };
+        if (k === 0 || k === 2) jb(ct[0], t, beatSec * 0.9);
+        if (k === 1) jb(ct[2], t + beatSec * 0.5, beatSec * 0.45);
+      } else if (P.bassMode === "power") {                         // 록·메탈: 찌그러진 기타 '파워 코드'(뿌리음+5음+옥타브)를 반 박마다
+        const len = P.palm ? beatSec * 0.22 : beatSec * 0.45;      // 메탈은 손바닥으로 눌러 짧게 끊는 소리(팜뮤트)
+        [0, 0.5].forEach((off) => [0, 7, 12].forEach((iv, j) =>
+          playSample(e, INST_FILE.dguitar, low(ct[0]) * Math.pow(2, iv / 12), t + off * beatSec + j * 0.004, len, 0.28, 0.003, null, -0.35)));
+        if (k === 0 || k === 2) { if (!playSample(e, INST_FILE.jbass, low(ct[0]), t, beatSec * 0.9, 0.45, 0.005)) playBass(e, ct[0], t); }
+      } else if (P.bassMode === "808") {                           // 힙합: 길게 울리며 살짝 내려가는 '808' 베이스 (폰에서도 들리게 배음 섞음)
+        if (k === 0 || (k === 2 && bar % 2 === 1)) {
+          const f0 = low(ct[0]), o = e.ctx.createOscillator(), o2 = e.ctx.createOscillator(), g = e.ctx.createGain(), g2 = e.ctx.createGain();
+          o.type = "sine"; o2.type = "triangle";
+          o.frequency.setValueAtTime(f0 * 1.06, t); o.frequency.exponentialRampToValueAtTime(f0, t + 0.08);
+          o2.frequency.setValueAtTime(f0 * 2.12, t); o2.frequency.exponentialRampToValueAtTime(f0 * 2, t + 0.08);
+          g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.3, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0005, t + beatSec * 1.8);
+          g2.gain.value = 0.25;
+          o.connect(g); o2.connect(g2); g2.connect(g); g.connect(e.mix);
+          o.start(t); o2.start(t); o.stop(t + beatSec * 1.9); o2.stop(t + beatSec * 1.9);
+        }
+      } else if (P.bassMode === "rnb") {                           // R&B: 부드러운 베이스 1박 + 3박 반 박 뒤
+        if (k === 0) playSample(e, INST_FILE.jbass, low(ct[0]), t, beatSec * 1.4, 0.45, 0.01) || playBass(e, ct[0], t);
+        if (k === 2) playSample(e, INST_FILE.jbass, low(ct[2]), t + beatSec * 0.5, beatSec * 0.8, 0.4, 0.01) || playBass(e, ct[2], t);
+      } else if (P.bassMode === "strum") {                         // 포크: 통기타 '내려치기(1·3박)·올려치기(반 박)' + 베이스
+        const tones = [ct[0] - 12, ct[2] - 12, ct[0], ct[1], ct[2]].map((x) => semi(P.root, x));
+        const strum = (tt, down, amp) => (down ? tones : tones.slice().reverse()).forEach((fq, j) =>
+          playSample(e, INST_FILE.aguitar, fq, tt + j * 0.014, beatSec * 0.9, amp, 0.002, null, 0.3));
+        strum(t, true, k % 2 === 0 ? 0.2 : 0.14);
+        strum(t + beatSec * 0.5, false, 0.1);
+        if (k === 0 || k === 2) { if (!playSample(e, INST_FILE.jbass, low(k === 0 ? ct[0] : ct[2]), t, beatSec * 0.9, 0.4, 0.005)) playBass(e, ct[0], t); }
       } else if (P.bassMode === "ostinato") {
         [0, 0.5].forEach((off) => playSample(e, INST_FILE.pad, low(ct[0]), t + off * beatSec, beatSec * 0.42, 0.32, 0.01));
       }
@@ -3470,7 +3713,8 @@
         const src = ctx.createBufferSource(), f = ctx.createBiquadFilter();
         src.buffer = getNoise(ctx);
         const P2 = { snare: ["bandpass", 1800, 0.7, 0.16], brush: ["bandpass", 2600, 0.5, 0.22], hat: ["highpass", 7000, 0.7, 0.04],
-                     ride: ["highpass", 5000, 0.7, 0.18], clap: ["bandpass", 1300, 1.2, 0.1] }[kind];
+                     ride: ["highpass", 5000, 0.7, 0.18], clap: ["bandpass", 1300, 1.2, 0.1],
+                     crash: ["highpass", 4000, 0.5, 1.2], shaker: ["bandpass", 6500, 1.0, 0.07], snap: ["bandpass", 2400, 2.0, 0.05] }[kind];
         f.type = P2[0]; f.frequency.value = P2[1]; f.Q.value = P2[2];
         g.gain.setValueAtTime(amp, t); g.gain.exponentialRampToValueAtTime(0.0005, t + P2[3]);
         src.connect(f); f.connect(g); src.start(t, Math.random()); src.stop(t + P2[3] + 0.02);
@@ -3494,6 +3738,36 @@
         if (k === 0 || k === 2) drumHit(e, "kick", t, 0.4);
         if (k === 1 || k === 3) drumHit(e, "snare", t, 0.16, 0.1);
         drumHit(e, "snare", t + beatSec * 0.5, 0.05, 0.1);
+      } else if (P.genre === "pop") {                            // 팝: 쿵(1·3) 짝(2·4) 치키(반 박마다)
+        if (k === 0 || k === 2) drumHit(e, "kick", t, 0.38);
+        if (k === 1 || k === 3) drumHit(e, "snare", t, 0.16, 0.1);
+        drumHit(e, "hat", t, 0.035, -0.3); drumHit(e, "hat", t + beatSec * 0.5, 0.025, -0.3);
+      } else if (P.genre === "rock") {                           // 록: 강한 쿵·짝 + 네 마디마다 '챙'(심벌)
+        if (k === 0 || k === 2) drumHit(e, "kick", t, 0.45);
+        if (k === 2) drumHit(e, "kick", t + beatSec * 0.5, 0.35);
+        if (k === 1 || k === 3) drumHit(e, "snare", t, 0.24, 0.1);
+        drumHit(e, "hat", t, 0.05, -0.3); drumHit(e, "hat", t + beatSec * 0.5, 0.04, -0.3);
+        if (k === 0 && bar % 4 === 0) drumHit(e, "crash", t, 0.08, 0.4);
+      } else if (P.genre === "metal") {                          // 메탈: 반 박마다 '쿵쿵'(두 발 베이스 북) + 강한 짝 + 심벌
+        drumHit(e, "kick", t, 0.4); drumHit(e, "kick", t + beatSec * 0.5, 0.35);
+        if (k === 1 || k === 3) drumHit(e, "snare", t, 0.28, 0.1);
+        if (k === 0 && bar % 2 === 0) drumHit(e, "crash", t, 0.09, 0.4);
+      } else if (P.genre === "hiphop") {                         // 힙합: 쿵(1박, 2박 반 뒤) 짝(2·4) + 출렁이는 치키
+        const sw = t + beatSec * P.swing;
+        if (k === 0) drumHit(e, "kick", t, 0.45);
+        if (k === 1) drumHit(e, "kick", sw, 0.35);
+        if (k === 2 && bar % 2 === 1) drumHit(e, "kick", t, 0.35);
+        if (k === 1 || k === 3) drumHit(e, "snare", t, 0.22, 0.1);
+        drumHit(e, "hat", t, 0.04, -0.3); drumHit(e, "hat", sw, 0.03, -0.3);
+      } else if (P.genre === "rnb") {                            // R&B: 부드러운 쿵 + 손가락 '딱'(2·4) + 출렁이는 치키
+        const sw = t + beatSec * P.swing;
+        if (k === 0) drumHit(e, "kick", t, 0.3);
+        if (k === 2) drumHit(e, "kick", sw, 0.25);
+        if (k === 1 || k === 3) drumHit(e, "snap", t, 0.12, 0.2);
+        drumHit(e, "hat", t, 0.025, -0.3); drumHit(e, "hat", sw, 0.02, -0.3);
+      } else if (P.genre === "folk") {                           // 포크: 흔드는 '착착'(셰이커) + 가벼운 쿵
+        drumHit(e, "shaker", t, 0.05, 0.4); drumHit(e, "shaker", t + beatSec * 0.5, 0.035, 0.4);
+        if (k === 0 || k === 2) drumHit(e, "kick", t, 0.22);
       } else if (P.genre === "cinema") {
         if (k === 0 || (k === 2 && P.style === "pulse")) {
           if (!playSample(e, INST_FILE.taiko, 98, t, 1.2, 0.7, 0)) drumHit(e, "kick", t, 0.5);
@@ -3622,89 +3896,120 @@
     }
     function clearViewLight() { $("lightMask").hidden = true; viewLight = null; }
 
-    // ---- 🎨 빛 그림 (선택) ----
-    let artMode = false, artParts = null, artRaf = 0, artEnergy = 0, artP = null;
-    let waitArtInfo = "아직 없음";
+    // ---- 🎨 빛 그림 [수정 6-14]: 분석을 기다리는 동안 '전체 화면'으로, 4가지 그림체가 4초마다 바뀜 ----
+    //   점묘(점으로 찍기) · 붓터치(윤곽 방향을 따라 짧은 붓 자국, 고흐처럼) · 모자이크(작은 타일) · 별빛(밝은 곳이 별처럼 반짝)
+    //   ※ 이해를 돕는 기능이 아니라 '기다림을 덜 지루하게' 하는 장식이라 기다릴 때만 씀
+    const ART_STYLES = ["dots", "brush", "mosaic", "stars"];
+    const ART_STYLE_KO = { dots: "점묘", brush: "붓터치", mosaic: "모자이크", stars: "별빛" };
+    let artMode = false, artParts = null, artRaf = 0, artEnergy = 0, artP = null, waitArtInfo = "아직 없음";
     function buildArt(s) {
-      const img = $("artImg"), cv = $("artCanvas");
-      const r = img.getBoundingClientRect();
-      if (r.width < 10 || r.height < 10) { waitArtInfo = "사진 크기가 아직 0이라 다시 시도"; return false; }
-      const W = Math.round(r.width), H = Math.round(r.height);
+      const img = $("artImg"), cv = $("waitCanvas");
+      if (!img.naturalWidth) { waitArtInfo = "사진이 아직 준비되지 않음"; return false; }
+      const W = window.innerWidth, H = window.innerHeight;
+      if (W < 10 || H < 10) { waitArtInfo = "화면 크기 0"; return false; }
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + "px"; cv.style.height = H + "px";
-      const step = Math.max(7, Math.round(Math.sqrt(W * H / 2200)));   // 알갱이 약 2200개
-      const t = document.createElement("canvas"); t.width = Math.ceil(W / step); t.height = Math.ceil(H / step);
-      const g = t.getContext("2d"); g.drawImage(img, 0, 0, t.width, t.height);
-      const d = g.getImageData(0, 0, t.width, t.height).data;
+      // 사진을 화면 안에 꽉 차게(비율 유지) 놓을 자리
+      const sc = Math.min(W * 0.94 / img.naturalWidth, H * 0.78 / img.naturalHeight);
+      const dw = img.naturalWidth * sc, dh = img.naturalHeight * sc, ox = (W - dw) / 2, oy = (H * 0.86 - dh) / 2;
+      const step = Math.max(7, Math.round(Math.sqrt(dw * dh / 2600)));       // 알갱이 약 2600개
+      const tw = Math.ceil(dw / step), th = Math.ceil(dh / step);
+      const t = document.createElement("canvas"); t.width = tw; t.height = th;
+      const g = t.getContext("2d"); g.drawImage(img, 0, 0, tw, th);
+      const d = g.getImageData(0, 0, tw, th).data;
+      const L = (x, y) => { x = Math.max(0, Math.min(tw - 1, x)); y = Math.max(0, Math.min(th - 1, y)); const i = (y * tw + x) * 4; return (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255; };
       artParts = [];
-      for (let y = 0; y < t.height; y++) for (let x = 0; x < t.width; x++) {
-        const i = (y * t.width + x) * 4, l = (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
-        artParts.push({ x0: (x + 0.5) * step, y0: (y + 0.5) * step, c: "rgb(" + d[i] + "," + d[i + 1] + "," + d[i + 2] + ")", l: l,
-                        ph: Math.random() * 6.28, r: step * (0.25 + 0.45 * l) });
+      for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
+        const i = (y * tw + x) * 4, l = L(x, y);
+        const gx = L(x + 1, y) - L(x - 1, y), gy = L(x, y + 1) - L(x, y - 1);
+        artParts.push({ x0: ox + (x + 0.5) * step, y0: oy + (y + 0.5) * step, c: "rgb(" + d[i] + "," + d[i + 1] + "," + d[i + 2] + ")", l: l,
+                        ph: Math.random() * 6.28, r: step * (0.25 + 0.45 * l),
+                        ang: Math.atan2(gy, gx) + Math.PI / 2,       // 붓터치 방향: 밝기가 바뀌는 방향의 직각 = 윤곽을 따라감
+                        edge: Math.min(1, Math.hypot(gx, gy) * 4) });
       }
-      artP = { s: planOf(s), W: W, H: H, dpr: dpr, step: step, mood: emotionColor(s) };
+      artP = { s: planOf(s), W: W, H: H, dpr: dpr, step: step, t0: performance.now(), style0: Math.floor(Math.random() * ART_STYLES.length) };
       waitArtInfo = "보여 줌 (알갱이 " + artParts.length + "개)";
       return true;
     }
+    function drawStyle(g, style, P, time, e, alpha) {
+      const c = P.s.c, cx = P.W / 2, cy = P.H * 0.43, step = P.step;
+      const swirl = reduceMotion() ? 0 : 0.04 + 0.25 * c.flow, jit = reduceMotion() ? 0 : 0.6 + 2 * c.roughness;
+      for (const p of artParts) {
+        const dx = p.x0 - cx, dy = p.y0 - cy, an = swirl * Math.sin(time * 0.3 + p.ph * 0.2) * 0.15;
+        const push = 1 + e * 0.05 * (0.5 + p.l);
+        const x = cx + (dx * Math.cos(an) - dy * Math.sin(an)) * push + Math.sin(time * 2 + p.ph) * jit;
+        const y = cy + (dx * Math.sin(an) + dy * Math.cos(an)) * push + Math.cos(time * 1.7 + p.ph) * jit;
+        g.fillStyle = p.c; g.strokeStyle = p.c;
+        if (style === "dots") {
+          g.globalAlpha = alpha * (0.55 + 0.45 * Math.min(1, p.l + e * 0.3));
+          const rr = p.r * (1 + e * 0.8 * p.l);
+          g.beginPath(); g.arc(x, y, rr, 0, 6.283); g.fill();
+        } else if (style === "brush") {
+          g.globalAlpha = alpha * 0.85;
+          const a2 = p.ang + Math.sin(time * 0.6 + p.ph) * 0.25 * (1 - p.edge);   // 윤곽이 약한 곳은 천천히 흔들림
+          const len = step * (0.9 + 0.7 * p.l), wdt = step * 0.38;
+          g.lineWidth = wdt; g.lineCap = "round";
+          g.beginPath(); g.moveTo(x - Math.cos(a2) * len / 2, y - Math.sin(a2) * len / 2); g.lineTo(x + Math.cos(a2) * len / 2, y + Math.sin(a2) * len / 2); g.stroke();
+        } else if (style === "mosaic") {
+          const fl = 0.85 + 0.15 * Math.sin(time * 1.3 + p.ph);                 // 타일마다 아주 살짝 밝기가 숨 쉼
+          g.globalAlpha = alpha * fl;
+          const sz = step * 0.86;
+          g.fillRect(p.x0 - sz / 2, p.y0 - sz / 2, sz, sz);
+        } else {                                                               // 별빛
+          if (p.l < 0.42) { g.globalAlpha = alpha * 0.25; g.fillRect(p.x0 - 1, p.y0 - 1, 2, 2); continue; }
+          const tw = 0.5 + 0.5 * Math.sin(time * (1.5 + p.ph % 1.5) + p.ph);
+          g.globalAlpha = alpha * (0.3 + 0.7 * tw);
+          const rr = step * (0.15 + 0.5 * p.l) * (0.7 + 0.6 * tw);
+          const gr = g.createRadialGradient(p.x0, p.y0, 0, p.x0, p.y0, rr * 2.4);
+          gr.addColorStop(0, "rgba(255,255,255,0.95)"); gr.addColorStop(0.35, p.c); gr.addColorStop(1, "rgba(0,0,0,0)");
+          g.fillStyle = gr; g.beginPath(); g.arc(p.x0, p.y0, rr * 2.4, 0, 6.283); g.fill();
+        }
+      }
+    }
     function drawArt(ts) {
       if (!artMode) return;
-      const cv = $("artCanvas"), g = cv.getContext("2d"), P = artP;
+      const cv = $("waitCanvas"), g = cv.getContext("2d"), P = artP;
       g.setTransform(P.dpr, 0, 0, P.dpr, 0, 0);
-      g.fillStyle = "rgba(10,10,14,1)"; g.fillRect(0, 0, P.W, P.H);
-      const c = P.s.c, time = ts / 1000, cx = P.W / 2, cy = P.H / 2;
-      const swirl = reduceMotion() ? 0 : 0.04 + 0.25 * c.flow;              // 흐름 → 소용돌이 속도
-      const jit = reduceMotion() ? 0 : 0.6 + 2.5 * c.roughness;             // 거칠기 → 떨림
-      const e = artEnergy;
-      g.globalCompositeOperation = "lighter";
-      for (const p of artParts) {
-        const dx = p.x0 - cx, dy = p.y0 - cy, ang = swirl * Math.sin(time * 0.3 + p.ph * 0.2) * 0.15;
-        const push = 1 + e * 0.06 * (0.5 + p.l);                            // 음이 나면 바깥으로 살짝 퍼짐
-        const x = cx + (dx * Math.cos(ang) - dy * Math.sin(ang)) * push + Math.sin(time * 2 + p.ph) * jit;
-        const y = cy + (dx * Math.sin(ang) + dy * Math.cos(ang)) * push + Math.cos(time * 1.7 + p.ph) * jit;
-        const rr = p.r * (1 + e * 0.8 * p.l);
-        g.fillStyle = p.c;
-        g.globalAlpha = 0.55 + 0.45 * Math.min(1, p.l + e * 0.3);
-        g.beginPath();
-        if (c.roughness > 0.6) g.rect(x - rr, y - rr, rr * 2, rr * 2); else g.arc(x, y, rr, 0, 6.283);
-        g.fill();
-      }
+      g.globalAlpha = 1; g.fillStyle = "#000"; g.fillRect(0, 0, P.W, P.H);
+      const el = (ts - P.t0) / 1000, SEG = 4, FADE = 1;                         // 4초마다 다음 그림체로 (1초 동안 겹쳐 바뀜)
+      const k = Math.floor(el / SEG), within = el - k * SEG;
+      const cur = ART_STYLES[(P.style0 + k) % ART_STYLES.length], nxt = ART_STYLES[(P.style0 + k + 1) % ART_STYLES.length];
+      const mix = reduceMotion() ? 0 : Math.max(0, (within - (SEG - FADE)) / FADE);
+      g.globalCompositeOperation = cur === "stars" ? "lighter" : "source-over";
+      drawStyle(g, cur, P, el, artEnergy, 1 - mix);
+      if (mix > 0) { g.globalCompositeOperation = nxt === "stars" ? "lighter" : "source-over"; drawStyle(g, nxt, P, el, artEnergy, mix); }
       g.globalAlpha = 1; g.globalCompositeOperation = "source-over";
+      $("waitStyle").textContent = "✨ " + ART_STYLE_KO[mix > 0.5 ? nxt : cur];
       artEnergy *= 0.94;
       artRaf = requestAnimationFrame(drawArt);
     }
     function setArtMode(on, s) {
       artMode = !!on && lastData && lastData.type === "photo";
       cancelAnimationFrame(artRaf);
-      $("artCanvas").hidden = !artMode;
-      $("artCanvas").style.opacity = "1";
-      if (artMode) {
-        const ok = buildArt(s || (lastResult && lastResult.whole) || {});
-        if (!ok) {                                                 // 사진이 아직 화면에 자리 잡지 않았으면 0.2초 뒤 다시
-          artMode = false; $("artCanvas").hidden = true;
-          if (on && viewState === "wait") setTimeout(() => { if (viewState === "wait") setArtMode(true, s); }, 200);
-          return;
-        }
-        artRaf = requestAnimationFrame(drawArt);
-      }
+      const full = $("waitFull");
+      if (!artMode) { full.hidden = true; return; }
+      full.hidden = false; full.style.opacity = "1";
+      if (!buildArt(s || {})) { artMode = false; full.hidden = true; return; }
+      artRaf = requestAnimationFrame(drawArt);
     }
-    // [수정 6-12] 빛 그림은 '기다리는 시간'에만 (이해를 돕는 기능이 아니라 기다림을 덜 지루하게 하는 장식이라서)
     let waitPulse = null;
     function startWaitArt() {
       const img = $("artImg");
       const go2 = () => {
         if (viewState !== "wait") return;
         setArtMode(true, { roughness: 0.3, flow: 0.6, arousal: 0.4 });
+        if (!artMode) { setTimeout(() => { if (viewState === "wait" && !artMode) go2(); }, 200); return; }
         clearInterval(waitPulse);
         waitPulse = setInterval(() => { artEnergy = Math.max(artEnergy, 0.7); }, 900);    // 숨 쉬듯 천천히
       };
       waitArtInfo = "준비 중";
       if (img.complete && img.naturalWidth) setTimeout(go2, 50); else img.addEventListener("load", go2, { once: true });
     }
+    // 분석이 끝나면: 화면 전체가 천천히 사라지며 원래 작품이 드러남
     function endWaitArt() {
       clearInterval(waitPulse); waitPulse = null;
-      if (!artMode) return;
-      const cv = $("artCanvas");
-      cv.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1200, easing: "ease-in" }).onfinish = () => setArtMode(false);
+      if (!artMode) { $("waitFull").hidden = true; return; }
+      $("waitFull").animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1200, easing: "ease-in" }).onfinish = () => setArtMode(false);
     }
 
     function startSense(s, box, colors, bars) {
@@ -3877,7 +4182,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-13 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-14 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -4062,7 +4367,9 @@
           '<button class="big primary" id="btnStart">시작하기</button>';
         $("btnStart").onclick = () => startReady("ask");
       } else {
+        const last = galleryList()[0];
         body.innerHTML =
+          (last ? '<div class="hero"><img alt="" src="' + last.thumb + '"><div class="hero-cap"><span>최근에 만난 작품</span><b>' + esc(last.title) + "</b></div></div>" : "") +
           '<div class="tip">🔔 무음·방해 금지를 끄고 볼륨을 올려 주세요.</div>' +
           '<button class="big primary" id="btnMeet">🎨 작품 만나기</button>' +
           '<div class="card"><b>내 감각</b>: ' + mainSenses(profile) + "<br>" + summaryHTML(profile) + "</div>" +
@@ -4075,7 +4382,7 @@
         $("btnMySense").onclick = () => { draft = copy(profile); openDetail(); };
         $("btnReady").onclick = () => startReady("home");
         $("btnNote").onclick = openNote;
-        $("btnGallery").onclick = () => showSoon("📚 내 갤러리", "<p>감상한 작품 기록은 <b>나중 단계</b>에서 만들어요.</p>");
+        $("btnGallery").onclick = openGallery;
       }
     }
 
@@ -4319,15 +4626,16 @@
     }
     $("btnSoonHome").onclick = () => { renderHome(); go("home"); };
     $("btnCamHome").onclick = () => { renderHome(); go("home"); };
+    $("btnGalHome").onclick = () => { renderHome(); go("home"); };
 
     // [수정 6-10] 디자인 시안 고르기 (기본 = 시안 1 '따뜻한 미술관')
-    const KEY_THEME = "digical.theme.v1", THEMES = { museum: "시안 1 · 따뜻한 미술관", contrast: "시안 2 · 고대비 다크", pastel: "시안 3 · 파스텔" };
+    const KEY_THEME = "digical.theme.v2", THEMES = { atelier: "시안 4 · 아틀리에", museum: "시안 1 · 따뜻한 미술관", contrast: "시안 2 · 고대비 다크", pastel: "시안 3 · 파스텔" };
     function applyTheme(t) {
-      if (!THEMES[t]) t = "museum";
+      if (!THEMES[t]) t = "atelier";
       document.documentElement.setAttribute("data-theme", t);
       try { localStorage.setItem(KEY_THEME, t); } catch (e) {}
     }
-    try { applyTheme(new URLSearchParams(location.search).get("theme") || localStorage.getItem(KEY_THEME) || "museum"); } catch (e) {}
+    try { applyTheme(new URLSearchParams(location.search).get("theme") || localStorage.getItem(KEY_THEME) || "atelier"); } catch (e) {}
 
     // 시작!
     renderBanner();
