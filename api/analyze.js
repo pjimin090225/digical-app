@@ -11,13 +11,14 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "4-3";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "4-4";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
 
 // 쉬운 말 규칙 (CEFR A1/A2의 능력 기준을 한국어 쉬운 글 규칙으로 응용)
 const RULES = { maxWords: 12, maxSummaryWords: 15, minScenes: 2, maxScenes: 5 };
+const GRID = 6;   // 사진 위에 그린 번호 칸: 6×6 = 36칸
 
 // 어려운 낱말 목록 (시작용). 팀원 A가 CACD 작업하며 늘려 갈 목록
 const HARD_WORDS = [
@@ -56,7 +57,7 @@ function textPrompt(type, explain, target, cropped) {
 
   return [
     "너는 인지적 약자(경계선 지능인 등)를 위한 문화예술 해설가다.",
-    "입력: " + what + "." + (cropped ? " 이 사진은 작품 부분만 잘라 낸 것이다. 위치는 이 사진 전체를 기준으로 쓴다." : ""),
+    "입력: " + what + "." + (cropped ? "" : ""),
     target
       ? "사용자가 고른 대상: '" + target + "'. 이 대상만 해설한다."
       : (type === "photo"
@@ -71,10 +72,11 @@ function textPrompt(type, explain, target, cropped) {
     "- interpretation: 이 작품(장면)이 주는 느낌이나 이야기를 1~2문장으로 해석한다. 보이는 것을 늘어놓지 말고, '어떤 마음이 드는지', '무엇을 말하는 것 같은지'를 쓴다.",
     "- scenes: 감상하기 좋게 " + RULES.minScenes + "~" + RULES.maxScenes + "개로 나눈다. 각 장면은 '무엇이 있는지 + 어떤 느낌인지'를 함께 쓴다.",
     type === "photo"
-      ? "- 위치는 모두 '사진 전체'를 기준으로 [왼쪽, 위, 오른쪽, 아래]를 0~1000으로 쓴다. (사진 왼쪽 위 = 0,0 / 오른쪽 아래 = 1000,1000)\n" +
-        "- frame: 사진 속에서 작품(느낄 대상)이 차지하는 테두리. 화면 속 글자·배경·책상은 빼고 작품만 감싼다.\n" +
-        "- 각 장면의 box는 반드시 frame 안에 있어야 하고, 실제로 그 장면이 보이는 자리를 정확히 감싼다. 예시의 숫자를 따라 하지 않는다."
-      : "- box는 null로 둔다.",
+      ? "- 사진 위에 1~" + (GRID * GRID) + "번 번호가 적힌 " + GRID + "×" + GRID + " 칸이 그려져 있다. (왼쪽 위가 1번, 한 줄에 " + GRID + "칸씩, 오른쪽 아래가 " + (GRID * GRID) + "번)\n" +
+        "  칸과 번호는 위치를 알려 주는 표시일 뿐이니 해설에는 쓰지 않는다.\n" +
+        "- frame_cells: 작품(느낄 대상)이 들어 있는 칸 번호를 모두 쓴다. 화면 속 글자·가격·버튼·책상·벽만 있는 칸은 뺀다.\n" +
+        "- 각 장면의 cells: 그 장면이 실제로 보이는 칸 번호를 모두 쓴다. 한 칸에 조금이라도 걸치면 넣는다. 장면마다 칸이 달라야 한다."
+      : "- cells와 frame_cells는 빈 목록 [] 으로 둔다.",
     type === "video" ? "- 영상은 '무엇이 일어나는지'를 말한다. '보여요', '보여줘요'를 반복하지 않는다." : "",
     "",
     "[쉬운 말 규칙 — 반드시 지킬 것]",
@@ -90,15 +92,15 @@ function textPrompt(type, explain, target, cropped) {
     "- 사람이 보이면 누구인지 추측하지 않고, 얼굴 생김새를 자세히 묘사하지 않는다.",
     "",
     "[좋은 예 — 밤하늘 그림]",
-    '{"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"candidates":[],"frame":[작품의 왼쪽,위,오른쪽,아래],',
+    '{"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"candidates":[],"frame_cells":[작품이 있는 칸 번호들],',
     ' "summary":"밤하늘이 빙글빙글 도는 그림이에요.",',
     ' "interpretation":"조용한 마을 위로 하늘이 크게 움직여요. 잠 못 드는 밤의 설레는 마음 같아요.",',
-    ' "scenes":[{"name":"하늘","text":"하늘이 소용돌이처럼 돌아요. 바람이 크게 부는 것 같아요.","box":[하늘이 보이는 자리]},',
-    '           {"name":"별","text":"노란 별이 반짝여요. 작은 등불처럼 따뜻해요.","box":[별이 모인 자리]},',
-    '           {"name":"마을","text":"마을은 조용히 잠들어 있어요.","box":[마을이 있는 자리]}]}',
+    ' "scenes":[{"name":"하늘","text":"하늘이 소용돌이처럼 돌아요. 바람이 크게 부는 것 같아요.","cells":[하늘이 보이는 칸 번호들]},',
+    '           {"name":"별","text":"노란 별이 반짝여요. 작은 등불처럼 따뜻해요.","cells":[별이 있는 칸 번호들]},',
+    '           {"name":"마을","text":"마을은 조용히 잠들어 있어요.","cells":[마을이 있는 칸 번호들]}]}',
     "",
-    "(위 예의 [ ] 안 글은 설명일 뿐이고, 실제로는 숫자 4개를 쓴다)",
-    "[출력] 위와 같은 모양의 JSON만 출력한다. needs_choice가 true면 candidates에 [{\"name\":\"\",\"box\":[..]}]를 2~4개 쓴다."
+    "(위 예의 [ ] 안 글은 설명일 뿐이고, 실제로는 칸 번호 숫자들을 쓴다. 사진이 아니면 cells와 frame_cells는 빈 목록)",
+    "[출력] 위와 같은 모양의 JSON만 출력한다. needs_choice가 true면 candidates에 [{\"name\":\"\",\"cells\":[칸 번호들]}]를 2~4개 쓴다."
   ].filter((x) => x !== "").join("\n");
 }
 
@@ -211,6 +213,14 @@ function checkRules(d, explain, type) {
   return v;
 }
 
+// 칸 번호 목록 정리: 1~36 정수만, 중복 없이
+function cleanCells(c) {
+  if (!Array.isArray(c)) return [];
+  const out = [];
+  c.forEach((v) => { const n = Math.round(Number(v)); if (n >= 1 && n <= GRID * GRID && !out.includes(n)) out.push(n); });
+  return out.sort((a, b) => a - b);
+}
+
 function stats(d) {
   const ss = [].concat(sentencesOf(d.summary), sentencesOf(d.interpretation), ...(d.scenes || []).map((s) => sentencesOf(s.text)));
   const w = ss.map(wordsOf);
@@ -244,13 +254,6 @@ function senseProblems(d, n) {
     const key = (s) => [s.intensity, s.tempo, s.pitch, s.texture, s.mode].join("|");
     if (sc.every((s) => key(s) === key(sc[0]))) v.push("모든 장면의 값이 똑같아요. 장면마다 느낌에 맞게 다르게 정해 주세요");
   }
-  const w = cleanSense(d.whole);
-  const wkey = [w.mode, w.tempo, w.pitch, w.texture].join("|");
-  sc.forEach((s, i) => {
-    if ([s.mode, s.tempo, s.pitch, s.texture].join("|") === wkey) {
-      v.push("whole이 " + (i + 1) + "번 장면과 똑같아요. whole은 모든 장면을 아우른 종합 분위기로 다시 정해 주세요");
-    }
-  });
   return v;
 }
 
@@ -290,7 +293,7 @@ module.exports = async (req, res) => {
     if (type !== "sound" && images.length === 0) return res.status(400).json({ error: "no_image" });
 
     // ---------- 0) 작품 테두리만 찾기 (앱이 이걸로 사진을 잘라 다시 보냄) ----------
-    if (body.task === "frame") {
+    if (body.task === "frame") {          // (예전 방식, 지금 앱은 쓰지 않음)
       const frame = await findFrame(images[0]);
       return res.status(200).json({ ok: true, version: SERVER_VERSION, frame: frame, ms: { total: Date.now() - t0 } });
     }
@@ -313,7 +316,7 @@ module.exports = async (req, res) => {
     if (type === "photo" && !target && text.needs_choice && Array.isArray(text.candidates) && text.candidates.length >= 2) {
       return res.status(200).json({
         ok: true, needs_choice: true, version: SERVER_VERSION, model: first.model,
-        candidates: text.candidates.slice(0, 4).map((c) => ({ name: String(c.name || "").slice(0, 20), box: c.box || null })),
+        candidates: text.candidates.slice(0, 4).map((c) => ({ name: String(c.name || "").slice(0, 20), cells: cleanCells(c.cells) })),
         ms: { text: Date.now() - tText, sense: 0, total: Date.now() - t0 }
       });
     }
@@ -360,12 +363,13 @@ module.exports = async (req, res) => {
       kind: text.kind || "기타",
       is_artwork: !!text.is_artwork,
       title_guess: text.title_guess || "",
-      frame: (Array.isArray(text.frame) && text.frame.length === 4 && text.frame.every((v) => typeof v === "number")) ? text.frame : null,
+      grid: GRID,
+      frame_cells: cleanCells(text.frame_cells),
       target: target,
       summary: text.summary || "",
       interpretation: text.interpretation || "",
       whole: cleanSense(sense.data.whole),
-      scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, box: (Array.isArray(s.box) && s.box.length === 4 && s.box.every((v) => typeof v === "number")) ? s.box : null, sense: cleanSense(sScenes[i]) })),
+      scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), sense: cleanSense(sScenes[i]) })),
       check: { passed: violations.length === 0, violations: violations, tries: tries, stats: stats(text),
                sensePassed: sProblems.length === 0, senseProblems: sProblems, senseTries: senseTries },
       ms: { text: textMs, sense: senseMs, total: Date.now() - t0 }
