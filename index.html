@@ -440,7 +440,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-10: 글·QR 입력 + 빛 강화·빛 그림 + 디자인 시안 + 공간 음향 + 아이폰 진동<br>
+    6단계 · 앱 6-11: 음악 성격 4가지 + 재질 울림 + 덩어리 정확도 + QR 1배 카메라<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1063,10 +1063,11 @@
       }
       camStarting = (async () => {
         try {
-          const s = await navigator.mediaDevices.getUserMedia({
+          let s = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 960 } },
             audio: false
           });
+          s = await useMainCamera(s);        // [수정 6-11] 0.5배(초광각)로 잡히는 폰 → 기본 1배 카메라로
           if (currentScreen !== "camera" || mode === "sound") { s.getTracks().forEach((t) => t.stop()); return false; }
           camStream = s;
           const v = $("video");
@@ -1087,6 +1088,31 @@
         }
       })();
       return camStarting;
+    }
+    // [수정 6-11] 일부 폰(특히 갤럭시)은 '뒤 카메라'를 달라고 하면 초광각(0.5배)을 줌
+    //   ① 카메라가 '확대(zoom)' 조절을 지원하면 1배로 맞춤  ② 뒤 카메라가 여러 개면 이름에 'ultra/wide/초광각'이 없는 기본 카메라로 바꿈
+    let mainCamId = null;
+    async function useMainCamera(s) {
+      try {
+        const tr = s.getVideoTracks()[0];
+        const cap = tr.getCapabilities ? tr.getCapabilities() : {};
+        if (cap.zoom && cap.zoom.min < 1 && cap.zoom.max >= 1) { await tr.applyConstraints({ advanced: [{ zoom: 1 }] }); return s; }
+        const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+        const backs = cams.filter((d) => /back|rear|environment|후면/i.test(d.label));
+        if (backs.length < 2) return s;
+        const cur = tr.getSettings().deviceId;
+        const main = mainCamId ? backs.find((d) => d.deviceId === mainCamId) :
+          (backs.find((d) => /camera2 0\b|camera 0\b/i.test(d.label)) || backs.find((d) => !/ultra|wide|초광각|광각|tele|망원/i.test(d.label)));
+        if (!main || main.deviceId === cur) return s;
+        s.getTracks().forEach((t) => t.stop());
+        mainCamId = main.deviceId;
+        try {
+          return await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: main.deviceId }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+        } catch (e2) {                                               // 바꾸기에 실패하면 원래 방식으로 다시
+          mainCamId = null;
+          return await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+        }
+      } catch (e) { return s; }
     }
     function camFail(msg, code) {
       $("camMsg").textContent = msg + "\n아래 버튼으로 다시 켜거나, 폰 카메라를 직접 열 수 있어요." +
@@ -1786,7 +1812,7 @@
 
     // 기기당 하루 사용 횟수 (관객이 너무 많이 눌러 비용이 나가지 않게)
     const KEY_USE = "digical.use.v1";
-    const DAILY_LIMIT = 40;
+    const DAILY_LIMIT = Infinity;       // [수정 6-11] 팀 결정으로 하루 횟수 제한 없앰 (비용은 OpenAI '월 사용 한도'로 막음)
     function useCount() {
       const today = new Date().toISOString().slice(0, 10);
       let u = load(KEY_USE);
@@ -2183,9 +2209,10 @@
     //      · 이웃 칸끼리 색 차이로 영역 나누기(그래프 기반 분할) → 아주 작은 조각은 옆 덩어리에 합침 → 최대 10개
     //   2) 덩어리 안을 문지르면 그 덩어리 재질의 '문지르는 소리' (아래 설명) + 거친 곳은 오돌토돌 진동
     //   3) 다른 덩어리로 넘어가면 '톡' 진동 + 노란 테두리가 새 덩어리로
-    let touchMap = null, tSyn = null, tPrev = null, touchInfo = null, curSeg = -1;
+    let touchMap = null, tSyn = null, tPrev = null, touchInfo = null, curSeg = -1, tapDist = 0;
     const TMAP_W = 200;                 // 계산용으로 줄인 사진 가로 칸 수
-    const SEG_K_FH = 0.9, SEG_MAX = 10, SEG_MIN = 0.012;   // 나누기 기준(클수록 큰 덩어리), 최대 10덩어리, 1.2%보다 작은 조각은 합침   // 색 5가지, 최대 8덩어리, 사진의 1.5%보다 작은 조각은 합침
+    // [수정 6-11] 잘못 엮이는 일을 줄이려고 '먼저 잘게(최대 16) 나누고 → AI가 같은 물건이라고 한 것끼리만 합침'
+    const SEG_K_FH = 0.55, SEG_MAX = 16, SEG_MIN = 0.006;   // 나누기 기준(클수록 큰 덩어리), 최대 16덩어리, 0.6%보다 작은 조각은 합침
     const ROUGH_LO = 0.006, ROUGH_HI = 0.055;        // 결(잔무늬) 세기 눈금: 흐린 배경 ≈ 0.002, 수놓은 옷 ≈ 0.06
 
     function boxBlur(src, W, H, r) {    // 주변 (2r+1)×(2r+1)칸 평균
@@ -2231,7 +2258,10 @@
       //   지금: 이웃한 칸끼리 색 차이를 '다리'로 보고, 차이가 작은 다리부터 이어 붙이되
       //         '덩어리 안의 색 차이'보다 '덩어리 사이의 차이'가 충분히 클 때는 붙이지 않음 → 경계가 물체 테두리를 따라감
       const nbr = [], wts = [];
-      const cd = (i, j) => Math.hypot(C[0][i] - C[0][j], C[1][i] - C[1][j], C[2][i] - C[2][j]);
+      // 색 차이: 밝기 차이를 2배로 중요하게 (사람 눈은 색보다 밝기 경계를 더 잘 봄) — 밝기(Y)·색(Cb, Cr)으로 바꿔 비교
+      const Y = new Float32Array(N), Cb = new Float32Array(N), Cr = new Float32Array(N);
+      for (let i = 0; i < N; i++) { Y[i] = 0.299 * C[0][i] + 0.587 * C[1][i] + 0.114 * C[2][i]; Cb[i] = C[2][i] - Y[i]; Cr[i] = C[0][i] - Y[i]; }
+      const cd = (i, j) => Math.sqrt(2 * (Y[i] - Y[j]) ** 2 + (Cb[i] - Cb[j]) ** 2 + (Cr[i] - Cr[j]) ** 2);
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
         const i = y * W + x;
         if (x < W - 1) { nbr.push(i, i + 1); wts.push(cd(i, i + 1)); }
@@ -2344,10 +2374,11 @@
 
     // [수정 6-8] 덩어리마다 재질을 AI에게 묻기: 덩어리 테두리와 번호를 그린 사진을 한 번 보냄
     //   (8×8 칸으로 위치를 짚게 하던 방식은 틀렸지만, 이건 앱이 이미 나눈 실제 모양에 '이름'만 붙이는 일이라 훨씬 쉬움)
-    const SEG_COLORS = ["#FF3B30", "#FFCC00", "#34C759", "#00C7BE", "#007AFF", "#AF52DE", "#FF2D92", "#FF9500", "#FFFFFF", "#8E8E93"];
+    const SEG_COLORS = ["#FF3B30", "#FFCC00", "#34C759", "#00C7BE", "#007AFF", "#AF52DE", "#FF2D92", "#FF9500", "#FFFFFF", "#8E8E93",
+                        "#A2845E", "#64D2FF", "#BF5AF2", "#30D158", "#FFD60A", "#FF453A"];
     function makeSegImage() {
       const img = $("artImg"), M = touchMap, S = M.seg;
-      const OW = 640, OH = Math.round(OW * M.H / M.W), sx = OW / M.W, sy = OH / M.H;
+      const OW = 768, OH = Math.round(OW * M.H / M.W), sx = OW / M.W, sy = OH / M.H;
       const cv = document.createElement("canvas"); cv.width = OW; cv.height = OH;
       const g = cv.getContext("2d");
       g.drawImage(img, 0, 0, OW, OH);
@@ -2424,9 +2455,13 @@
     }
 
     // 덩어리 표시: 그 덩어리 말고는 어둡게 + 노란 굵은 테두리
+    // [수정 6-11] 덩어리 테두리는 감상에 방해 → 기본은 숨김. 개발용 정보에서 '테스트용 테두리'를 켜면 보임
+    const KEY_SEGLINE = "digical.segline.v1";
+    let showSegLine = false;
+    try { showSegLine = localStorage.getItem(KEY_SEGLINE) === "1"; } catch (e) {}
     function drawSeg(k) {
       const cv = $("touchMask");
-      if (k < 0 || !touchMap || !profile.visual.on) { cv.hidden = true; return; }
+      if (k < 0 || !touchMap || !profile.visual.on || !showSegLine) { cv.hidden = true; return; }
       const M = touchMap, W = M.W, H = M.H, comp = M.seg.comp;
       cv.width = W; cv.height = H;
       const g = cv.getContext("2d"), im = g.createImageData(W, H), d = im.data;
@@ -2470,15 +2505,52 @@
       return crackleBuf;
     }
     function touchSense() { return lastResult.whole; }
+    // [수정 6-11] 날카롭고 맑은 소리(유리·금속 등)를 내려고: '모달 합성'
+    //   물체를 톡 치면 그 물체만의 몇 가지 높이(고유 진동수)로 울리다 사라짐. 유리는 높고 맑게 조금 길게, 금속은 길게,
+    //   나무는 짧고 둥글게, 돌은 낮고 아주 짧게. 문지르는 동안 손가락이 일정 거리를 갈 때마다 '톡'을 냄
+    //   (f = 울리는 높이들 Hz, d = 사라지는 시간 초, gap = 몇 픽셀마다 톡, hit = 처음 닿을 때 세기)
+    const MAT_MODES = {
+      "유리":    { f: [2350, 3720, 5480, 7900], d: [0.45, 0.32, 0.22, 0.14], gap: 46, hit: 1.0 },
+      "금속":    { f: [1180, 2790, 4520, 6930], d: [1.1, 0.75, 0.5, 0.35],  gap: 36, hit: 0.9 },
+      "나무":    { f: [420, 980, 1850],          d: [0.07, 0.05, 0.03],       gap: 20, hit: 0.9 },
+      "돌":      { f: [240, 650, 1420, 2800],    d: [0.04, 0.03, 0.02, 0.015], gap: 13, hit: 1.0 },
+      "플라스틱": { f: [760, 1720, 3150],         d: [0.06, 0.04, 0.025],      gap: 28, hit: 0.7 },
+      "고무":    { f: [180, 430],                d: [0.035, 0.025],           gap: 40, hit: 0.5 },
+      "종이":    { f: [1900, 4200],              d: [0.012, 0.008],           gap: 16, hit: 0.4 },
+      "물":      { f: [520],                     d: [0.12],                   gap: 60, hit: 0.5, drop: true }
+    };
+    function modalTap(ctx, dest, mat, t, amp, pan) {
+      const m = MAT_MODES[mat];
+      if (!m || amp <= 0.001) return;
+      const out = ctx.createGain(); out.gain.value = amp;
+      let end = out;
+      if (pan !== undefined && ctx.createStereoPanner) { const pn = ctx.createStereoPanner(); pn.pan.value = pan; out.connect(pn); end = pn; }
+      end.connect(dest);
+      m.f.forEach((f0, k) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        const f = f0 * (0.985 + Math.random() * 0.03);             // 같은 물체도 칠 때마다 아주 조금씩 다름
+        o.frequency.setValueAtTime(f, t);
+        if (m.drop) o.frequency.exponentialRampToValueAtTime(f * 0.45, t + m.d[k]);   // 물방울: 음이 뚝 떨어짐
+        const lv = 0.5 / (k + 1);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(lv, t + 0.002);
+        g.gain.exponentialRampToValueAtTime(0.0003, t + m.d[k]);
+        o.connect(g); g.connect(out); o.start(t); o.stop(t + m.d[k] + 0.02);
+      });
+      const nb = ctx.createBufferSource(), nf = ctx.createBiquadFilter(), ng = ctx.createGain();   // 부딪히는 순간의 '틱'
+      nb.buffer = getNoise(ctx); nf.type = "bandpass"; nf.frequency.value = m.f[Math.min(1, m.f.length - 1)]; nf.Q.value = 1.5;
+      ng.gain.setValueAtTime(0.35, t); ng.gain.exponentialRampToValueAtTime(0.0003, t + 0.006);
+      nb.connect(nf); nf.connect(ng); ng.connect(out); nb.start(t, Math.random()); nb.stop(t + 0.01);
+    }
     // [수정 6-8] 재질별 문지르는 소리 (모두 '잡음'을 걸러서 만든 소리)
     //   soft = 낮게 걸러 낸 '스-'(sf = 높이) / grit = 가운데를 걸러 낸 '쓱'(gf) / cr = 알갱이 '사각'(cf) / ring = 아주 좁게 걸러 낸 '삐익·뽀득'(rf, 유리·금속·고무)
     //   vib: none = 진동 없음, light = 가볍게 톡, grain = 오돌토돌
     const MAT_SOUND = {
       // [수정 6-9] 유리가 '휘파람' 같다는 의견 → 좁게 거른 '삐익'을 빼고, 아주 작고 높은 '스스'(손끝이 미끄러지는 소리)로
-      "유리":   { soft: 0.3,  sf: 5000, grit: 0,    gf: 2000, cr: 0,   cf: 3000, ring: 0,    rf: 2600, vib: "none", quiet: 0.45 },
-      "금속":   { soft: 0.2,  sf: 4000, grit: 0.15, gf: 3500, cr: 0,   cf: 3000, ring: 0.12, rf: 3200, vib: "light", quiet: 0.6 },
+      "유리":   { soft: 0.12, sf: 6000, grit: 0,    gf: 2000, cr: 0,   cf: 3000, ring: 0,    rf: 2600, vib: "none", quiet: 0.6 },
+      "금속":   { soft: 0.15, sf: 4000, grit: 0.1,  gf: 3500, cr: 0,   cf: 3000, ring: 0,    rf: 3200, vib: "light", quiet: 0.6 },
       "나무":   { soft: 0.3,  sf: 600,  grit: 0.5,  gf: 900,  cr: 0.3, cf: 1200, ring: 0,    rf: 1000, vib: "grain" },
-      "돌":     { soft: 0.15, sf: 500,  grit: 0.55, gf: 1600, cr: 0.7, cf: 2200, ring: 0,    rf: 1000, vib: "grain" },
+      // [수정 6-11] 돌이 '사포'처럼 들린다는 의견 → 높은 알갱이를 줄이고, 낮고 드문드문한 '덜컥·사각'으로 (알갱이 빠르기 crr 0.45)
+      "돌":     { soft: 0.3,  sf: 260,  grit: 0.3,  gf: 650,  cr: 0.5, cf: 900,  crr: 0.45, ring: 0, rf: 1000, vib: "grain" },
       "천":     { soft: 0.9,  sf: 450,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 1000, vib: "none" },
       "피부":   { soft: 0.7,  sf: 350,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 1000, vib: "none" },
       "종이":   { soft: 0.2,  sf: 800,  grit: 0.5,  gf: 3200, cr: 0.3, cf: 3500, ring: 0,    rf: 1000, vib: "light" },
@@ -2570,7 +2642,7 @@
       s.grit.frequency.setTargetAtTime(p.gf * (1 + 0.8 * moving), t, 0.05);
       s.gCr.gain.setTargetAtTime(Math.min(1.3, p.cr * k), t, 0.05);                  // [수정 6-8] 알갱이 소리 상한 (자극 줄이기)
       s.crF.frequency.setTargetAtTime(p.cf, t, 0.05);
-      s.cr.playbackRate.setTargetAtTime(0.6 + 1.6 * moving, t, 0.05);
+      s.cr.playbackRate.setTargetAtTime((0.6 + 1.6 * moving) * (p.crr || 1), t, 0.05);
       s.gRing.gain.setTargetAtTime(p.ring * 3, t, 0.05);                               // 좁게 거르면 작아져서 키움
       s.ring.frequency.setTargetAtTime(p.rf * (1 + 0.35 * moving), t, 0.04);          // 빨리 문지르면 '삐익'이 올라감
       s.move.gain.setTargetAtTime(Math.min(0.5, s.base * 5 * moving) * (p.quiet || 1), t, 0.03);   // 유리·금속은 더 작게
@@ -2637,6 +2709,19 @@
         if (vibKind === "grain") { buzz([Math.round(20 * k), 18, Math.round(20 * k), 18, Math.round(20 * k)]); vibeAt = now; }
         else if (vibKind === "light") { buzz(Math.round(16 * k)); vibeAt = now; }
       }
+      // 🔔 재질의 울림: 새 덩어리에 닿으면 한 번, 문지르는 동안 gap 픽셀마다 한 번 (빠를수록 크게)
+      const segMat = touchMap.seg.st[m.seg].material;
+      if (tSyn && MAT_MODES[segMat]) {
+        const mm = MAT_MODES[segMat], dist = tPrev ? Math.hypot(e.clientX - tPrev.x, e.clientY - tPrev.y) : 0;
+        tapDist += dist;
+        const pan = ((m.x + 0.5) / touchMap.W * 2 - 1) * 0.85;
+        const base = Math.min(0.5, tSyn.base * 3);
+        if (changed) { modalTap(tSyn.ctx, tSyn.master, segMat, tSyn.ctx.currentTime, base * mm.hit, pan); tapDist = 0; }
+        else if (tapDist >= mm.gap && moving > 0.05) {
+          modalTap(tSyn.ctx, tSyn.master, segMat, tSyn.ctx.currentTime, base * (0.25 + 0.55 * moving) * (0.8 + 0.4 * m.rough), pan);
+          tapDist = 0;
+        }
+      }
       tPrev = { x: e.clientX, y: e.clientY, t: now, vibeAt: vibeAt };
       const st = touchMap.seg.st[m.seg];
       touchInfo = { n: touchMap.seg.n, k: m.seg, part: st.part, segLum: st.lum, segRough: st.rough, rank: st.rank,
@@ -2648,7 +2733,7 @@
     $("art").addEventListener("pointermove", onTouchMove);
     const endTouch = () => {
       if (viewState !== "touch") return;
-      tPrev = null; curSeg = -1;
+      tPrev = null; curSeg = -1; tapDist = 0;
       stopTouchSound();
       if (canVibrate) navigator.vibrate(0);
       $("touchRing").hidden = true; $("touchMask").hidden = true;
@@ -2729,7 +2814,8 @@
       const c = calibAll(s);
       const v = c.valence, a = c.arousal, b = c.brightness, w = c.weight, r = c.roughness, f = c.flow;
       // 음계: 기분이 높을수록 밝은 선법. 아주 어둡고 들뜨면 불안한 선법
-      let mi = Math.max(0, Math.min(5, Math.round((1 - v) * 5.4)));
+      // [수정 6-11] 평범한 물건(기분 중간)이 슬픈 단조로 가던 것 → 중간은 믹솔리디안·도리안, 정말 어두울 때만 단조·프리지안
+      let mi = Math.max(0, Math.min(5, Math.round(Math.pow(1 - v, 1.3) * 5.2)));
       if (v > 0.75 && f > 0.65) mi = 0;                 // 밝고 흐르면 떠오르는 느낌
       if (v < 0.2 && a > 0.65) mi = 6;                  // 어둡고 긴장되면 불안
       const mode = MODES7[mi];
@@ -2760,19 +2846,28 @@
       else inst = "epiano";
       const INST_KO = { reed: "리드(거친 관악 느낌)", bell: "종소리", flute: "부드러운 피리", pluck: "튕기는 현", epiano: "전자 피아노" };
       // 리듬: 활기가 높을수록 한 마디 안의 음이 많음 (1·2·3·4개, 모두 박자 위)
-      const rhythm = RHYTHMS[aEff < 0.3 ? 0 : aEff < 0.55 ? 1 : aEff < 0.8 ? 2 : 3];
+      // [수정 6-11] '다 비슷하다'는 의견 → 음악의 '성격(스타일)' 4가지를 나눔 (음 개수·박자 모양·베이스·멜로디 움직임이 모두 달라짐)
+      //   잔잔한 울림(활기 낮음) / 노래(보통) / 춤(활기 높고 밝음: 엇박·도약) / 맥박(활기 높고 어두움: 같은 음 되풀이·매 박 베이스)
+      const style = aEff < 0.25 ? "drone" : (aEff > 0.62 && v >= 0.5) ? "dance" : (aEff > 0.6 && v < 0.45) ? "pulse" : "song";
+      const STYLE_KO = { drone: "잔잔한 울림", song: "노래", dance: "춤", pulse: "맥박" };
+      const rhythm = style === "drone" ? [1,0,0,0] : style === "dance" ? [1,0,1,1] : style === "pulse" ? [1,1,1,1] :
+                     RHYTHMS[aEff < 0.4 ? 1 : 2];
+      // 5음 음계(파·시를 피함): 밝고 잔잔하거나 자연 재질(잎·물·흙·나무)이면 → 동요·민요처럼 단순하고 편안한 소리
+      const NATURE = ["잎·풀", "물", "흙", "나무"];
+      const avoid = (v > 0.55 && aEff < 0.5) || NATURE.includes(s.material) ? [3, 6] : [];
       return {
         c: c, mode: mode, scale: mode.s, scaleName: mode.name, prog: prog, progName: progName,
         inst: inst, instName: (INST_NAME[INST_FILE[inst]] || INST_KO[inst]), rhythm: rhythm,
-        root: 196 * Math.pow(2, bEff * 1.0),               // 멜로디 기준음 196~392Hz (폰 스피커가 잘 내는 높이)
-        bpm: 64 + a * 44,                                  // 64~108 BPM
+        root: 196 * Math.pow(2, bEff * 1.3),               // 멜로디 기준음 196~483Hz (폰 스피커가 잘 내는 높이, 예전보다 넓게)
+        bpm: 56 + aEff * 76,                               // 56~132 BPM (예전 64~108보다 넓게)
+        style: style, styleName: STYLE_KO[style], avoid: avoid,
         barsPerChord: a < 0.35 ? 2 : 1,                    // 잔잔하면 화음이 천천히 바뀜
         padLevel: 0.5 + (1 - a) * 0.5,
         padCut: 400 + bEff * 1800 + pCol * 1500,          // 색이 진할수록 배경 화음이 또렷
         rich: pCol > 0.5 || f > 0.6,                      // 색이 진하면 화음에 음 하나 더 (7화음)
         accentGap: 0.45 + 0.45 * pCon,                    // 명암 차이가 크면 센 박과 여린 박의 차이가 큼
         px: px, pLum: pLum, pCol: pCol, pCon: pCon, pCx: pCx, material: s.material || "",
-        bass: w > 0.35 || pCon > 0.7, bass2: w > 0.65,     // 무게(또는 강한 명암) → 베이스
+        bass: style !== "drone" && (w > 0.35 || pCon > 0.7 || style === "pulse"), bass2: w > 0.65 || style === "dance",   // 무게(또는 강한 명암) → 베이스
         echo: f > 0.55 ? (f > 0.8 ? 2 : 1) : 0,
         trem: r > 0.6 ? 5 + r * 3 : (f > 0.7 ? 0.35 : 0),
         seed: seedOf(s) ^ (px ? Math.round(px.lum * 1000 + px.complexity * 7919) : 0)
@@ -3003,9 +3098,11 @@
       const up = P.c.valence > 0.6 ? 0.62 : P.c.valence < 0.35 ? 0.38 : 0.5;
       let pos = 2 + Math.floor(R() * 3);
       for (let i = 0; i < 32; i++) {
-        const leap = P.c.roughness > 0.55 && R() < 0.35 ? 2 : 1;
+        if (P.style === "pulse" && R() < 0.7) { steps.push(pos); continue; }           // 맥박: 같은 음을 되풀이
+        const leap = (P.c.roughness > 0.55 && R() < 0.35) || (P.style === "dance" && R() < 0.4) ? 2 : 1;
         pos += (R() < up ? 1 : -1) * leap * (R() < 0.15 ? 0 : 1);
         pos = Math.max(0, Math.min(n + 4, pos));
+        if (P.avoid && P.avoid.includes(pos % 7)) pos += pos > 0 && R() < 0.5 ? -1 : 1;   // 5음 음계
         steps.push(pos);
       }
       return steps;
@@ -3107,8 +3204,27 @@
         }
         playLead(e, st, t, Math.min(2.6, n * beatSec * 0.95), k === 0);
       }
-      if (P.bass && k === 0) playBass(e, chordTones(P, deg, false)[0], t);
+      if (P.bass && (k === 0 || (P.style === "pulse"))) playBass(e, chordTones(P, deg, false)[0], t);
       if (P.bass2 && k === 2) playBass(e, chordTones(P, deg, false)[2], t);
+      // [수정 6-11] 🔔 재질 소리 층: 주인공 재질의 '울림'을 박자에 맞춰 섞음 → 작품마다 소리 색이 달라짐
+      //   (유리 = 맑은 '팅', 금속 = 길게 '챙', 나무 = '톡', 돌 = 낮은 '툭', 물 = '똑' / 천·피부·털 = 숨결 같은 '후-')
+      const mat = P.material;
+      if (MAT_MODES[mat]) {
+        const every = P.style === "drone" ? 8 : P.style === "song" ? 4 : 2;           // 몇 박마다 한 번
+        if (step % every === 0) modalTap(e.ctx, e.mix, mat, t + 0.01, 0.22 * (k === 0 ? 1 : 0.6), (e.rnd() * 2 - 1) * 0.7);
+      } else if (["천", "피부", "털·머리카락", "잎·풀", "흙"].includes(mat) && k === 0 && bar % 2 === 0) {
+        breathLayer(e, t, beatSec * 4, mat);
+      }
+    }
+    // 부드러운 재질의 '숨결': 걸러 낸 잡음이 천천히 커졌다 작아짐 (잎·풀·흙은 조금 더 바스락)
+    function breathLayer(e, t, dur, mat) {
+      const ctx = e.ctx, src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      src.buffer = getNoise(ctx); src.loop = true;
+      const rustle = mat === "잎·풀" || mat === "흙";
+      f.type = rustle ? "bandpass" : "lowpass"; f.frequency.value = rustle ? 3200 : 700; f.Q.value = rustle ? 0.8 : 0.5;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(rustle ? 0.05 : 0.08, t + dur * 0.4);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      src.connect(f); f.connect(g); g.connect(e.mix); src.start(t, Math.random()); src.stop(t + dur + 0.05);
     }
     // 끝맺음: 으뜸화음(음계의 첫 화음)을 길게 울리며 끝
     function scheduleEnding(e, t, ringSec) {
@@ -3210,7 +3326,7 @@
       art.animate([{ boxShadow: "0 0 0 6px var(--mood), 0 0 0px var(--mood)" },
                    { boxShadow: "0 0 0 6px var(--mood), 0 0 " + Math.round(12 + 40 * a) + "px var(--mood)" },
                    { boxShadow: "0 0 0 6px var(--mood), 0 0 0px var(--mood)" }], { duration: dur, easing: "ease-in-out" });
-      if (accent && viewLight) {                                   // 큰 박: 가장 밝은 곳에서 빛의 고리
+      if (false && accent && viewLight) {                          // [수정 6-11] 빛의 고리(파장)는 '어색하다'는 의견으로 끔
         const ring = document.createElement("div");
         ring.className = "light-ring";
         ring.style.left = (viewLight.bright.x * 100) + "%"; ring.style.top = (viewLight.bright.y * 100) + "%";
@@ -3423,7 +3539,7 @@
           (P.material ? " · 주인공 재질 " + esc(P.material) : "") : "") +
         "<br>&nbsp;&nbsp;&nbsp;눈금 적용 → 기분 " + f(P.c.valence) + " · 활기 " + f(P.c.arousal) + " · 무게 " + f(P.c.weight) +
         " · 거칠기 " + f(P.c.roughness) + " · 흐름 " + f(P.c.flow) +
-        "<br>&nbsp;&nbsp;&nbsp;→ " + P.scaleName + " · 코드 " + P.progName + " · " + P.instName + " · " + Math.round(P.bpm) + "BPM · 기준음 " + Math.round(P.root) + "Hz" +
+        "<br>&nbsp;&nbsp;&nbsp;→ 성격 '" + P.styleName + "' · " + P.scaleName + (P.avoid && P.avoid.length ? "(5음)" : "") + " · 코드 " + P.progName + " · " + P.instName + " · " + Math.round(P.bpm) + "BPM · 기준음 " + Math.round(P.root) + "Hz" +
         "<br>&nbsp;&nbsp;&nbsp;→ 리듬(한 마디) [" + P.rhythm.join(" ") + "] · 진동(첫 음) [" + vibeForNote(P.c, lastOut ? lastOut.vibe : 0.6, noteAt(P, 0) * 60000 / P.bpm, true).join(", ") + "]ms" +
         (s.spread ? "<br>&nbsp;&nbsp;&nbsp;3번 매긴 값의 흔들림: 평균 ±" + spreadAvg(s.spread).toFixed(3) : "") +
         (s.why ? "<br>&nbsp;&nbsp;&nbsp;근거: " + esc(s.why) : "");
@@ -3445,7 +3561,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-10 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-11 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -3464,6 +3580,7 @@
         "<br><br><b>🎨 디자인 시안</b>: " + Object.keys(THEMES).map((k) => "<button class='mini' data-theme-btn='" + k + "'>" + THEMES[k] + "</button>").join(" ") +
         (r.think ? "<br><br><b>🧠 AI의 생각 메모 (CoT)</b><br>① 보이는 것: " + esc((r.think.see || []).join(", ")) + "<br>② 가장 중요한 것: " + esc(r.think.main || "-") +
           "<br>③ 쉬운 말로 바꾸기: " + esc(r.think.easy || "-") : "") +
+        "<br><br><b>✋ 만져보기 테두리</b>: <button class='mini' data-segline='1'>" + (showSegLine ? "테스트용 테두리 끄기" : "테스트용 테두리 켜기") + "</button>" +
         "<br><br><b>📳 진동 방식</b>: " + (canVibrate ? "웹 진동 (패턴·길이 조절 가능)" : iosHaptic ? "아이폰 '톡' 진동 (스위치 우회 방법, 길이 조절 불가)" : "진동 없음 → 화면 두근거림") +
         "<br><br><b>👁 감정 색</b>: <span class='sw' style='background:" + emotionColor(r.whole || {}) + "'></span> (기분·활기 → 색) · 빛 세기 = 스티븐스 자극을 화면 밝기(감마 2.2)로 변환" +
         "<br><br><b>🎻 악기 소리</b><br><span id='sampleNow'>" + sampleText() + "</span><br><span class='note'>출처: FluidR3_GM 사운드폰트 (CC BY 3.0)</span>" +
@@ -3492,6 +3609,11 @@
     $("devBody").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.themeBtn) applyTheme(b.dataset.themeBtn);
+      if (b.dataset.segline) {
+        showSegLine = !showSegLine;
+        try { localStorage.setItem(KEY_SEGLINE, showSegLine ? "1" : "0"); } catch (x) {}
+        b.textContent = showSegLine ? "테스트용 테두리 끄기" : "테스트용 테두리 켜기";
+      }
       if (b.dataset.lat) {
         latAdj += Number(b.dataset.lat);
         try { localStorage.setItem(KEY_LAT, String(latAdj)); } catch (x) {}

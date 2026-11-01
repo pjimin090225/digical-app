@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-5";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-6";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -44,7 +44,8 @@ const TEXTURES = ["부드러움", "물결", "톡톡", "거침", "묵직함"];
 const MODES = ["밝음", "신남", "차분함", "슬픔", "신비", "긴장"];   // (이제 숫자에서 코드가 계산하는 이름표)
 
 // ---------------------------------------------------------------------
-// 간단한 사용량 제한: 같은 인터넷 주소에서 10분에 60번까지
+// 간단한 사용량 제한: 같은 인터넷 주소에서 10분에 300번까지
+// [수정 6-6] 부스에서는 여러 폰이 같은 와이파이(= 같은 인터넷 주소)를 써서 60번이면 금방 막힘 → 300번으로
 // ---------------------------------------------------------------------
 const hits = new Map();
 function tooMany(ip) {
@@ -52,7 +53,7 @@ function tooMany(ip) {
   const list = (hits.get(ip) || []).filter((t) => now - t < 10 * 60 * 1000);
   list.push(now);
   hits.set(ip, list);
-  return list.length > 60;
+  return list.length > 300;
 }
 
 // ---------------------------------------------------------------------
