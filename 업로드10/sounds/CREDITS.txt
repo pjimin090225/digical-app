@@ -1,0 +1,8 @@
+이 폴더의 악기 소리 파일 출처
+- FluidR3_GM 사운드폰트 (제작: Frank Wen) — Creative Commons Attribution 3.0 (CC BY 3.0)
+  https://creativecommons.org/licenses/by/3.0/
+- mp3 변환본: midi-js-soundfonts (Benjamin Gleitzman, MIT License)
+  https://github.com/gleitz/midi-js-soundfonts
+사용 악기: 피아노, 비브라폰, 플루트, 하프, 첼로, 현악 합주 (C·E♭·G♭·A 음만, 2~7옥타브)
+추가 악기(6-12): 전자 피아노(electric_piano_1), 콘트라베이스(acoustic_bass), 북(taiko_drum) — 출처·라이선스 위와 같음 (FluidR3_GM, CC BY 3.0)
+추가 악기(6-13): 오르골(music_box), 금관 합주(brass_section), 고요한 배경음(pad_7_halo) — 출처·라이선스 위와 같음

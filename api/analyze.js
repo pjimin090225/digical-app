@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-6";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-7";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -36,7 +36,7 @@ const FEEL_WORDS = ["같아요", "같은 느낌", "느껴", "느낌", "기분", 
 const COLOR_WORDS = ["빨간", "빨강", "붉은", "파란", "파랑", "푸른", "노란", "노랑", "초록", "녹색", "분홍", "보라", "주황", "갈색", "금빛", "황금", "화려한 색", "알록달록", "색깔", "컬러", "다채로운 색"];
 
 // [수정 6-4] 재질 목록 — 만져보기의 문지르는 소리와 전체 느끼기의 악기를 고르는 데 씀
-const MATERIALS = ["유리", "금속", "나무", "돌", "천", "피부", "종이", "플라스틱", "고무", "흙", "잎·풀", "털·머리카락", "물", "모름"];
+const MATERIALS = ["유리", "도자기", "금속", "나무", "돌", "천", "가죽", "피부", "종이", "플라스틱", "고무", "흙", "모래", "잎·풀", "털·머리카락", "물", "얼음", "물감·붓질", "모름"];   // [수정 6-7] 도자기·가죽·모래·얼음·물감 추가
 
 const TEMPOS = ["느림", "보통", "빠름"];
 const PITCHES = ["낮음", "중간", "높음"];
@@ -395,20 +395,24 @@ module.exports = async (req, res) => {
     // ---------- 0) 작품 테두리만 찾기 (앱이 이걸로 사진을 잘라 다시 보냄) ----------
     // ---------- [수정 6-4] 만져보기: 앱이 나눈 덩어리(번호가 그려진 사진)마다 재질 이름 붙이기 ----------
     if (body.task === "materials") {
-      const n = Math.max(1, Math.min(12, Number(body.n) || 1));
+      const n = Math.max(1, Math.min(16, Number(body.n) || 1));   // [수정 6-7] 앱이 최대 16덩어리를 보내는데 12까지만 받던 문제 고침
       const sys = [
         "너는 사진 속 물체의 재질을 알아보는 도우미다.",
         "사진에는 앱이 색·밝기로 나눈 영역들이 색 테두리와 1~" + n + "번 번호로 표시되어 있다.",
         "각 번호 영역이 실제로 무엇으로 되어 있는지(손으로 만지면 어떤 재질일지) 고른다.",
         "재질은 다음 중 하나만: " + MATERIALS.join(", ") + ".",
         "영역에 여러 재질이 섞여 있으면 가장 넓은 것. 하늘·흐린 배경처럼 만질 수 없는 곳은 '모름'.",
-        "번호와 테두리는 표시일 뿐 재질이 아니다. 유리처럼 비치는 물체는 뒤에 비친 것이 아니라 '유리'로 고른다.",
-        '[출력] JSON만: {"regions":[{"n":1,"material":"유리","thing":"화분"}, ...]} (thing은 무엇인지 5자 안팎)'
+        "번호와 테두리는 표시일 뿐 재질이 아니다.",
+        "'유리'는 투명하거나 반투명해서 뒤가 비쳐 보이는 것(컵, 병, 창문, 유리 화분)만 고른다. 반짝이거나 매끈하다고 유리가 아니다. 반짝이는 그릇·화분은 대개 '도자기'다.",
+        "그림(회화) 사진이면 그림 속 물체의 재질을 고른다. 그림 속 물체를 알아보기 어렵고 붓 자국만 보이면 '물감·붓질'.",
+        "sure: 재질이 확실하면 true, 조금이라도 헷갈리면 false.",
+        '[출력] JSON만: {"regions":[{"n":1,"material":"도자기","thing":"화분","sure":true}, ...]} (thing은 무엇인지 5자 안팎)'
       ].join("\n");
       const first = await callAI([{ role: "system", content: sys },
         { role: "user", content: [{ type: "text", text: "영역 수: " + n }, { type: "image_url", image_url: { url: images[0], detail: "high" } }] }], 0.2);
       const regs = (Array.isArray(first.data.regions) ? first.data.regions : []).map((r) => ({
-        n: Math.round(Number(r.n)), material: MATERIALS.includes(r.material) ? r.material : "모름", thing: String(r.thing || "").slice(0, 12)
+        n: Math.round(Number(r.n)), material: MATERIALS.includes(r.material) && r.sure !== false ? r.material : "모름",   // 헷갈린다고 하면 '모름' → 앱이 픽셀로 추정
+        thing: String(r.thing || "").slice(0, 12), sure: r.sure !== false
       })).filter((r) => r.n >= 1 && r.n <= n);
       return res.status(200).json({ ok: true, version: SERVER_VERSION, model: first.model, regions: regs, ms: { total: Date.now() - t0 } });
     }
