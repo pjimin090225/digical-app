@@ -362,7 +362,7 @@
   </section>
 
   <footer>
-    4단계(수정 5) · 앱 4-5: 숫자 6가지로 소리 계산 · 8×8 칸 · 바깥 어둡게<br>
+    4단계(수정 6) · 앱 4-6: 박자 예약 시계 · 바깥 어둡게 끔<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1659,7 +1659,7 @@
     function applyCells(r, d) {
       const frame = r.frame_cells || [];
       const dim = $("dim");
-      const use = d.type === "photo" && frame.length >= 2 && frame.length < GRID * GRID * 0.9;
+      const use = false;                 // [수정 4-6] 바깥 어둡게 하기는 끔 (격자처럼 보여 어색했음)
       if (use) {
         let h = "";
         for (let n = 1; n <= GRID * GRID; n++) {
@@ -1677,7 +1677,7 @@
         s.rects = (s.cells || []).map(cellRect);
         s.box = bboxOf(s.rects);
       });
-      d.cropInfo = use ? "작품 칸 " + frame.length + "개, 바깥 " + (GRID * GRID - frame.length) + "칸은 어둡게" : "작품 칸을 못 찾음 → 사진 전체";
+      d.cropInfo = "사진 전체 표시 (AI가 고른 작품 칸 " + frame.length + "개)";
       return Promise.resolve();
     }
 
@@ -1955,6 +1955,8 @@
     function stopSense() {
       clearInterval(senseTimer);
       senseTimer = null;
+      senseRun = null;
+      pendingFx.forEach(clearTimeout); pendingFx = [];
       stopEngine();
       if (canVibrate) navigator.vibrate(0);
       glowColors = null;
@@ -2030,7 +2032,7 @@
     }
 
     // 멜로디 한 음
-    function playNote(e, step) {
+    function playNote(e, step, t) {
       const ctx = e.ctx, P = e.P, sc = P.scale, n = sc.length;
       let idx;
       if (P.contour === "up") idx = step % n;
@@ -2038,7 +2040,6 @@
       else if (P.contour === "updown") { const k = step % (2 * n - 2); idx = k < n ? k : 2 * n - 2 - k; }
       else if (P.contour === "repeat") idx = step % n;
       else { e.last = Math.max(0, Math.min(n - 1, e.last + [-2, -1, 1, 2][Math.floor(Math.random() * 4)])); idx = e.last; }   // 떠도는 멜로디
-      const t = ctx.currentTime + 0.01;
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = P.lead;
       o.frequency.value = semi(e.root * P.leadOct, sc[idx]);
@@ -2055,23 +2056,23 @@
       if (e.send) g.connect(e.send);
       o.start(t); o.stop(t + P.att + dec + 0.05);
     }
-    function playBass(e) {
-      const ctx = e.ctx, t = ctx.currentTime + 0.01;
+    function playBass(e, t) {
+      const ctx = e.ctx;
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = "sine"; o.frequency.value = e.root / 2;
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.35, t + 0.01);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
       o.connect(g); g.connect(e.bus); o.start(t); o.stop(t + 0.4);
     }
-    function playKick(e) {
-      const ctx = e.ctx, t = ctx.currentTime + 0.01;
+    function playKick(e, t) {
+      const ctx = e.ctx;
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
       g.gain.setValueAtTime(0.6, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
       o.connect(g); g.connect(e.bus); o.start(t); o.stop(t + 0.22);
     }
-    function playHat(e, loud) {
-      const ctx = e.ctx, t = ctx.currentTime + 0.01;
+    function playHat(e, loud, t) {
+      const ctx = e.ctx;
       if (!noiseBuf) {
         noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
         const d = noiseBuf.getChannelData(0);
@@ -2083,44 +2084,70 @@
       src.connect(f); f.connect(g); g.connect(e.bus); src.start(t); src.stop(t + 0.06);
     }
 
-    // 한 '반 박자'마다 실행. 빛·진동은 박자(짝수 반 박자)에만 → 깜빡임 안전 기준 지킴
+    // [수정 4-6] '미리 예약하는 박자 시계' — 엇박처럼 들리던 문제 해결
+    //   예전: 휴대폰의 일반 타이머(setInterval)로 "지금 소리 내!"를 반복 → 폰이 바쁘면 수십 ms씩 늦어져 박자가 흔들림
+    //   지금: 소리는 오디오 전용 시계로 0.1초 앞을 '정확한 시각에 예약'하고,
+    //         빛·진동은 같은 시각에 맞춰 실행 → 그 시각과 실제 실행 시각의 차이를 재서 기록(35ms 목표)
+    //   빛·진동은 박자(짝수 반 박자)에만 → 깜빡임 1초 2번 미만 (안전 기준)
+    let pendingFx = [];
     function startSense(s, box, colors) {
       stopSense();
       if (!s) return;
       const p = profile;
       const I = clamp01(Number(s.intensity) || 0.5);
       const P = planOf(s);
-      const period = 60000 / Math.min(112, P.bpm);                 // 한 박자 길이 (최대 112 BPM → 깜빡임 1초 2번 미만)
+      const beatSec = 60 / Math.min(112, P.bpm);                   // 한 박자 길이(초)
+      const halfSec = beatSec / 2;
       glowColors = colors && colors.length > 1 ? colors : null;
       setGlow((s.colors && s.colors[0]) || "#FFD23F", box);
       const withSound = p.sound.on && soundUsable();
       if (withSound) startEngine(s, I);
+      const ctx = getAudio();
+      if (!ctx) return;
       stepNo = 0;
-      const step = () => {
-        const onBeat = stepNo % 2 === 0;
-        const t0 = performance.now();
-        if (onBeat && p.visual.on) pulseGlow(I * (p.visual.level / 5), period, stepNo / 2);       // 👁
-        const t1 = performance.now();
-        if (withSound && eng) {                                                                   // 👂
-          const k = stepNo % 8;
-          const thin = I < 0.35 && k % 2 === 1;                    // 약한 장면은 음을 듬성듬성
-          if (P.rhythm[k] && !thin) playNote(eng, stepNo);
-          if (P.bass && (k === 0 || (P.bass === 2 && k === 4))) playBass(eng);
-          if (P.kick && (k === 0 || k === 4 || (P.kick === 2 && k === 1))) playKick(eng);
-          if (P.hat && k % 2 === 1) playHat(eng, P.hat === 2);
-        }
-        const t2 = performance.now();
-        if (onBeat && p.touch.on) {                                                               // ✋
+      let next = ctx.currentTime + 0.08;                            // 첫 박자 예약 시각
+      const myRun = {};
+      senseRun = myRun;
+
+      const fx = (onBeatNo) => {                                    // 빛·진동 (예약된 시각에 실행)
+        if (senseRun !== myRun) return;
+        if (p.visual.on) pulseGlow(I * (p.visual.level / 5), beatSec * 1000, onBeatNo);           // 👁
+        if (p.touch.on) {                                                                          // ✋
           if (vibeUsable()) navigator.vibrate(scalePattern(TEXTURE_VIBE[s.texture] || [90], I * (p.touch.level / 5)));
           else heartGlow();
         }
-        const t3 = performance.now();
-        if (onBeat) { syncLog.push(t3 - t0); if (syncLog.length > 300) syncLog.shift(); }
-        stepNo++;
       };
-      step();
-      senseTimer = setInterval(step, period / 2);
+      const tick = () => {
+        if (senseRun !== myRun) return;
+        while (next < ctx.currentTime + 0.12) {                     // 0.12초 앞까지 미리 예약
+          const k = stepNo % 8, onBeat = stepNo % 2 === 0;
+          if (withSound && eng) {                                   // 👂 소리: 오디오 시계로 정확히 예약
+            const thin = I < 0.35 && k % 2 === 1;
+            if (P.rhythm[k] && !thin) playNote(eng, stepNo, next);
+            if (P.bass && (k === 0 || (P.bass === 2 && k === 4))) playBass(eng, next);
+            if (P.kick && (k === 0 || k === 4 || (P.kick === 2 && k === 1))) playKick(eng, next);
+            if (P.hat && k % 2 === 1) playHat(eng, P.hat === 2, next);
+          }
+          if (onBeat) {                                             // 👁✋ 같은 시각에 맞춰 실행하고, 어긋난 시간을 잼
+            const waitMs = (next - ctx.currentTime) * 1000;
+            const due = performance.now() + waitMs;
+            const beatNo = stepNo / 2;
+            const id = setTimeout(() => {
+              const late = Math.abs(performance.now() - due);       // 소리 예약 시각과 빛·진동 실행 시각의 차이
+              syncLog.push(late); if (syncLog.length > 300) syncLog.shift();
+              fx(beatNo);
+            }, Math.max(0, waitMs));
+            pendingFx.push(id);
+          }
+          next += halfSec;
+          stepNo++;
+        }
+        if (pendingFx.length > 50) pendingFx = pendingFx.slice(-20);
+      };
+      tick();
+      senseTimer = setInterval(tick, 25);
     }
+    let senseRun = null;
 
     // 진동 켜짐 길이를 세기에 맞춰 늘이고 줄임 (웹 진동은 세기 자체를 못 바꿈)
     function scalePattern(pat, k) {
@@ -2196,7 +2223,8 @@
     function syncText() {
       if (!syncLog.length) return "아직 측정 안 됨";
       const m = syncLog.reduce((a, b) => a + b, 0) / syncLog.length;
-      return "평균 " + m.toFixed(2) + "ms · 최대 " + Math.max(...syncLog).toFixed(2) + "ms (" + syncLog.length + "박자, 목표 35ms 이내)";
+      return "평균 " + m.toFixed(2) + "ms · 최대 " + Math.max(...syncLog).toFixed(2) + "ms (" + syncLog.length + "박자, 목표 35ms 이내)" +
+        "<br><span class='note'>= 소리를 예약한 시각과 빛·진동 명령이 실제로 실행된 시각의 차이</span>";
     }
     function devInfoHTML(r) {
       const c = r.check || {}, st = c.stats || {};
@@ -2206,7 +2234,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 4-5 · 서버 " + esc(r.version || "옛 버전(4-5 아님!)") + "<br>" +
+        "<b>버전</b>: 앱 4-6 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -2220,9 +2248,9 @@
         "<b>전체 감각</b>: " + senseLine(r.whole) + "<br>" +
         "<b>장면</b><br>" + (r.scenes || []).map((s, i) => (i + 1) + ". " + esc(s.name) + " → " + senseLine(s.sense) +
           ((s.cells || []).length ? "<br>&nbsp;&nbsp;&nbsp;칸 " + esc(JSON.stringify(s.cells)) : "")).join("<br>") +
-        "<br><br><b>⏱ 감각 동시 출력 (공통 박자 시계)</b><br>한 박자 안에서 시각→청각→촉각 명령까지: <span id='syncNow'>" + syncText() + "</span>";
+        "<br><br><b>⏱ 감각 동시 출력 (공통 박자 시계)</b><br>소리–빛·진동 시각 차이: <span id='syncNow'>" + syncText() + "</span>";
     }
-    $("devBox").addEventListener("toggle", () => { const s = $("syncNow"); if (s) s.textContent = syncText(); });
+    $("devBox").addEventListener("toggle", () => { const s = $("syncNow"); if (s) s.innerHTML = syncText(); });
 
     // ----- 🗣 해설 목소리 (항상 나오지 않음: '자동으로 읽기'가 켜진 사람만 자동, 나머지는 버튼) -----
     let voiceSrc = null, voiceSeq = 0, speaking = false;
