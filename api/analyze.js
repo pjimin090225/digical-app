@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-4";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-5";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -63,7 +63,8 @@ function textPrompt(type, explain, target, cropped, pixel) {
   const what = {
     photo: "사용자가 휴대폰 카메라로 찍은 사진 1장",
     video: "사용자가 휴대폰으로 담은 영상에서 시간 순서대로 뽑은 장면 사진 여러 장과 소리 정보",
-    sound: "소리를 기기에서 분석한 숫자 정보(크기·변화·높낮이·강세). 실제 소리는 듣지 못했으니 추측임을 밝힌다"
+    sound: "소리를 기기에서 분석한 숫자 정보(크기·변화·높낮이·강세). 실제 소리는 듣지 못했으니 추측임을 밝힌다",
+    text: "사용자가 입력하거나 붙여 넣은 글 (작품 설명, 공연 안내, 시, 기사 등). 사진은 없다"
   }[type];
 
   return [
@@ -75,6 +76,11 @@ function textPrompt(type, explain, target, cropped, pixel) {
         ? "먼저 사진 속에서 '느껴볼 대상'을 정한다. 뚜렷한 중심 대상이 하나면 그것을 고른다. " +
           "서로 다른 대상이 2개 이상 비슷한 크기로 있어 무엇을 골라야 할지 정말 모르겠을 때만 needs_choice를 true로 하고 candidates를 채운다."
         : ""),
+    "",
+    "[생각 순서 — CoT(생각의 사슬)] 답을 쓰기 전에 think 칸에 짧게 적는다 (사용자에게는 보이지 않고, 개발용 정보에만 보임)",
+    "- think.see: " + (type === "text" ? "글에 나온 중요한 사실 3~5개 (짧은 낱말)" : "사진에 실제로 보이는 것 3~5개 (짧은 낱말)"),
+    "- think.main: 그중 가장 중요한 것 하나와 이유 (한 줄)",
+    "- think.easy: 어려운 낱말이 있으면 무엇으로 쉽게 바꿀지 (예: '구도 → 놓인 자리')",
     "",
     "[무엇을 쓸까]",
     "- kind: 찍힌 대상의 종류. 카메라로 찍었다고 '사진'이라고 하지 않는다. (그림, 조각, 사진작품, 포스터, 공연·무대, 영상 화면, 건축, 공예, 책, 음악, 일상 물건, 기타)",
@@ -92,6 +98,7 @@ function textPrompt(type, explain, target, cropped, pixel) {
         "- 각 장면의 cells: 그 장면이 실제로 보이는 칸 번호를 모두 쓴다. 한 칸에 조금이라도 걸치면 넣는다. 장면마다 칸이 달라야 한다."
       : "- cells와 frame_cells는 빈 목록 [] 으로 둔다.",
     type === "video" ? "- 영상은 '무엇이 일어나는지'를 말한다. '보여요', '보여줘요'를 반복하지 않는다." : "",
+    type === "text" ? "- 글이면: summary는 '무엇에 대한 글인지', interpretation과 scenes는 글의 중요한 내용을 쉬운 말로. 글에 없는 내용은 지어내지 않는다. 장면 대신 '중요한 부분'으로 나눈다. material은 글에 나온 중심 대상의 재질(모르면 '모름')." : "",
     "",
     "[쉬운 말 규칙 — 반드시 지킬 것]",
     "1. 한 문장은 " + RULES.maxWords + "어절 이하. 한 문장에 정보 하나만.",
@@ -105,14 +112,14 @@ function textPrompt(type, explain, target, cropped, pixel) {
     "8. 소리, 냄새, 바람, 온도처럼 사진에 찍히지 않는 것은 쓰지 않는다.",
     "",
     "[정직 규칙]",
-    "- 작품 이름은 확실할 때만 title_guess에, 아니면 빈 문자열.",
+    "- 작품 이름은 확실할 때만 title_guess에, 아니면 빈 문자열. '작품 안내판 정보'가 주어지면 그 제목을 title_guess에 쓰고, 해설에 작가·연도를 써도 된다.",
     "- 보이지 않는 것은 지어내지 않는다. 잘 안 보이면 '잘 보이지 않아요'라고 쓴다.",
     pixel && pixel.gray ? "- 앱이 사진의 픽셀을 직접 재 보니 이 사진은 흑백이다. 빨강·파랑·노랑 같은 색 이름이나 '화려한 색'을 쓰지 않는다. 흰색·검은색·회색, 밝고 어두움만 쓴다." : "",
     pixel && !pixel.gray && pixel.colors && pixel.colors.length ? "- 앱이 픽셀에서 잰 대표 색: " + pixel.colors.join(", ") + ". 색을 말할 때는 실제로 보이는 색만 쓴다." : "",
     "- 사람이 보이면 누구인지 추측하지 않고, 얼굴 생김새를 자세히 묘사하지 않는다.",
     "",
     "[좋은 예 — 밤하늘 그림]",
-    '{"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"material":"천","mood_line":"조용한 밤에 마음이 들뜨는 느낌이에요.","candidates":[],"frame_cells":[작품이 있는 칸 번호들],',
+    '{"think":{"see":["밤하늘","소용돌이","노란 별","작은 마을"],"main":"하늘의 소용돌이 — 그림의 대부분을 차지함","easy":"붓질 → 굵은 선"},"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"material":"천","mood_line":"조용한 밤에 마음이 들뜨는 느낌이에요.","candidates":[],"frame_cells":[작품이 있는 칸 번호들],',
     ' "summary":"밤하늘과 작은 마을을 그린 그림이에요.",',
     ' "interpretation":"하늘에 소용돌이 모양이 크게 그려져 있어요. 마을은 화면 아래에 작게 있어요.",',
     ' "scenes":[{"name":"하늘","text":"하늘에 굵은 선이 빙글빙글 돌아요.","look":"짙은 파랑, 크게 휘도는 붓질","cells":[하늘이 보이는 칸 번호들]},',
@@ -244,7 +251,7 @@ function checkRules(d, explain, type, pixel) {
   JUDGE_WORDS.forEach((w) => { if (String(d.mood_line || "").includes(w)) v.push("mood_line에 평가하는 말 '" + w + "…'을 썼어요"); });
   HARD_WORDS.forEach((w) => { if (all.includes(w)) v.push("어려운 낱말 '" + w + "'을 썼어요"); });
   JUDGE_WORDS.forEach((w) => { if (all.includes(w)) v.push("평가하는 말 '" + w + "…'을 썼어요. 보이는 모습으로 바꿔 주세요"); });
-  FEEL_WORDS.forEach((w) => { if (all.includes(w)) v.push("해석하는 말 '" + w + "'을 썼어요. 느낌은 빼고 보이는 것만 써 주세요"); });
+  if (type !== "text") FEEL_WORDS.forEach((w) => { if (all.includes(w)) v.push("해석하는 말 '" + w + "'을 썼어요. 느낌은 빼고 보이는 것만 써 주세요"); });
   if (pixel && pixel.gray) COLOR_WORDS.forEach((w) => { if (all.includes(w)) v.push("흑백 사진인데 색 낱말 '" + w + "'을 썼어요. 흰색·검은색·회색, 밝고 어두움으로만 써 주세요"); });
   if (type === "video" && (all.match(/보여/g) || []).length > 2) v.push("'보여요/보여줘요'를 너무 많이 썼어요. 무엇이 일어나는지를 말해 주세요");
   if (/^사진$/.test(String(d.kind || ""))) v.push("kind를 '사진'이라고 했어요. 찍힌 대상의 종류를 써 주세요");
@@ -368,7 +375,9 @@ module.exports = async (req, res) => {
     if (tooMany(ip)) return res.status(429).json({ error: "too_many" });
 
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-    const type = ["photo", "video", "sound"].includes(body.type) ? body.type : "photo";
+    const type = ["photo", "video", "sound", "text"].includes(body.type) ? body.type : "photo";
+    const inText = type === "text" ? String(body.text || "").trim().slice(0, 2000) : "";
+    if (type === "text" && inText.length < 2) return res.status(400).json({ error: "no_text" });
     const explain = body.explain === "short" ? "short" : "normal";
     const target = String(body.target || "").slice(0, 30);
     const cropped = !!body.cropped;
@@ -380,7 +389,7 @@ module.exports = async (req, res) => {
     const images = (Array.isArray(body.images) ? body.images : [])
       .filter((s) => typeof s === "string" && s.startsWith("data:image/") && s.length < 2000000)
       .slice(0, 8);
-    if (type !== "sound" && images.length === 0) return res.status(400).json({ error: "no_image" });
+    if (type !== "sound" && type !== "text" && images.length === 0) return res.status(400).json({ error: "no_image" });
 
     // ---------- 0) 작품 테두리만 찾기 (앱이 이걸로 사진을 잘라 다시 보냄) ----------
     // ---------- [수정 6-4] 만져보기: 앱이 나눈 덩어리(번호가 그려진 사진)마다 재질 이름 붙이기 ----------
@@ -409,7 +418,12 @@ module.exports = async (req, res) => {
     }
 
     // ---------- 1) Original to Text ----------
-    const userParts = [{ type: "text", text: (type === "video" ? "장면 사진은 시간 순서예요. " : "") + audioText(body.audio) }];
+    // [수정 6-5] 미니 벽화 QR 작품이면 안내판의 작품 정보(제목·작가·연도)를 함께 줌 → 제목을 추측하지 않아도 됨
+    const w = body.work && typeof body.work === "object" ? body.work : null;
+    const workInfo = w && w.title ? "[작품 안내판 정보 — 사실로 써도 됨] 제목: " + String(w.title).slice(0, 60) +
+      (w.artist ? " / 작가: " + String(w.artist).slice(0, 40) : "") + (w.year ? " / 연도: " + String(w.year).slice(0, 20) : "") +
+      (w.note ? " / 설명: " + String(w.note).slice(0, 200) : "") + "\n" : "";
+    const userParts = [{ type: "text", text: workInfo + (type === "text" ? "[사용자가 넣은 글]\n" + inText : (type === "video" ? "장면 사진은 시간 순서예요. " : "") + audioText(body.audio)) }];
     images.forEach((url) => userParts.push({
       type: "image_url",
       image_url: { url: url, detail: type === "photo" ? "high" : "low" }   // 영상 장면은 저해상도로 (빠르고 저렴)
@@ -449,10 +463,11 @@ module.exports = async (req, res) => {
     const tSense = Date.now();
     const scenes = (text.scenes || []).slice(0, RULES.maxScenes);
     const senseIn = (pixel && pixel.gray ? "(앱이 잰 사실: 흑백 사진)\n" : "") +
+      (type === "text" ? "(사진 없음 — 아래 글과 원래 글만 보고 매긴다. 밝기·무게·거칠기·흐름은 글이 그리는 장면을 떠올려서)\n원래 글: " + inText.slice(0, 800) + "\n" : "") +
       "종류: " + text.kind + "\n요약: " + text.summary + "\n자세한 해설: " + text.interpretation + "\n" +
       scenes.map((s, i) => "장면 " + (i + 1) + " (" + s.name + "): " + s.text + " / 보이는 모습: " + (s.look || "-")).join("\n") + "\n" + audioText(body.audio);
     // 감각 단계에는 번호 칸이 없는 원래 사진을 보냄 (칸 선이 색 판단을 방해하지 않게)
-    const raw = (typeof body.rawImage === "string" && body.rawImage.startsWith("data:image/") && body.rawImage.length < 2000000) ? [body.rawImage] : images;
+    const raw = type === "text" ? [] : (typeof body.rawImage === "string" && body.rawImage.startsWith("data:image/") && body.rawImage.length < 2000000) ? [body.rawImage] : images;
     const senseUser = [{ type: "text", text: senseIn }].concat(
       raw.slice(0, 4).map((url) => ({ type: "image_url", image_url: { url: url, detail: "low" } })));   // 느낌 판단에는 저해상도면 충분 (빠르고 저렴)
     const senseMsgs = [{ role: "system", content: sensePrompt() }, { role: "user", content: senseUser }];
@@ -484,6 +499,10 @@ module.exports = async (req, res) => {
       summary: text.summary || "",
       interpretation: text.interpretation || "",
       mood_line: String(text.mood_line || "").slice(0, 80),
+      think: text.think && typeof text.think === "object" ? {
+        see: (Array.isArray(text.think.see) ? text.think.see : []).slice(0, 6).map((x) => String(x).slice(0, 20)),
+        main: String(text.think.main || "").slice(0, 80), easy: String(text.think.easy || "").slice(0, 80)
+      } : null,
       material: MATERIALS.includes(text.material) ? text.material : "모름",
       whole: cleanSense(sense.data.whole),
       senseMethod: "사진 직접 보기 + 눈금 예시 + " + senseTries + "번 평균",

@@ -35,6 +35,17 @@
       --rec: #C62828;        /* 녹화 중 빨강 */
     }
 
+    /* [수정 6-10] 디자인 시안 3가지 — 주소 끝에 ?theme=museum / contrast / pastel (개발용 정보에서도 바꿀 수 있음)
+       팀원 B: 고른 시안의 색을 여기서 조금씩 바꾸면 앱 전체가 바뀜 */
+    :root[data-theme="contrast"] {      /* 시안 2: 고대비 다크 — 저시력·고령자, 어두운 전시장 */
+      --bg: #000000; --card: #121212; --text: #FFFFFF; --sub: #D0D0D0; --border: #FFFFFF;
+      --accent: #8FE3FF; --primary: #FFD23F; --primary-text: #000000; --off: #444444; --warn-bg: #3A3000;
+    }
+    :root[data-theme="pastel"] {        /* 시안 3: 파스텔 — 계획서의 '파스텔 컬러 코딩', 부드럽고 자극이 적음 */
+      --bg: #F6F4FB; --card: #FFFFFF; --text: #2B2840; --sub: #5A5670; --border: #8C86B0;
+      --accent: #BFE6D6; --primary: #6C5CE7; --primary-text: #FFFFFF; --off: #E4E1EE; --warn-bg: #FFF4D6;
+      --radius: 22px;
+    }
     * { box-sizing: border-box; }
     /* [중요 수정] hidden(숨김)이 붙은 것은 어떤 모양 규칙보다 우선해서 숨김.
        이게 없어서 '소리 화면'이 사진·영상 모드에서도 카메라를 덮고 있었음 */
@@ -62,10 +73,10 @@
       font-size: 22px; font-weight: 700;
       border: 3px solid var(--border);
       border-radius: var(--radius);
-      background: var(--accent);
+      background: var(--accent); color: #1A1A1A;           /* 노랑 등 밝은 강조색 위에는 항상 진한 글자 */
     }
     .big.primary { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
-    .big.ghost { background: transparent; }
+    .big.ghost { background: transparent; color: var(--text); }
     .big:active { transform: scale(0.98); }
 
     /* ----- 카드 (설명 상자) ----- */
@@ -177,11 +188,12 @@
 
     .modebar { display: flex; gap: var(--gap); margin: calc(var(--gap) * 2) 0 var(--gap); }
     .modebar button {
-      flex: 1; min-height: 56px;
+      flex: 1; min-height: 56px; padding: 0 2px;
       border: 3px solid var(--border); border-radius: 999px;
-      background: var(--card); font-size: 20px; font-weight: 800;
+      background: var(--card); font-size: 16px; font-weight: 800; white-space: nowrap;
     }
-    .modebar button[aria-pressed="true"] { background: var(--text); color: #FFF; }
+    #textIn { width: 100%; box-sizing: border-box; margin-top: 8px; font-size: 18px; line-height: 1.5; padding: 10px; border: 3px solid var(--border); border-radius: 12px; font-family: inherit; }
+    .modebar button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
 
     .shutter-wrap { display: flex; flex-direction: column; align-items: center; }
     .shutter {
@@ -218,6 +230,10 @@
     .art img { display: block; max-width: 100%; width: auto; height: auto; max-height: 60vh;
                pointer-events: none; -webkit-user-drag: none; -webkit-touch-callout: none; }
     .art.touching { touch-action: none; outline: 4px solid var(--accent); }
+    .art.mooded { box-shadow: 0 0 0 6px var(--mood); }
+    .light-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; mix-blend-mode: screen; pointer-events: none; }
+    .art-canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
+    .light-ring { position: absolute; width: 40%; aspect-ratio: 1; border-radius: 50%; border: 6px solid var(--mood); pointer-events: none; transform: translate(-50%, -50%); }
     .glow { position: absolute; opacity: 0; pointer-events: none; mix-blend-mode: screen; }
     .hl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
     .touch-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -226,7 +242,7 @@
     .scene-bar { margin: calc(var(--gap) * 1.5) 0 0; font-weight: 800; font-size: 20px; }
     .row2 { display: flex; gap: var(--gap); }
     .ai-mood { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #F1EEF8; border: 2px dashed #8A7FB8; }
-    .mini { padding: 4px 10px; border: 2px solid #1A1A1A; border-radius: 10px; background: #FFF; font-weight: 800; }
+    .mini { padding: 4px 10px; border: 2px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font-weight: 800; }
     /* 탐구 노트 */
     .presets button[aria-pressed="true"] { background: var(--accent); }
     .slider { width: 100%; height: 48px; accent-color: var(--primary); }
@@ -323,6 +339,10 @@
       </div>
     </div>
 
+    <div class="card" id="textPanel" hidden>
+      <b>📝 글로 만나기</b><br><span class="note">작품 설명, 공연 안내, 시처럼 '글'을 붙여 넣거나 써 주세요. (2000자까지)</span>
+      <textarea id="textIn" rows="7" maxlength="2000" placeholder="예) 이 그림은 1889년에 그려진 밤하늘 그림으로…"></textarea>
+    </div>
     <div class="cam-msg" id="camMsg"></div>
     <div class="card result" id="soundResult" hidden></div>
     <button class="big ghost" id="btnVibeTest" hidden>📳 지금 진동 시험 (1초)</button>
@@ -333,6 +353,8 @@
       <button data-mode="photo">📷 사진</button>
       <button data-mode="video">🎬 영상</button>
       <button data-mode="sound">🎵 소리</button>
+      <button data-mode="text">📝 글</button>
+      <button data-mode="qr">🔳 QR</button>
     </div>
     <p class="hint" id="camHint"></p>
 
@@ -358,6 +380,8 @@
     <div class="art" id="art">
       <div class="art-wrap" id="artWrap">
         <img id="artImg" alt="찍은 작품" draggable="false">
+        <canvas class="light-mask" id="lightMask" hidden></canvas>
+        <canvas class="art-canvas" id="artCanvas" hidden></canvas>
         <div class="glow" id="glow"></div>
         <svg class="hl" id="dim" viewBox="0 0 1000 1000" preserveAspectRatio="none" hidden></svg>
         <svg class="hl" id="hl" viewBox="0 0 1000 1000" preserveAspectRatio="none" hidden></svg>
@@ -416,7 +440,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-8: 재질 소리 + 사진 특징 반영 + AI 느낌 한 줄<br>
+    6단계 · 앱 6-10: 글·QR 입력 + 빛 강화·빛 그림 + 디자인 시안 + 공간 음향 + 아이폰 진동<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -508,6 +532,38 @@
     //    안 되면 → 해결 방법 안내 → 그래도 안 되면 다른 감각으로 자동 대체
     // ==========================================================
     const canVibrate = ("vibrate" in navigator);
+    // [수정 6-10] 아이폰: 웹 진동(Vibration API)이 없음 → 사파리 17.4부터 생긴 '스위치' 단추를 누를 때 나는 짧은 '톡' 진동을 빌려 씀
+    //   (알려진 우회 방법. 길이·세기는 못 바꾸고 '톡' 한 번만 가능, 손으로 만지는 중에 가장 잘 됨, 애플이 바꾸면 안 될 수 있음)
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const iosHaptic = !canVibrate && isIOS;
+    let hapLabel = null, hapLast = 0;
+    function hapTick() {
+      if (!iosHaptic) return false;
+      if (!hapLabel) {
+        hapLabel = document.createElement("label");
+        hapLabel.setAttribute("aria-hidden", "true");
+        hapLabel.style.cssText = "position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0;overflow:hidden;";
+        const inp = document.createElement("input"); inp.type = "checkbox"; inp.setAttribute("switch", ""); inp.tabIndex = -1;
+        hapLabel.appendChild(inp); document.body.appendChild(hapLabel);
+      }
+      const now = performance.now();
+      if (now - hapLast < 45) return true;                        // 너무 촘촘하면 하나로
+      hapLast = now;
+      hapLabel.click();
+      return true;
+    }
+    // 모든 진동은 이 함수로: 안드로이드 = 진동 패턴 그대로 / 아이폰 = 켜짐 구간마다 '톡' (최대 6번)
+    function buzz(pattern) {
+      if (canVibrate) return navigator.vibrate(pattern);
+      if (!iosHaptic) return false;
+      const pat = Array.isArray(pattern) ? pattern : [pattern];
+      let t = 0, n = 0;
+      for (let i = 0; i < pat.length && n < 6; i += 2) {
+        if (pat[i] > 0) { if (t === 0) hapTick(); else setTimeout(hapTick, t); n++; }
+        t += (pat[i] || 0) + (pat[i + 1] || 0);
+      }
+      return true;
+    }
     let readyNext = "ask";     // 확인이 끝나면 갈 곳
     let readyStep = "sound";
     let readyTemp = {};
@@ -537,14 +593,15 @@
           '<button class="big" data-r="soundRetry">🔊 다시 해 보기</button>' +
           '<button class="big ghost" data-r="soundGiveUp">그래도 안 들려요 → 화면으로 대신하기</button>';
       } else if (readyStep === "vibe") {
-        if (!canVibrate) {
+        if (!canVibrate && !iosHaptic) {
           h = '<div class="card"><b>2. 진동</b><br>이 폰(브라우저)은 웹에서 진동을 낼 수 없어요.<br>' +
             "대신 <b>화면이 두근거리며</b> 알려 드려요.</div>" +
             '<div class="feel-area"><div class="feel-box" id="readyBox"></div></div>' +
             '<button class="big" data-r="heartDemo">💓 두근거림 보기</button>' +
             '<button class="big primary" data-r="vibeNone">다음</button>';
         } else {
-          h = '<div class="card"><b>2. 진동</b><br>버튼을 누르고 손에 진동이 느껴지는지 확인해요.</div>' +
+          h = '<div class="card"><b>2. 진동</b><br>버튼을 누르고 손에 진동이 느껴지는지 확인해요.' +
+            (iosHaptic ? '<br><span class="note">아이폰은 길게 울리지 않고 짧은 \'톡\'만 할 수 있어요.</span>' : "") + "</div>" +
             '<button class="big" data-r="playVibe">📳 진동 해 보기 (1초)</button>' +
             '<div id="rq" hidden><p class="q-mid">진동이 느껴졌나요?</p>' +
             '<button class="big primary" data-r="vibeYes">네, 느껴져요</button>' +
@@ -581,7 +638,7 @@
 
       if (r === "playVibe" || r === "vibeRetry") {
         if (r === "vibeRetry") { readyStep = "vibe"; renderReady(); }
-        navigator.vibrate(1000);
+        buzz(iosHaptic ? [20, 120, 20, 120, 20] : 1000);
         const q = $("rq"); if (q) q.hidden = false;
       }
       if (r === "heartDemo") animate($("readyBox"), "heart");
@@ -600,7 +657,7 @@
     };
 
     // 확인 결과를 반영한 '실제로 쓸 수 있는가'
-    const vibeUsable = () => canVibrate && !(check && (check.vibe === "no" || check.vibe === "none"));
+    const vibeUsable = () => (canVibrate || iosHaptic) && !(check && (check.vibe === "no" || check.vibe === "none"));
     const soundUsable = () => !(check && check.sound === "no");
 
     // ==========================================================
@@ -780,7 +837,7 @@
       // ✋ 촉각 먼저 (버튼을 누른 그 순간이 가장 확실)
       if (p.touch.on) {
         if (vibeUsable()) {
-          const ok = navigator.vibrate(VIBE[p.touch.level]);
+          const ok = buzz(VIBE[p.touch.level]);
           msg.push(ok ? "✋ 진동이 울렸어요" : "✋ 브라우저가 진동을 막았어요 (진동 점검을 열어 보세요)");
         } else {
           setTimeout(() => animate(box, "heart"), p.visual.on ? 350 : 0);
@@ -905,7 +962,9 @@
     const MODE_INFO = {
       photo: { hint: "작품을 네모 안에 넣고 찍어요", icon: "📷", label: "찍기", file: "사진", accept: "image/*" },
       video: { hint: "● 시작 → ■ 멈춤 · 3~30초", icon: "●", label: "시작", file: "영상", accept: "video/*" },
-      sound: { hint: "● 듣기 → ■ 멈춤", icon: "●", label: "듣기", file: "소리", accept: "audio/*" }
+      sound: { hint: "● 듣기 → ■ 멈춤", icon: "●", label: "듣기", file: "소리", accept: "audio/*" },
+      text: { hint: "글을 넣고 ✨를 눌러요", icon: "✨", label: "느껴보기", file: "글", accept: ".txt,text/plain" },
+      qr: { hint: "작품 옆 QR을 네모 안에 비추면 저절로 읽어요", icon: "🔳", label: "읽는 중", file: "QR 사진", accept: "image/*" }
     };
 
     function enterCamera() {
@@ -916,6 +975,7 @@
 
     function leaveCamera() {
       clearTimeout(hideTimer);
+      stopQR();
       if (rec) cancelRecording();
       stopInput();
       stopCamera();
@@ -951,10 +1011,15 @@
       setShutter(false);
       $("recBadge").hidden = true;
 
-      const isSound = (mode === "sound");
+      const isSound = (mode === "sound"), isText = (mode === "text");
       if (!isSound) $("soundResult").hidden = true;
       $("soundView").hidden = !isSound;
       $("guide").hidden = isSound;
+      // [수정 6-10] 📝 글 모드: 카메라 대신 글 상자 / 🔳 QR 모드: 카메라로 QR을 계속 읽음
+      document.querySelector("#camera .stage").hidden = isText;
+      $("textPanel").hidden = !isText;
+      $("guide").querySelector("span").textContent = mode === "qr" ? "QR을 네모 안에" : "작품을 네모 안에";
+      stopQR();
 
       // [새로] 파일 올리기: 모드에 맞는 파일만 고를 수 있게
       $("btnFile").textContent = "📁 파일 올리기 (" + info.file + ")";
@@ -962,11 +1027,16 @@
       $("fileCapture").accept = mode === "video" ? "video/*" : "image/*";
       $("btnCapFallback").textContent = mode === "video" ? "🎬 폰 카메라로 직접 찍기" : "📷 폰 카메라로 직접 찍기";
 
-      if (isSound) {
+      if (isSound || isText) {
         $("btnCapFallback").hidden = true;
         $("btnCamRetry").hidden = true;
         stopCamera();
-        resetSoundView();
+        stopInput();
+        if (isSound) resetSoundView();
+      } else if (mode === "qr") {
+        $("btnCapFallback").hidden = true;
+        stopInput();
+        startCamera().then((ok) => { if (ok && mode === "qr") startQR(); });
       } else {
         if (mode !== "video") stopInput();
         // 카메라를 다 켠 '다음에' 마이크를 켬 (동시에 켜면 일부 폰에서 실패)
@@ -1029,6 +1099,105 @@
       $("video").srcObject = null;
     }
     $("btnCamRetry").onclick = () => { stopCamera(); $("camMsg").textContent = ""; applyMode(); };
+
+    // ==========================================================
+    // [수정 6-10] 📝 글 입력 · 🔳 QR 입력 · 미니 벽화 작품(?work=번호)
+    // ==========================================================
+    function loadImg(url) {
+      return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = url; });
+    }
+    // 글 → 감상 화면에 보여 줄 '글 카드' 그림 (사진이 없으니 글 자체를 그림처럼)
+    function textCard(text) {
+      const W = 720, H = 900, cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      const g = cv.getContext("2d");
+      g.fillStyle = "#FBF6EA"; g.fillRect(0, 0, W, H);
+      g.fillStyle = "#1A1A1A"; g.font = "bold 44px sans-serif"; g.fillText("📝 글", 48, 90);
+      g.font = "34px sans-serif";
+      const lines = []; let line = "";
+      for (const ch of text.replace(/\s+/g, " ")) {
+        if (g.measureText(line + ch).width > W - 96) { lines.push(line); line = ""; if (lines.length >= 15) break; }
+        line += ch;
+      }
+      if (lines.length < 15 && line) lines.push(line);
+      lines.forEach((l, i) => g.fillText(l + (i === 14 ? "…" : ""), 48, 170 + i * 48));
+      return cv.toDataURL("image/jpeg", 0.85);
+    }
+    function submitText() {
+      const t = $("textIn").value.trim();
+      if (t.length < 2) { $("camMsg").textContent = "글을 조금 더 넣어 주세요."; return; }
+      showConfirm({ type: "text", text: t, images: [textCard(t)], source: "글 입력" });
+    }
+    // QR 읽기: 안드로이드 크롬은 폰에 들어 있는 BarcodeDetector, 없으면 jsQR(오픈소스, Apache-2.0)
+    let qrTimer = null, jsQRLoading = null, qrBusy = false;
+    function loadJsQR() {
+      if (window.jsQR) return Promise.resolve(true);
+      if (!jsQRLoading) jsQRLoading = new Promise((res) => {
+        const sc = document.createElement("script");
+        sc.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+        sc.onload = () => res(true); sc.onerror = () => res(false);
+        document.head.appendChild(sc);
+      });
+      return jsQRLoading;
+    }
+    async function decodeQR(source) {
+      try {
+        if ("BarcodeDetector" in window) {
+          const det = new BarcodeDetector({ formats: ["qr_code"] });
+          const r = await det.detect(source);
+          if (r.length) return r[0].rawValue;
+        }
+      } catch (e) { /* 아래 방법으로 */ }
+      if (!(await loadJsQR())) return null;
+      const w = source.videoWidth || source.naturalWidth || source.width, h = source.videoHeight || source.naturalHeight || source.height;
+      const s = Math.min(1, 640 / Math.max(w, h));
+      const cv = document.createElement("canvas"); cv.width = Math.round(w * s); cv.height = Math.round(h * s);
+      const g = cv.getContext("2d"); g.drawImage(source, 0, 0, cv.width, cv.height);
+      const d = g.getImageData(0, 0, cv.width, cv.height);
+      const code = window.jsQR(d.data, d.width, d.height);
+      return code ? code.data : null;
+    }
+    function startQR() {
+      stopQR();
+      qrTimer = setInterval(async () => {
+        if (qrBusy || mode !== "qr" || !camStream || currentScreen !== "camera") return;
+        const v = $("video"); if (!v.videoWidth) return;
+        qrBusy = true;
+        const txt = await decodeQR(v);
+        qrBusy = false;
+        if (txt && mode === "qr" && currentScreen === "camera") { stopQR(); handleQR(txt); }
+      }, 300);
+    }
+    function stopQR() { clearInterval(qrTimer); qrTimer = null; }
+    function handleQR(txt) {
+      buzz(40);
+      let u = null;
+      try { u = new URL(txt); } catch (e) {}
+      const work = u && u.searchParams.get("work");
+      if (work) { openWork(work); return; }                          // 우리 미니 벽화 QR → 그 작품을 바로 엽니다
+      // 그 밖의 QR → 글로 느끼기 (인터넷 주소는 열지 않고 글로만 보여 줌: 모르는 사이트로 이동하는 위험 막기)
+      mode = "text"; save(KEY_MODE, mode); applyMode();
+      $("textIn").value = String(txt).slice(0, 2000);
+      $("camMsg").textContent = u ? "인터넷 주소 QR이에요. 안전을 위해 열지 않고 글로 보여 드려요." : "QR 속 글을 넣었어요. ✨를 누르면 느껴 볼 수 있어요.";
+    }
+    // 미니 벽화 작품: works/works.json 목록에서 번호로 찾아 그림을 엽니다
+    async function openWork(id) {
+      try {
+        const list = await (await fetch("works/works.json", { cache: "no-cache" })).json();
+        const w = (list.works || []).find((x) => String(x.id) === String(id));
+        if (!w) throw new Error("no work");
+        const im = await loadImg("works/" + w.file);
+        const s = Math.min(1, 1024 / Math.max(im.naturalWidth, im.naturalHeight));
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(im.naturalWidth * s); cv.height = Math.round(im.naturalHeight * s);
+        cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+        if (!profile) { profile = makeRecommendation({}); }         // QR로 처음 들어온 관람객: 기본 감각으로 바로 시작
+        showConfirm({ type: "photo", images: [cv.toDataURL("image/jpeg", 0.85)], source: "QR 작품: " + (w.title || id), work: w });
+      } catch (e) {
+        renderHome(); go("home");
+        $("homeBody").insertAdjacentHTML("afterbegin", '<div class="tip">⚠️ QR 작품(' + esc(String(id)) + ')을 찾지 못했어요. 작품 목록(works.json)을 확인해 주세요.</div>');
+      }
+    }
 
     // 카메라 화면을 사진 한 장으로 (긴 쪽을 max 픽셀로 줄여서 → AI로 보낼 때 빨라짐)
     function grabFrame(max) {
@@ -1163,6 +1332,18 @@
       }
     }
     $("btnFile").onclick = () => $("filePick").click();
+    // [수정 6-10] 글 파일(.txt)과 QR이 찍힌 사진도 올릴 수 있게 (아래 기존 처리보다 먼저 가로챔)
+    $("filePick").addEventListener("change", async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f || (mode !== "text" && mode !== "qr")) return;
+      e.stopImmediatePropagation();
+      e.target.value = "";
+      if (mode === "text") { $("textIn").value = (await f.text()).slice(0, 2000); return; }
+      const url = await new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); });
+      const img = await loadImg(url);
+      const txt = await decodeQR(img);
+      if (txt) handleQR(txt); else $("camMsg").textContent = "이 사진에서 QR을 찾지 못했어요.";
+    }, true);
     $("btnCapFallback").onclick = () => $("fileCapture").click();
     $("filePick").onchange = (e) => onFile(e.target, "올린 파일");
     $("fileCapture").onchange = (e) => onFile(e.target, "폰 카메라");
@@ -1171,6 +1352,8 @@
     const shutter = $("shutter");
     shutter.onclick = () => {
       if (mode === "photo") takePhoto();
+      if (mode === "text") submitText();
+      if (mode === "qr") { $("camMsg").textContent = "QR을 네모 안에 비추면 저절로 읽어요. 잘 안 되면 조금 멀리, 밝은 곳에서 비춰 보세요."; }
       if (mode === "sound") { if (listening) stopListening(true); else startListening(); }
       // 영상은 아래 '누르기/떼기'로 처리
     };
@@ -1441,13 +1624,13 @@
       if (p.touch.on && vibeUsable()) {
         let ok = null;
         if (accent) {
-          ok = navigator.vibrate(40 + p.touch.level * 15);
+          ok = buzz(40 + p.touch.level * 15);
           ana.lastVibe = now + 150;                    // 톡이 끝날 때까지 기다림
         } else if (now - ana.lastVibe >= 200) {
           ana.lastVibe = now;
           const v = L * (p.touch.level / 5);
-          if (v < 0.08) navigator.vibrate(0);
-          else {
+          if (v < 0.08) { if (canVibrate) navigator.vibrate(0); }
+          else if (canVibrate) {
             const on = Math.round(15 + 75 * v), off = 100 - on;     // 100ms 중 on만큼 떨림
             ok = navigator.vibrate([on, off, on, off]);
           }
@@ -1739,6 +1922,8 @@
     // 사진·영상을 받으면 → 바로 감상 화면으로
     function showConfirm(d) {
       lastData = d; lastResult = null;
+      clearViewLight(); setArtMode(false);
+      $("art").classList.remove("mooded");
       $("artImg").src = d.images[0];
       $("dim").innerHTML = ""; $("dim").setAttribute("hidden", "");
       setHighlight(null);
@@ -1765,12 +1950,14 @@
       const tStart = performance.now();
       try {
         // 사진이면 번호 칸을 그린 사진을 보냄 (사용자 화면에는 원래 사진)
-        const sendImages = d.type === "photo" ? [await makeGridImage(d.images[0])] : d.images;
+        const sendImages = d.type === "photo" ? [await makeGridImage(d.images[0])] : d.type === "text" ? [] : d.images;
         // [수정 6-5] 픽셀에서 직접 잰 사실(흑백인지, 대표 색) — AI에게 알려 주고, 빛 색도 이것으로 씀
-        const pix = await measurePixels(d.images[0]);
+        const pix = d.type === "photo" ? await measurePixels(d.images[0]) : null;   // 글 카드는 사진이 아니라 재지 않음
         d.pixel = pix;
         const r = await askAI({ type: d.type, images: sendImages, rawImage: d.type === "photo" ? d.images[0] : null,
                                 pixel: pix ? { gray: pix.gray, colors: pix.names } : null,
+                                text: d.type === "text" ? d.text : undefined,
+                                work: d.work ? { title: d.work.title || "", artist: d.work.artist || "", year: d.work.year || "", note: d.work.note || "" } : undefined,
                                 audio: d.audio || null, explain: profile.explain, target: target });
         if (seq !== analyzeSeq || currentScreen !== "view") return;   // 기다리는 사이 다른 화면으로 갔으면 무시
         if (r.needs_choice) { stop(); showChoice(d, r); return; }
@@ -1900,6 +2087,8 @@
       renderButtons();
       const begin = () => {
         clearTimeout(wholeTimer);
+        setMood(lastResult.whole);
+        if (!viewLight) viewLight = buildLight(lastResult.whole);
         startSense(lastResult.whole, null, allColors(), PLAY_BARS);   // 구절 2번 + 끝맺음 화음
       };
       if (autoVoice()) narrate(lastResult.summary + " " + lastResult.interpretation, lastResult.whole.emotion, begin);
@@ -1957,7 +2146,8 @@
         h = (readyMode ? '<p class="q-mid" style="margin:4px 0 8px">▶ 버튼을 누르면 소리·빛·진동이 천천히 나와요</p>' +
                          '<p class="note" style="margin:0 0 8px">세게 느껴지면 처음 화면의 감각 설정에서 줄일 수 있어요.</p>' : "") +
             '<button class="big primary" data-v="again">' + (readyMode ? "▶ 느껴보기" : "🔁 다시 느끼기") + "</button>" +
-            (canTouch ? '<button class="big" data-v="touch">✋ 손으로 만져보기</button>' : "");
+            (canTouch ? '<button class="big" data-v="touch">✋ 손으로 만져보기</button>' : "") +
+            (canTouch ? '<button class="big ghost" data-v="art">' + (artMode ? "🖼 사진으로 돌아가기" : "🎨 빛 그림으로 보기") + "</button>" : "");
       } else if (viewState === "touch") {
         h = '<button class="big ghost" data-v="whole">⏹ 그만 만지기</button>';
       }
@@ -1976,6 +2166,7 @@
       if (v === "again") playWhole();
       if (v === "whole") showWholeMenu();          // 돌아올 때는 다시 재생하지 않고 조용히
       if (v === "touch") startTouch();
+      if (v === "art") { setArtMode(!artMode); renderButtons(); }
       if (v === "voice") {
         // [수정 4-4] 해설을 들을 때는 감각(소리·진동·빛)을 모두 멈춤. 해설이 끝나도 저절로 다시 켜지지 않음
         stopSense();
@@ -1989,12 +2180,12 @@
     // ----- ✋ 손으로 만져보기 [수정 6-7]: 덩어리 + '문지르는 소리'(재질) + 질감 진동 -----
     //   (6-5의 '덩어리마다 다른 음'은 그림이 악기처럼 느껴져 기획(시각→촉각·청각 전이)과 맞지 않아 뺌)
     //   1) 만져보기를 시작할 때 사진을 '색·밝기가 비슷한 곳끼리' 몇 개의 덩어리로 한 번만 나눔 (AI 아님, 픽셀 계산)
-    //      · 색 5가지로 묶기(k-평균 묶기) → 떨어져 있으면 다른 덩어리 → 아주 작은 조각은 옆 덩어리에 합침 → 최대 8개
+    //      · 이웃 칸끼리 색 차이로 영역 나누기(그래프 기반 분할) → 아주 작은 조각은 옆 덩어리에 합침 → 최대 10개
     //   2) 덩어리 안을 문지르면 그 덩어리 재질의 '문지르는 소리' (아래 설명) + 거친 곳은 오돌토돌 진동
     //   3) 다른 덩어리로 넘어가면 '톡' 진동 + 노란 테두리가 새 덩어리로
     let touchMap = null, tSyn = null, tPrev = null, touchInfo = null, curSeg = -1;
     const TMAP_W = 200;                 // 계산용으로 줄인 사진 가로 칸 수
-    const SEG_K = 5, SEG_MAX = 8, SEG_MIN = 0.015;   // 색 5가지, 최대 8덩어리, 사진의 1.5%보다 작은 조각은 합침
+    const SEG_K_FH = 0.9, SEG_MAX = 10, SEG_MIN = 0.012;   // 나누기 기준(클수록 큰 덩어리), 최대 10덩어리, 1.2%보다 작은 조각은 합침   // 색 5가지, 최대 8덩어리, 사진의 1.5%보다 작은 조각은 합침
     const ROUGH_LO = 0.006, ROUGH_HI = 0.055;        // 결(잔무늬) 세기 눈금: 흐린 배경 ≈ 0.002, 수놓은 옷 ≈ 0.06
 
     function boxBlur(src, W, H, r) {    // 주변 (2r+1)×(2r+1)칸 평균
@@ -2035,35 +2226,37 @@
     // 덩어리 나누기
     function segmentImage(M) {
       const W = M.W, H = M.H, N = W * H, C = M.col;
-      // ① 색 5가지로 묶기 (k-평균): 시작점은 밝기 순서로 10%, 30%, 50%, 70%, 90% 위치의 칸 → 매번 같은 결과
-      const order = Array.from({ length: N }, (_, i) => i).sort((a, b) => M.lum[a] - M.lum[b]);
-      let cen = [0.1, 0.3, 0.5, 0.7, 0.9].map((q) => { const i = order[Math.floor(q * (N - 1))]; return [C[0][i], C[1][i], C[2][i]]; });
-      const lab = new Int32Array(N);
-      for (let it = 0; it < 8; it++) {
-        const sum = cen.map(() => [0, 0, 0, 0]);
-        for (let i = 0; i < N; i++) {
-          let best = 0, bd = 1e9;
-          for (let k = 0; k < SEG_K; k++) {
-            const d = (C[0][i] - cen[k][0]) ** 2 + (C[1][i] - cen[k][1]) ** 2 + (C[2][i] - cen[k][2]) ** 2;
-            if (d < bd) { bd = d; best = k; }
-          }
-          lab[i] = best; const s = sum[best]; s[0] += C[0][i]; s[1] += C[1][i]; s[2] += C[2][i]; s[3]++;
-        }
-        cen = sum.map((s, k) => s[3] ? [s[0] / s[3], s[1] / s[3], s[2] / s[3]] : cen[k]);
+      // [수정 6-9] ①② 그래프 기반 영역 나누기 (Felzenszwalb–Huttenlocher, 2004)
+      //   예전(색 5가지 묶기)은 '색이 같으면 같은 덩어리'라서, 색이 비슷한 다른 물체가 붙고 한 물체가 잘게 나뉘었음
+      //   지금: 이웃한 칸끼리 색 차이를 '다리'로 보고, 차이가 작은 다리부터 이어 붙이되
+      //         '덩어리 안의 색 차이'보다 '덩어리 사이의 차이'가 충분히 클 때는 붙이지 않음 → 경계가 물체 테두리를 따라감
+      const nbr = [], wts = [];
+      const cd = (i, j) => Math.hypot(C[0][i] - C[0][j], C[1][i] - C[1][j], C[2][i] - C[2][j]);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (x < W - 1) { nbr.push(i, i + 1); wts.push(cd(i, i + 1)); }
+        if (y < H - 1) { nbr.push(i, i + W); wts.push(cd(i, i + W)); }
+        if (x < W - 1 && y < H - 1) { nbr.push(i, i + W + 1); wts.push(cd(i, i + W + 1)); }
+        if (x > 0 && y < H - 1) { nbr.push(i, i + W - 1); wts.push(cd(i, i + W - 1)); }
       }
-      // ② 떨어져 있으면 다른 덩어리 (이어진 칸끼리 번호 붙이기)
-      const comp = new Int32Array(N).fill(-1), q = new Int32Array(N);
+      const E = wts.length, ord = new Uint32Array(E);
+      for (let e = 0; e < E; e++) ord[e] = e;
+      ord.sort((p, q2) => wts[p] - wts[q2]);
+      const par = new Int32Array(N), sz = new Int32Array(N).fill(1), inner = new Float32Array(N);
+      for (let i = 0; i < N; i++) par[i] = i;
+      const find = (i) => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+      const K = SEG_K_FH;
+      for (let e2 = 0; e2 < E; e2++) {
+        const e = ord[e2], a = find(nbr[2 * e]), b = find(nbr[2 * e + 1]), w = wts[e];
+        if (a === b) continue;
+        if (w <= Math.min(inner[a] + K / sz[a], inner[b] + K / sz[b])) {
+          const [big, small2] = sz[a] >= sz[b] ? [a, b] : [b, a];
+          par[small2] = big; sz[big] += sz[small2]; inner[big] = Math.max(inner[a], inner[b], w);
+        }
+      }
+      const comp = new Int32Array(N);
       let nComp = 0;
-      for (let s0 = 0; s0 < N; s0++) {
-        if (comp[s0] >= 0) continue;
-        let h = 0, t = 0; q[t++] = s0; comp[s0] = nComp;
-        while (h < t) {
-          const i = q[h++], x = i % W;
-          const nb = [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W];
-          for (const j of nb) if (j >= 0 && j < N && comp[j] < 0 && lab[j] === lab[i]) { comp[j] = nComp; q[t++] = j; }
-        }
-        nComp++;
-      }
+      { const re = new Map(); for (let i = 0; i < N; i++) { const r = find(i); if (!re.has(r)) re.set(r, nComp++); comp[i] = re.get(r); } }
       // ③ 작은 조각은 가장 많이 맞닿은 옆 덩어리에 합치기 → ④ 그래도 많으면 가장 작은 것부터 합쳐 최대 8개
       const sizes = () => { const z = new Int32Array(nComp); for (let i = 0; i < N; i++) z[comp[i]]++; return z; };
       const mergeInto = (pick) => {     // pick(크기) → 합칠 덩어리 표시 배열
@@ -2094,8 +2287,31 @@
         return changed;
       };
       for (let p = 0; p < 8; p++) if (!mergeInto((z) => z.map((v) => v < SEG_MIN * N ? 1 : 0)) ) break;
-      for (let p = 0; p < 40 && nComp > SEG_MAX; p++) mergeInto((z) => { let m = 0; z.forEach((v, k) => { if (v < z[m]) m = k; }); return z.map((v, k) => k === m ? 1 : 0); });
-      // ⑤ 덩어리마다 평균 밝기·결·색
+      // ④ 그래도 많으면: 맞닿은 덩어리 중 '평균 색이 가장 비슷한 두 덩어리'부터 합쳐 최대 SEG_MAX개
+      for (let p = 0; p < 60 && nComp > SEG_MAX; p++) {
+        const m = Array.from({ length: nComp }, () => [0, 0, 0, 0]);
+        for (let i = 0; i < N; i++) { const t3 = m[comp[i]]; t3[0] += C[0][i]; t3[1] += C[1][i]; t3[2] += C[2][i]; t3[3]++; }
+        m.forEach((t3) => { t3[0] /= t3[3]; t3[1] /= t3[3]; t3[2] /= t3[3]; });
+        let bestA = -1, bestB = -1, bd = 1e9;
+        for (let i = 0; i < N; i++) {
+          const x = i % W, a = comp[i];
+          for (const j of [x < W - 1 ? i + 1 : -1, i + W < N ? i + W : -1]) {
+            if (j < 0 || comp[j] === a) continue;
+            const b2 = comp[j], d = Math.hypot(m[a][0] - m[b2][0], m[a][1] - m[b2][1], m[a][2] - m[b2][2]);
+            if (d < bd) { bd = d; bestA = a; bestB = b2; }
+          }
+        }
+        if (bestA < 0) break;
+        for (let i = 0; i < N; i++) if (comp[i] === bestB) comp[i] = bestA;
+        const re = new Map(); let n2 = 0;
+        for (let i = 0; i < N; i++) { if (!re.has(comp[i])) re.set(comp[i], n2++); comp[i] = re.get(comp[i]); }
+        nComp = n2;
+      }
+      return segStats(M, comp, nComp);
+    }
+    // ⑤ 덩어리마다 평균 밝기·결·색  ⑥ 번호를 적을 자리
+    function segStats(M, comp, nComp) {
+      const W = M.W, H = M.H, N = W * H;
       const st = Array.from({ length: nComp }, () => ({ n: 0, lum: 0, rough: 0, r: 0, g: 0, b: 0 }));
       for (let i = 0; i < N; i++) {
         const s = st[comp[i]]; s.n++; s.lum += M.lum[i]; s.rough += M.rough[i];
@@ -2128,7 +2344,7 @@
 
     // [수정 6-8] 덩어리마다 재질을 AI에게 묻기: 덩어리 테두리와 번호를 그린 사진을 한 번 보냄
     //   (8×8 칸으로 위치를 짚게 하던 방식은 틀렸지만, 이건 앱이 이미 나눈 실제 모양에 '이름'만 붙이는 일이라 훨씬 쉬움)
-    const SEG_COLORS = ["#FF3B30", "#FFCC00", "#34C759", "#00C7BE", "#007AFF", "#AF52DE", "#FF2D92", "#FF9500"];
+    const SEG_COLORS = ["#FF3B30", "#FFCC00", "#34C759", "#00C7BE", "#007AFF", "#AF52DE", "#FF2D92", "#FF9500", "#FFFFFF", "#8E8E93"];
     function makeSegImage() {
       const img = $("artImg"), M = touchMap, S = M.seg;
       const OW = 640, OH = Math.round(OW * M.H / M.W), sx = OW / M.W, sy = OH / M.H;
@@ -2155,6 +2371,7 @@
       if (!M) return;
       if (lastData.segMaterials && lastData.segMaterials.length === M.seg.n) {   // 같은 사진이면 다시 묻지 않음
         lastData.segMaterials.forEach((r, k) => { M.seg.st[k].material = r.material; M.seg.st[k].thing = r.thing; });
+        mergeSameThing(M);
         M.matState = "done"; return;
       }
       M.matState = "asking";
@@ -2166,9 +2383,34 @@
         (r.regions || []).forEach((x) => { if (arr[x.n - 1]) arr[x.n - 1] = { material: x.material, thing: x.thing }; });
         arr.forEach((x, k) => { M.seg.st[k].material = x.material; M.seg.st[k].thing = x.thing; });
         lastData.segMaterials = arr;
+        mergeSameThing(M);
         M.matState = "done"; M.matMs = Math.round(performance.now() - t0);
         if (curSeg >= 0 && tSyn) touchSegSound(curSeg, tSyn.base);      // 지금 만지는 덩어리에 바로 적용
       } catch (e) { if (M === touchMap) M.matState = "fail"; }
+    }
+
+    // [수정 6-9] AI가 '같은 물건·같은 재질'이라고 한 덩어리가 서로 맞닿아 있으면 하나로 합침 (예: 얼굴이 두 조각으로 나뉜 경우)
+    function mergeSameThing(M) {
+      const S = M.seg, W = M.W, N = W * M.H, comp = S.comp;
+      const key = (k) => { const t = S.st[k]; return t.material && t.material !== "모름" && t.thing ? t.material + "|" + t.thing : null; };
+      const to = S.st.map((_, k) => k), root = (k) => { while (to[k] !== k) k = to[k]; return k; };
+      for (let i = 0; i < N; i++) {
+        const x = i % W;
+        for (const j of [x < W - 1 ? i + 1 : -1, i + W < N ? i + W : -1]) {
+          if (j < 0) continue;
+          const a = root(comp[i]), b = root(comp[j]);
+          if (a !== b && key(a) && key(a) === key(b)) to[Math.max(a, b)] = Math.min(a, b);
+        }
+      }
+      if (S.st.every((_, k) => root(k) === k)) return;                 // 합칠 것 없음
+      const info = S.st.map((t) => ({ material: t.material, thing: t.thing }));
+      const re = new Map(); let n = 0;
+      const nc = new Int32Array(N);
+      for (let i = 0; i < N; i++) { const r = root(comp[i]); if (!re.has(r)) re.set(r, n++); nc[i] = re.get(r); }
+      M.seg = segStats(M, nc, n);
+      re.forEach((nk, ok) => { M.seg.st[nk].material = info[ok].material; M.seg.st[nk].thing = info[ok].thing; });
+      M.merged = S.n - n;
+      curSeg = -1;                                                      // 지금 표시 중인 덩어리 번호가 바뀌었으니 다시 그리게
     }
 
     function mapAt(clientX, clientY) {
@@ -2205,7 +2447,7 @@
     //   재질은 '그 덩어리의 거칠기'(+손가락 바로 아래 결)로 정함
     //     매끈 → 천·피부를 쓸 듯 작고 낮은 '스-'      거침 → 돌·나무껍질을 긁듯 '사각사각'(작은 알갱이 소리가 촘촘)
     let noiseBuf = null, crackleBuf = null;
-    const BG_IN_TOUCH = true;           // 만져보기 중 작품 분위기 화음을 아주 작게 깔지 (false로 바꾸면 끔)
+    const BG_IN_TOUCH = false;          // 만져보기 중 작품 분위기 화음을 아주 작게 깔지 (false로 바꾸면 끔)
     function getNoise(ctx) {
       if (!noiseBuf) {
         noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
@@ -2232,8 +2474,9 @@
     //   soft = 낮게 걸러 낸 '스-'(sf = 높이) / grit = 가운데를 걸러 낸 '쓱'(gf) / cr = 알갱이 '사각'(cf) / ring = 아주 좁게 걸러 낸 '삐익·뽀득'(rf, 유리·금속·고무)
     //   vib: none = 진동 없음, light = 가볍게 톡, grain = 오돌토돌
     const MAT_SOUND = {
-      "유리":   { soft: 0.25, sf: 1600, grit: 0,    gf: 2000, cr: 0,   cf: 3000, ring: 0.5,  rf: 2600, vib: "none" },
-      "금속":   { soft: 0.15, sf: 1200, grit: 0.2,  gf: 3000, cr: 0,   cf: 3000, ring: 0.55, rf: 3400, vib: "light" },
+      // [수정 6-9] 유리가 '휘파람' 같다는 의견 → 좁게 거른 '삐익'을 빼고, 아주 작고 높은 '스스'(손끝이 미끄러지는 소리)로
+      "유리":   { soft: 0.3,  sf: 5000, grit: 0,    gf: 2000, cr: 0,   cf: 3000, ring: 0,    rf: 2600, vib: "none", quiet: 0.45 },
+      "금속":   { soft: 0.2,  sf: 4000, grit: 0.15, gf: 3500, cr: 0,   cf: 3000, ring: 0.12, rf: 3200, vib: "light", quiet: 0.6 },
       "나무":   { soft: 0.3,  sf: 600,  grit: 0.5,  gf: 900,  cr: 0.3, cf: 1200, ring: 0,    rf: 1000, vib: "grain" },
       "돌":     { soft: 0.15, sf: 500,  grit: 0.55, gf: 1600, cr: 0.7, cf: 2200, ring: 0,    rf: 1000, vib: "grain" },
       "천":     { soft: 0.9,  sf: 450,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 1000, vib: "none" },
@@ -2244,7 +2487,7 @@
       "흙":     { soft: 0.2,  sf: 500,  grit: 0.4,  gf: 700,  cr: 0.9, cf: 1000, ring: 0,    rf: 1000, vib: "grain" },
       "잎·풀":  { soft: 0.3,  sf: 900,  grit: 0.35, gf: 2600, cr: 0.45, cf: 3800, ring: 0,   rf: 1000, vib: "light" },
       "털·머리카락": { soft: 0.55, sf: 2200, grit: 0.2, gf: 4500, cr: 0, cf: 3000, ring: 0, rf: 1000, vib: "light" },
-      "물":     { soft: 0.6,  sf: 700,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0.3,  rf: 900,  vib: "none" }
+      "물":     { soft: 0.6,  sf: 700,  grit: 0,    gf: 1000, cr: 0,   cf: 2000, ring: 0,    rf: 900,  vib: "none" }
     };
     function startTouchSound() {
       stopTouchSound();
@@ -2255,7 +2498,8 @@
       master.gain.value = 1;
       master.connect(comp); comp.connect(ctx.destination);
       const move = ctx.createGain(); move.gain.value = 0;          // 손가락 속도 → 크기 (멈추면 0)
-      move.connect(master);
+      const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;   // 🎧 손가락이 왼쪽이면 왼쪽 귀, 오른쪽이면 오른쪽 귀
+      if (panner) { move.connect(panner); panner.connect(master); } else move.connect(master);
       const src = ctx.createBufferSource(); src.buffer = getNoise(ctx); src.loop = true;
       // 매끈: 낮게 걸러 낸 '스-'
       const soft = ctx.createBiquadFilter(); soft.type = "lowpass"; soft.frequency.value = 500; soft.Q.value = 0.5;
@@ -2271,7 +2515,7 @@
       const gCr = ctx.createGain(); gCr.gain.value = 0;
       cr.connect(crF); crF.connect(gCr); gCr.connect(move);
       // 유리·금속·고무: 아주 좁게 걸러 낸 '삐익·뽀득'
-      const ring = ctx.createBiquadFilter(); ring.type = "bandpass"; ring.frequency.value = 2600; ring.Q.value = 14;
+      const ring = ctx.createBiquadFilter(); ring.type = "bandpass"; ring.frequency.value = 2600; ring.Q.value = 6;
       const gRing = ctx.createGain(); gRing.gain.value = 0;
       src.connect(ring); ring.connect(gRing); gRing.connect(move);
       src.start(t); cr.start(t);
@@ -2285,7 +2529,7 @@
         else tones.forEach((f) => { const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = f; const og = ctx.createGain(); og.gain.value = 0.15; o.connect(og); og.connect(padBus); o.start(t); o.stop(t + 20); padSrc.push(o); });
         padBus.gain.setTargetAtTime(senseOutputs(clamp01(Number(P && touchSense().intensity) || 0.5)).gain * 1.4, t, 0.6);
       }
-      tSyn = { ctx: ctx, master: master, comp: comp, move: move, src: src, cr: cr, soft: soft, gSoft: gSoft, grit: grit, gGrit: gGrit,
+      tSyn = { ctx: ctx, master: master, comp: comp, move: move, panner: panner, src: src, cr: cr, soft: soft, gSoft: gSoft, grit: grit, gGrit: gGrit,
                ring: ring, gRing: gRing, padBus: padBus, padSrc: padSrc,
                crF: crF, gCr: gCr, segRough: 0, base: 0, mat: "" };
       tSyn.still = setInterval(() => {                             // 손가락을 멈추면(0.08초 동안 움직임 신호 없음) 조용히
@@ -2327,13 +2571,14 @@
       s.gCr.gain.setTargetAtTime(Math.min(1.3, p.cr * k), t, 0.05);                  // [수정 6-8] 알갱이 소리 상한 (자극 줄이기)
       s.crF.frequency.setTargetAtTime(p.cf, t, 0.05);
       s.cr.playbackRate.setTargetAtTime(0.6 + 1.6 * moving, t, 0.05);
-      s.gRing.gain.setTargetAtTime(p.ring * 6, t, 0.05);                               // 좁게 거르면 작아져서 키움
+      s.gRing.gain.setTargetAtTime(p.ring * 3, t, 0.05);                               // 좁게 거르면 작아져서 키움
       s.ring.frequency.setTargetAtTime(p.rf * (1 + 0.35 * moving), t, 0.04);          // 빨리 문지르면 '삐익'이 올라감
-      s.move.gain.setTargetAtTime(Math.min(0.5, s.base * 5 * moving), t, 0.03);
+      s.move.gain.setTargetAtTime(Math.min(0.5, s.base * 5 * moving) * (p.quiet || 1), t, 0.03);   // 유리·금속은 더 작게
       return p;
     }
 
     function startTouch() {
+      setArtMode(false);                 // 만질 때는 원래 사진으로
       setViewParts("touch");
       stopSense();
       setHighlight(null);
@@ -2370,7 +2615,7 @@
         curSeg = m.seg;
         drawSeg(m.seg);
         touchSegSound(m.seg, out.gain);
-        if (tPrev && canBuzz) { navigator.vibrate(Math.round(30 + 25 * out.vibe)); vibeAt = now; }
+        if (tPrev && canBuzz) { buzz(Math.round(30 + 25 * out.vibe)); vibeAt = now; }
         const st = touchMap.seg.st[m.seg];
         $("sceneBar").textContent = "✋ " + (st.material && st.material !== "모름"
           ? "AI가 본 재질: " + st.material + (st.thing ? " (" + st.thing + ")" : "")
@@ -2384,12 +2629,13 @@
       }
       // 3) 👂 문지르는 소리: 움직일 때만, 재질에 따라
       const p = tSyn ? touchFriction(m, moving) : null;
+      if (tSyn && tSyn.panner) tSyn.panner.pan.setTargetAtTime(((m.x + 0.5) / touchMap.W * 2 - 1) * 0.85, tSyn.ctx.currentTime, 0.03);
       const vibKind = (MAT_SOUND[touchMap.seg.st[m.seg].material] || {}).vib || (m.rough > 0.55 ? "grain" : m.rough > 0.25 ? "light" : "none");
       // 4) ✋ 결: 거친 곳만 오돌토돌 진동 (매끈한 곳은 진동 없음) — 지난번 좋았던 방식 그대로
       if (!changed && canBuzz && moving > 0.1 && now - vibeAt > 110) {
         const k = 0.75 + 0.5 * out.vibe;
-        if (vibKind === "grain") { navigator.vibrate([Math.round(20 * k), 18, Math.round(20 * k), 18, Math.round(20 * k)]); vibeAt = now; }
-        else if (vibKind === "light") { navigator.vibrate(Math.round(16 * k)); vibeAt = now; }
+        if (vibKind === "grain") { buzz([Math.round(20 * k), 18, Math.round(20 * k), 18, Math.round(20 * k)]); vibeAt = now; }
+        else if (vibKind === "light") { buzz(Math.round(16 * k)); vibeAt = now; }
       }
       tPrev = { x: e.clientX, y: e.clientY, t: now, vibeAt: vibeAt };
       const st = touchMap.seg.st[m.seg];
@@ -2598,7 +2844,8 @@
       [INST_FILE[P.inst], INST_FILE.pad].concat(P.bass ? [INST_FILE.bass] : []).forEach((f) => loadInstrument(f));
     }
     // 악기 소리 하나 재생. 준비가 안 됐으면 false (→ 합성음으로 대신)
-    function playSample(e, file, freq, t, dur, peak, attack, dest) {
+    // pan: -1(왼쪽 귀) ~ 0(가운데) ~ +1(오른쪽 귀) — 이어폰을 끼면 악기마다 자리가 생김 (폰 스피커는 거의 차이 없음)
+    function playSample(e, file, freq, t, dur, peak, attack, dest, pan) {
       const bank = sampleBank[file];
       if (!bank) return false;
       const midi = 69 + 12 * Math.log2(freq / 440);
@@ -2609,8 +2856,10 @@
       const rate = Math.pow(2, (midi - best.midi) / 12);
       const sus = !!SUSTAINED[file];
       const out = ctx.createGain();
-      out.connect(dest || e.mix);
-      if (e.send && !dest) out.connect(e.send);
+      let outEnd = out;
+      if (pan && ctx.createStereoPanner) { const pn = ctx.createStereoPanner(); pn.pan.value = Math.max(-1, Math.min(1, pan)); out.connect(pn); outEnd = pn; }
+      outEnd.connect(dest || e.mix);
+      if (e.send && !dest) outEnd.connect(e.send);
       // 녹음은 약 3초. 길게 이어지는 악기가 그보다 길게 울려야 하면 2.4초마다 새로 겹쳐 이어 붙임
       const seg = 2.4, release = sus ? 0.35 : 0.8;
       const total = sus ? dur : Math.min(dur, 2.8);
@@ -2723,7 +2972,8 @@
       const ctx = e.ctx, P = e.P;
       if (sampleBank[INST_FILE.pad]) {                             // 현악 합주 녹음으로 배경 화음
         const att = 0.3 + (1 - P.c.arousal) * 0.9;
-        chordTones(P, deg, P.rich).forEach((x) => playSample(e, INST_FILE.pad, semi(P.root / 2, x + 12 * (x < 5 ? 1 : 0)), t, durSec + 0.2, 0.2 * P.padLevel, att));
+        chordTones(P, deg, P.rich).forEach((x, k, arr) => playSample(e, INST_FILE.pad, semi(P.root / 2, x + 12 * (x < 5 ? 1 : 0)), t, durSec + 0.2, 0.2 * P.padLevel, att,
+          null, arr.length > 1 ? -0.7 + 1.4 * k / (arr.length - 1) : 0));   // 🎧 화음은 왼쪽~오른쪽으로 넓게 펼침
         return;
       }
       const tones = chordTones(P, deg, P.c.flow > 0.6);
@@ -2766,7 +3016,8 @@
       const ctx = e.ctx, P = e.P;
       const freq = semi(P.root, st);
       const file = INST_FILE[P.inst];                              // 실제 악기 녹음이 준비됐으면 그걸로
-      if (playSample(e, file, freq, t, SUSTAINED[file] ? len : len * 1.6, 0.55 * (accent ? 1 : 1 - (P.accentGap || 0.22)) * (SUSTAINED[file] ? 0.8 : 1), SUSTAINED[file] ? 0.04 : 0)) return;
+      const pan = Math.max(-0.6, Math.min(0.6, (st - 7) / 12));   // 🎧 낮은 음은 왼쪽, 높은 음은 오른쪽 (피아노 건반처럼)
+      if (playSample(e, file, freq, t, SUSTAINED[file] ? len : len * 1.6, 0.55 * (accent ? 1 : 1 - (P.accentGap || 0.22)) * (SUSTAINED[file] ? 0.8 : 1), SUSTAINED[file] ? 0.04 : 0, null, pan)) return;
       const g = ctx.createGain();
       const peak = 0.16 * (accent ? 1 : 0.78);
       g.connect(e.mix);
@@ -2899,6 +3150,131 @@
     let pendingFx = [];
     const FADE_IN = 2.0;                // 시작할 때 소리·빛·진동이 서서히 커지는 시간(초)
     const RING_SEC = 3.5;               // 끝맺음 화음이 울리는 시간
+    // ==========================================================
+    // [수정 6-10] 👁 시각 강화 — 사진은 그대로 두고 '빛'을 덧입힘 (원래 작품을 알아볼 수 있게)
+    //   ① 감정 색: 기분(밝음↔어두움)·활기로 색을 정함 → 작품 테두리와 빛의 색
+    //      근거: 음악·감정·색의 연결 연구(밝고 기쁜 느낌 ↔ 노랑·주황처럼 따뜻하고 진한 색, 슬픈 느낌 ↔ 파랑처럼 흐린 색)
+    //   ② 숨 쉬는 빛: 사진에서 '밝은 부분'만 골라 감정 색으로 칠한 빛 층이, 음이 날 때마다 숨 쉬듯 밝아짐
+    //   ③ 큰 박(마디 첫 음)에는 가장 밝은 곳에서 빛의 고리가 퍼짐
+    //   ④ (선택) 🎨 빛 그림: 사진의 점들이 빛 알갱이가 되어 음악에 맞춰 움직이는 디지털 아트
+    //   빛 세기는 스티븐스 법칙으로 정한 '물리 자극'을 화면 밝기(감마 2.2)로 바꿔서 씀
+    //   깜빡임 안전: 빛이 밝아지는 횟수는 1초에 3번을 넘지 않음(음은 1초에 2번 이하)
+    // ==========================================================
+    const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function emotionColor(s, alpha) {
+      const v = calib("valence", s.valence), a = calib("arousal", s.arousal);
+      const h = Math.round(225 - 185 * v);                        // 기분 낮음 = 파랑(225) … 높음 = 노랑·주황(40)
+      const sat = Math.round(35 + 55 * a);                        // 활기가 높을수록 진하게
+      const l = Math.round(50 + 10 * v);
+      return "hsla(" + h + "," + sat + "%," + l + "%," + (alpha === undefined ? 1 : alpha) + ")";
+    }
+    // 스티븐스 법칙의 물리 자극(빛의 양) → 화면에 칠할 불투명도 (화면은 밝기를 감마 2.2로 저장하므로)
+    const visAlpha = (x) => Math.min(0.9, Math.pow(Math.max(0, x), 1 / 2.2));
+    let viewLight = null;               // { cv, bright:{x,y} } 지금 사진의 빛 층
+    function buildLight(s) {
+      const img = $("artImg"), cv = $("lightMask");
+      if (!img.naturalWidth) return null;
+      const W = 160, H = Math.max(8, Math.round(W * img.naturalHeight / img.naturalWidth));
+      const t = document.createElement("canvas"); t.width = W; t.height = H;
+      const g = t.getContext("2d"); g.drawImage(img, 0, 0, W, H);
+      const d = g.getImageData(0, 0, W, H).data, L = [];
+      for (let i = 0; i < W * H; i++) L.push(0.2126 * d[i * 4] + 0.7152 * d[i * 4 + 1] + 0.0722 * d[i * 4 + 2]);
+      const sorted = L.slice().sort((a, b) => a - b), thr = sorted[Math.floor(L.length * 0.65)], top = sorted[L.length - 1] || 1;
+      cv.width = W; cv.height = H;
+      const og = cv.getContext("2d"), im = og.createImageData(W, H);
+      const col = emotionColor(s);                                 // 색을 RGB로 바꾸려고 한 칸에 칠해 봄
+      og.fillStyle = col; og.fillRect(0, 0, 1, 1);
+      const [cr, cg, cb] = og.getImageData(0, 0, 1, 1).data;
+      let bx = 0, by = 0, bw = 0;
+      for (let i = 0; i < W * H; i++) {
+        const k = L[i] <= thr ? 0 : (L[i] - thr) / Math.max(1, top - thr);   // 밝은 35%만, 밝을수록 진하게
+        im.data[i * 4] = cr; im.data[i * 4 + 1] = cg; im.data[i * 4 + 2] = cb; im.data[i * 4 + 3] = Math.round(255 * Math.min(1, k * 1.4));
+        if (k > 0.5) { bx += (i % W) * k; by += ((i / W) | 0) * k; bw += k; }
+      }
+      og.putImageData(im, 0, 0);
+      cv.style.opacity = "0";
+      cv.hidden = false;
+      return { bright: bw ? { x: bx / bw / W, y: by / bw / H } : { x: 0.5, y: 0.5 } };
+    }
+    function setMood(s) {                                          // 테두리를 감정 색으로
+      $("art").style.setProperty("--mood", emotionColor(s));
+      $("art").classList.add("mooded");
+    }
+    function pulseView(phys, ms, accent) {
+      const a = visAlpha(phys);
+      const cv = $("lightMask"), art = $("art");
+      if (reduceMotion()) { cv.style.opacity = String(a * 0.6); return; }
+      const dur = Math.min(1600, Math.max(300, ms * 0.85));
+      cv.animate([{ opacity: 0.05 }, { opacity: a }, { opacity: 0.05 }], { duration: dur, easing: "ease-in-out" });
+      cv.style.opacity = "0.05";
+      art.animate([{ boxShadow: "0 0 0 6px var(--mood), 0 0 0px var(--mood)" },
+                   { boxShadow: "0 0 0 6px var(--mood), 0 0 " + Math.round(12 + 40 * a) + "px var(--mood)" },
+                   { boxShadow: "0 0 0 6px var(--mood), 0 0 0px var(--mood)" }], { duration: dur, easing: "ease-in-out" });
+      if (accent && viewLight) {                                   // 큰 박: 가장 밝은 곳에서 빛의 고리
+        const ring = document.createElement("div");
+        ring.className = "light-ring";
+        ring.style.left = (viewLight.bright.x * 100) + "%"; ring.style.top = (viewLight.bright.y * 100) + "%";
+        $("artWrap").appendChild(ring);
+        ring.animate([{ transform: "translate(-50%,-50%) scale(0.2)", opacity: a }, { transform: "translate(-50%,-50%) scale(3)", opacity: 0 }],
+                     { duration: Math.min(1800, dur * 1.6), easing: "ease-out" }).onfinish = () => ring.remove();
+      }
+      if (artMode) artEnergy = Math.max(artEnergy, 0.4 + 0.6 * a);
+    }
+    function clearViewLight() { $("lightMask").hidden = true; viewLight = null; }
+
+    // ---- 🎨 빛 그림 (선택) ----
+    let artMode = false, artParts = null, artRaf = 0, artEnergy = 0, artP = null;
+    function buildArt(s) {
+      const img = $("artImg"), cv = $("artCanvas");
+      const r = img.getBoundingClientRect();
+      const W = Math.round(r.width), H = Math.round(r.height);
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + "px"; cv.style.height = H + "px";
+      const step = Math.max(7, Math.round(Math.sqrt(W * H / 2200)));   // 알갱이 약 2200개
+      const t = document.createElement("canvas"); t.width = Math.ceil(W / step); t.height = Math.ceil(H / step);
+      const g = t.getContext("2d"); g.drawImage(img, 0, 0, t.width, t.height);
+      const d = g.getImageData(0, 0, t.width, t.height).data;
+      artParts = [];
+      for (let y = 0; y < t.height; y++) for (let x = 0; x < t.width; x++) {
+        const i = (y * t.width + x) * 4, l = (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
+        artParts.push({ x0: (x + 0.5) * step, y0: (y + 0.5) * step, c: "rgb(" + d[i] + "," + d[i + 1] + "," + d[i + 2] + ")", l: l,
+                        ph: Math.random() * 6.28, r: step * (0.25 + 0.45 * l) });
+      }
+      artP = { s: planOf(s), W: W, H: H, dpr: dpr, step: step, mood: emotionColor(s) };
+    }
+    function drawArt(ts) {
+      if (!artMode) return;
+      const cv = $("artCanvas"), g = cv.getContext("2d"), P = artP;
+      g.setTransform(P.dpr, 0, 0, P.dpr, 0, 0);
+      g.fillStyle = "rgba(10,10,14,1)"; g.fillRect(0, 0, P.W, P.H);
+      const c = P.s.c, time = ts / 1000, cx = P.W / 2, cy = P.H / 2;
+      const swirl = reduceMotion() ? 0 : 0.04 + 0.25 * c.flow;              // 흐름 → 소용돌이 속도
+      const jit = reduceMotion() ? 0 : 0.6 + 2.5 * c.roughness;             // 거칠기 → 떨림
+      const e = artEnergy;
+      g.globalCompositeOperation = "lighter";
+      for (const p of artParts) {
+        const dx = p.x0 - cx, dy = p.y0 - cy, ang = swirl * Math.sin(time * 0.3 + p.ph * 0.2) * 0.15;
+        const push = 1 + e * 0.06 * (0.5 + p.l);                            // 음이 나면 바깥으로 살짝 퍼짐
+        const x = cx + (dx * Math.cos(ang) - dy * Math.sin(ang)) * push + Math.sin(time * 2 + p.ph) * jit;
+        const y = cy + (dx * Math.sin(ang) + dy * Math.cos(ang)) * push + Math.cos(time * 1.7 + p.ph) * jit;
+        const rr = p.r * (1 + e * 0.8 * p.l);
+        g.fillStyle = p.c;
+        g.globalAlpha = 0.55 + 0.45 * Math.min(1, p.l + e * 0.3);
+        g.beginPath();
+        if (c.roughness > 0.6) g.rect(x - rr, y - rr, rr * 2, rr * 2); else g.arc(x, y, rr, 0, 6.283);
+        g.fill();
+      }
+      g.globalAlpha = 1; g.globalCompositeOperation = "source-over";
+      artEnergy *= 0.94;
+      artRaf = requestAnimationFrame(drawArt);
+    }
+    function setArtMode(on) {
+      artMode = !!on && lastData && lastData.type === "photo";
+      cancelAnimationFrame(artRaf);
+      $("artCanvas").hidden = !artMode;
+      if (artMode) { buildArt(lastResult.whole); artRaf = requestAnimationFrame(drawArt); }
+    }
+
     function startSense(s, box, colors, bars) {
       stopSense();
       if (!s) return;
@@ -2923,9 +3299,12 @@
       const fx = (ms, accent, n) => {
         if (senseRun !== myRun) return;
         const ramp = Math.min(1, 0.25 + 0.75 * (performance.now() - t0) / (FADE_IN * 1000));   // 처음 2초는 약하게 시작
-        if (p.visual.on) pulseGlow(out.glow * ramp, ms, n, gEl);                                   // 👁
+        if (p.visual.on) {                                                                         // 👁
+          if (currentScreen === "view") pulseView(out.glow * ramp, ms, accent);                    //   감상 화면: 사진 위 빛 층
+          else pulseGlow(out.glow * ramp, ms, n, gEl);                                             //   탐구 노트: 동그라미
+        }
         if (p.touch.on) {                                                                          // ✋
-          if (vibeUsable()) navigator.vibrate(vibeForNote(P.c, out.vibe * ramp, ms, accent && ramp >= 1));
+          if (vibeUsable()) buzz(vibeForNote(P.c, out.vibe * ramp, ms, accent && ramp >= 1));
           else heartGlow();
         }
       };
@@ -3066,7 +3445,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-8 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-10 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -3082,6 +3461,11 @@
         "<b>장면</b><br>" + (r.scenes || []).map((s, i) => (i + 1) + ". " + esc(s.name) + " → " + senseLine(s.sense) +
           ((s.cells || []).length ? "<br>&nbsp;&nbsp;&nbsp;칸 " + esc(JSON.stringify(s.cells)) : "")).join("<br>") +
         "<br><br><b>⏱ 감각 동시 출력 (공통 박자 시계)</b><br>소리–빛·진동 시각 차이: <span id='syncNow'>" + syncText() + "</span>" +
+        "<br><br><b>🎨 디자인 시안</b>: " + Object.keys(THEMES).map((k) => "<button class='mini' data-theme-btn='" + k + "'>" + THEMES[k] + "</button>").join(" ") +
+        (r.think ? "<br><br><b>🧠 AI의 생각 메모 (CoT)</b><br>① 보이는 것: " + esc((r.think.see || []).join(", ")) + "<br>② 가장 중요한 것: " + esc(r.think.main || "-") +
+          "<br>③ 쉬운 말로 바꾸기: " + esc(r.think.easy || "-") : "") +
+        "<br><br><b>📳 진동 방식</b>: " + (canVibrate ? "웹 진동 (패턴·길이 조절 가능)" : iosHaptic ? "아이폰 '톡' 진동 (스위치 우회 방법, 길이 조절 불가)" : "진동 없음 → 화면 두근거림") +
+        "<br><br><b>👁 감정 색</b>: <span class='sw' style='background:" + emotionColor(r.whole || {}) + "'></span> (기분·활기 → 색) · 빛 세기 = 스티븐스 자극을 화면 밝기(감마 2.2)로 변환" +
         "<br><br><b>🎻 악기 소리</b><br><span id='sampleNow'>" + sampleText() + "</span><br><span class='note'>출처: FluidR3_GM 사운드폰트 (CC BY 3.0)</span>" +
         "<br><br><b>🔊 소리 크기 자동 맞춤</b><br><span id='levelNow'>" + levelText() + "</span>" +
         "<br><br><b>✋ 만져보기 (마지막으로 만진 곳)</b><br><span id='touchNow'>" + touchText() + "</span>" +
@@ -3097,7 +3481,7 @@
     function touchText() {
       if (!touchInfo) return "아직 만지지 않음";
       const f = (x) => Number(x).toFixed(2);
-      return "사진을 색·밝기가 비슷한 곳끼리 " + touchInfo.n + "덩어리로 나눔 (색 " + SEG_K + "가지로 묶기 → 떨어진 곳은 따로 → 1.5%보다 작은 조각은 합침 → 최대 " + SEG_MAX + "개)" +
+      return "사진을 색·밝기가 비슷한 곳끼리 " + touchInfo.n + "덩어리로 나눔 (이웃 칸끼리 색 차이로 영역 나누기 → 1.2%보다 작은 조각은 합침 → 비슷한 색끼리 합쳐 최대 " + SEG_MAX + "개)" +
         "<br>만진 덩어리: 사진의 " + (touchInfo.part * 100).toFixed(1) + "% · 평균 밝기 " + f(touchInfo.segLum) + " · 덩어리 거칠기 " + f(touchInfo.segRough) + "<br>" +
         "AI가 본 재질: " + (touchInfo.material ? esc(touchInfo.material) + (touchInfo.thing ? " (" + esc(touchInfo.thing) + ")" : "") : "-") +
         " · 재질 묻기 " + ({ asking: "진행 중", done: "완료" + (touchInfo.matMs ? " " + (touchInfo.matMs / 1000).toFixed(1) + "초" : ""), fail: "실패 → 픽셀로" }[touchInfo.matState] || "-") +
@@ -3107,6 +3491,7 @@
     }
     $("devBody").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.themeBtn) applyTheme(b.dataset.themeBtn);
       if (b.dataset.lat) {
         latAdj += Number(b.dataset.lat);
         try { localStorage.setItem(KEY_LAT, String(latAdj)); } catch (x) {}
@@ -3496,10 +3881,23 @@
     $("btnSoonHome").onclick = () => { renderHome(); go("home"); };
     $("btnCamHome").onclick = () => { renderHome(); go("home"); };
 
+    // [수정 6-10] 디자인 시안 고르기 (기본 = 시안 1 '따뜻한 미술관')
+    const KEY_THEME = "digical.theme.v1", THEMES = { museum: "시안 1 · 따뜻한 미술관", contrast: "시안 2 · 고대비 다크", pastel: "시안 3 · 파스텔" };
+    function applyTheme(t) {
+      if (!THEMES[t]) t = "museum";
+      document.documentElement.setAttribute("data-theme", t);
+      try { localStorage.setItem(KEY_THEME, t); } catch (e) {}
+    }
+    try { applyTheme(new URLSearchParams(location.search).get("theme") || localStorage.getItem(KEY_THEME) || "museum"); } catch (e) {}
+
     // 시작!
     renderBanner();
     renderHome();
     go("home");
+    try {                                // [수정 6-10] 미니 벽화 QR로 들어오면(주소에 ?work=번호) 그 작품을 바로 엽니다
+      const wq = new URLSearchParams(location.search).get("work");
+      if (wq) openWork(wq);
+    } catch (e) {}
   </script>
 </body>
 </html>

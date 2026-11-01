@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>미니 벽화 QR 만들기</title>
+  <!-- QR 그리는 도구: qrcodejs (MIT 라이선스) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body { font-family: "Pretendard", "Noto Sans KR", sans-serif; background: #FFF; color: #1A1A1A; margin: 0; padding: 16px; }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+    .tools input { flex: 1; min-width: 220px; font-size: 16px; padding: 8px; border: 2px solid #1A1A1A; border-radius: 8px; }
+    .tools button { font-size: 16px; font-weight: 800; padding: 8px 14px; border: 2px solid #1A1A1A; border-radius: 8px; background: #FFD23F; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .card { border: 3px solid #1A1A1A; border-radius: 16px; padding: 16px; text-align: center; break-inside: avoid; }
+    .card .qr { display: flex; justify-content: center; margin: 8px 0; }
+    .card .t { font-size: 20px; font-weight: 800; }
+    .card .s { font-size: 14px; color: #555; }
+    .card .how { font-size: 15px; margin-top: 6px; }
+    .note { font-size: 14px; color: #555; }
+    @media print { .tools, .note, h1 { display: none; } body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <h1>🔳 미니 벽화 QR 만들기</h1>
+  <p class="note">works 폴더의 works.json 목록으로 작품마다 QR을 만들어요. 인쇄해서 작품 옆에 붙이세요. (인쇄할 때는 이 안내와 버튼은 나오지 않아요)</p>
+  <div class="tools">
+    <input id="base" aria-label="앱 주소">
+    <button id="btnMake">QR 다시 만들기</button>
+    <button onclick="window.print()">🖨 인쇄</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <script>
+    // 앱 주소: 이 페이지와 같은 사이트의 첫 화면 (다르면 위 칸에서 고치기)
+    const baseInput = document.getElementById("base");
+    baseInput.value = location.origin + location.pathname.replace(/qr\.html$/, "");
+    async function make() {
+      const grid = document.getElementById("grid");
+      grid.innerHTML = "";
+      let list;
+      try { list = (await (await fetch("works/works.json", { cache: "no-cache" })).json()).works || []; }
+      catch (e) { grid.innerHTML = "<p>works/works.json을 읽지 못했어요.</p>"; return; }
+      list.forEach((w) => {
+        const url = baseInput.value.replace(/\/?$/, "/") + "?work=" + encodeURIComponent(w.id);
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = '<div class="t"></div><div class="s"></div><div class="qr"></div>' +
+          '<div class="how">📱 휴대폰 카메라로 찍으면<br>소리·빛·진동으로 느낄 수 있어요</div>';
+        card.querySelector(".t").textContent = w.title || ("작품 " + w.id);
+        card.querySelector(".s").textContent = [w.artist, w.year].filter(Boolean).join(" · ");
+        grid.appendChild(card);
+        new QRCode(card.querySelector(".qr"), { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+      });
+    }
+    document.getElementById("btnMake").onclick = make;
+    make();
+  </script>
+</body>
+</html>
