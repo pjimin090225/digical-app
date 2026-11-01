@@ -58,14 +58,14 @@
     .cam-side { width: 64px; height: 64px; border-radius: 16px; border: 2px solid var(--border); background: var(--card); font-size: 28px; padding: 0; overflow: hidden; }
     .cam-side img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .side-label { font-weight: 700; margin-top: var(--gap); font-size: 16px; text-align: center; }
-    /* 아틀리에: 어두운 '촬영실' — 작품이 돋보이게 주변을 어둡게, 모드는 카메라 앱처럼 글자 탭, 찍기는 하얀 고리 */
-    :root[data-theme="atelier"] body[data-screen="camera"] { background: #15120F; }
-    :root[data-theme="atelier"] #camera { --text: #F3EDE4; --sub: #B9AFA2; --border: #F3EDE4; --card: #24201B; --accent: #E8DFD2; --gold: #E6C38F; color: var(--text); }
-    :root[data-theme="atelier"] #camera .topbar { margin-bottom: calc(var(--gap) * 1.5); }
-    :root[data-theme="atelier"] #camera .back { background: rgba(255,255,255,0.08); border: 1px solid rgba(243,237,228,0.45); }
-    :root[data-theme="atelier"] #camera .cam-h { display: block; margin: 0; font-size: 22px; color: var(--text); }
-    :root[data-theme="atelier"] #camera .stage { border-radius: 22px; max-height: 60vh; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-    :root[data-theme="atelier"] #camera .guide {
+    /* [수정 6-16] 어떤 디자인 시안이든 작품 만나기는 어두운 '촬영실' (시안 1~4 공통) — 작품이 돋보이게 주변을 어둡게, 모드는 카메라 앱처럼 글자 탭, 찍기는 하얀 고리 */
+    body[data-screen="camera"] { background: #15120F; }
+    #camera { --text: #F3EDE4; --sub: #B9AFA2; --border: #F3EDE4; --card: #24201B; --accent: #E8DFD2; --gold: #E6C38F; color: var(--text); }
+    #camera .topbar { margin-bottom: calc(var(--gap) * 1.5); }
+    #camera .back { background: rgba(255,255,255,0.08); border: 1px solid rgba(243,237,228,0.45); }
+    #camera .cam-h { display: block; margin: 0; font-size: 22px; color: var(--text); font-family: var(--font-title); }
+    #camera .stage { border-radius: 22px; max-height: 60vh; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    #camera .guide {
       inset: 9%; border: none; border-radius: 0;
       --c: rgba(255,255,255,0.95); --l: 34px; --w: 4px;
       background:
@@ -74,27 +74,27 @@
         linear-gradient(var(--c), var(--c)) bottom left / var(--l) var(--w) no-repeat, linear-gradient(var(--c), var(--c)) bottom left / var(--w) var(--l) no-repeat,
         linear-gradient(var(--c), var(--c)) bottom right / var(--l) var(--w) no-repeat, linear-gradient(var(--c), var(--c)) bottom right / var(--w) var(--l) no-repeat;
     }
-    :root[data-theme="atelier"] #camera .guide span { background: rgba(21,18,15,0.6); font-family: var(--font-title); letter-spacing: 0.02em; margin-top: 14px; }
-    :root[data-theme="atelier"] #camera .modebar { gap: 0; margin: calc(var(--gap) * 2) 0 0; justify-content: space-between; }
-    :root[data-theme="atelier"] #camera .modebar button {
+    #camera .guide span { background: rgba(21,18,15,0.6); font-family: var(--font-title); letter-spacing: 0.02em; margin-top: 14px; }
+    #camera .modebar { gap: 0; margin: calc(var(--gap) * 2) 0 0; justify-content: space-between; }
+    #camera .modebar button {
       border: none; background: transparent; color: var(--sub); font-weight: 600; min-height: 52px; position: relative; letter-spacing: 0.02em;
     }
-    :root[data-theme="atelier"] #camera .modebar button[aria-pressed="true"] { color: var(--gold); background: transparent; }
-    :root[data-theme="atelier"] #camera .modebar button[aria-pressed="true"]::after {
+    #camera .modebar button[aria-pressed="true"] { color: var(--gold); background: transparent; }
+    #camera .modebar button[aria-pressed="true"]::after {
       content: ""; position: absolute; left: 50%; bottom: 4px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--gold);
     }
-    :root[data-theme="atelier"] #camera .hint { color: var(--sub); font-size: 17px; margin: 4px 0 0; }
-    :root[data-theme="atelier"] #camera .shutter {
+    #camera .hint { color: var(--sub); font-size: 17px; margin: 4px 0 0; }
+    #camera .shutter {
       width: 84px; height: 84px; border: 4px solid #F3EDE4; background: #F3EDE4; box-shadow: inset 0 0 0 4px #15120F; font-size: 30px;
     }
-    :root[data-theme="atelier"] #camera .shutter.recording { background: var(--rec); border-color: #F3EDE4; }
-    :root[data-theme="atelier"] #camera .cam-side { border: 1.5px solid rgba(243,237,228,0.6); border-radius: 14px; }
-    :root[data-theme="atelier"] #camera .shutter-label, :root[data-theme="atelier"] #camera .side-label { font-weight: 600; color: var(--text); }
-    :root[data-theme="atelier"] #camera .cam-note { color: #8E857A; font-size: 14px; text-align: center; }
-    :root[data-theme="atelier"] #camera .card { background: var(--card); color: var(--text); border-color: rgba(243,237,228,0.35); }
-    :root[data-theme="atelier"] #camera textarea { background: #15120F; color: var(--text); border-color: rgba(243,237,228,0.5); }
-    :root[data-theme="atelier"] #camera .big { background: transparent; color: var(--text); border-color: rgba(243,237,228,0.6); }
-    :root[data-theme="atelier"] body[data-screen="camera"] footer, :root[data-theme="atelier"] body[data-screen="camera"] .foot { color: #8E857A; }
+    #camera .shutter.recording { background: var(--rec); border-color: #F3EDE4; }
+    #camera .cam-side { border: 1.5px solid rgba(243,237,228,0.6); border-radius: 14px; }
+    #camera .shutter-label, #camera .side-label { font-weight: 600; color: var(--text); }
+    #camera .cam-note { color: #8E857A; font-size: 14px; text-align: center; }
+    #camera .card { background: var(--card); color: var(--text); border-color: rgba(243,237,228,0.35); }
+    #camera textarea { background: #15120F; color: var(--text); border-color: rgba(243,237,228,0.5); }
+    #camera .big { background: transparent; color: var(--text); border-color: rgba(243,237,228,0.6); }
+    body[data-screen="camera"] footer, body[data-screen="camera"] .foot { color: #8E857A; }
     :root[data-theme="contrast"] {      /* 시안 2: 고대비 다크 — 저시력·고령자, 어두운 전시장 */
       --bg: #000000; --card: #121212; --text: #FFFFFF; --sub: #D0D0D0; --border: #FFFFFF;
       --accent: #8FE3FF; --primary: #FFD23F; --primary-text: #000000; --off: #444444; --warn-bg: #3A3000;
@@ -323,7 +323,7 @@
     .wait-info { position: absolute; left: 0; right: 0; bottom: 6vh; text-align: center; color: #FFF; font-size: 22px; font-weight: 800; line-height: 1.5; text-shadow: 0 0 8px #000; }
     .wait-style { font-size: 16px; opacity: 0.75; font-weight: 600; }
     .art-wrap { transition: transform 1.4s cubic-bezier(.4,0,.2,1); transform-origin: 50% 50%; }
-    .tour-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; filter: blur(3px); }
+    .tour-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
     .tour-cap { position: absolute; left: 12px; bottom: 12px; background: rgba(0,0,0,0.78); color: #FFF; font-size: 24px; font-weight: 800; padding: 6px 16px; border-radius: 999px; pointer-events: none; line-height: 1.4; }
     .light-ring { position: absolute; width: 40%; aspect-ratio: 1; border-radius: 50%; border: 6px solid var(--mood); pointer-events: none; transform: translate(-50%, -50%); }
     .glow { position: absolute; opacity: 0; pointer-events: none; mix-blend-mode: screen; }
@@ -565,7 +565,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-15: 더 정확한 나누기·볼 곳 + 재질 소리 다듬기 + 촬영실 디자인<br>
+    6단계 · 앱 6-16: 음질(잔향·MusyngKite·끊김 고침) + 갤러리 원본 저장 + 촬영실 공통 디자인<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -2282,26 +2282,38 @@
       else list = list.filter((g) => !/배경|벽|바닥|하늘|어둠|그림자/.test(g.thing)).sort((a, b) => b.part - a.part);   // (예전 서버: 중요도 없음)
       return list.slice(0, 3);
     }
-    function drawTourMask(ks) {
-      const cv = $("tourMask"), M = lastData.touchMap, set = new Set(ks);
+    // [수정 6-16] 가리개(어둡게 + 빛 테두리)를 ▶ 누를 때 미리 다 만들어 둠 → 연주 중에는 그리기만 (화면 작업 때문에 소리가 끊기지 않게)
+    //   흐리게(번짐) 처리도 미리 한 번만 (예전에는 화면이 확대·이동할 때마다 휴대폰이 번짐을 다시 계산했음)
+    function buildTourMask(ks) {
+      const M = lastData.touchMap, set = new Set(ks);
       const W = M.hi ? M.hi.W : M.W, H = M.hi ? M.hi.H : M.H, lab = M.hi ? M.hi.lab : M.seg.comp;
-      cv.width = W; cv.height = H;
-      const g = cv.getContext("2d"), im = g.createImageData(W, H);
-      const d = im.data;
+      const raw = document.createElement("canvas"); raw.width = W; raw.height = H;
+      const g = raw.getContext("2d"), im = g.createImageData(W, H), d = im.data;
       for (let i = 0; i < W * H; i++) {
         if (!set.has(lab[i])) { d[i * 4 + 3] = 185; continue; }              // 그 부분 말고는 어둡게
-        // [수정 6-15] 어두운 작품에서는 '어둡게'만으로 잘 안 보여서 → 그 부분의 테두리에 은은한 빛(조명) 선
+        // 어두운 작품에서는 '어둡게'만으로 잘 안 보여서 → 그 부분의 테두리에 은은한 빛(조명) 선
         const x = i % W, edge = (x > 0 && !set.has(lab[i - 1])) || (x < W - 1 && !set.has(lab[i + 1])) || (i >= W && !set.has(lab[i - W])) || (i + W < W * H && !set.has(lab[i + W]));
         if (edge) { d[i * 4] = 255; d[i * 4 + 1] = 236; d[i * 4 + 2] = 200; d[i * 4 + 3] = 230; }
       }
       g.putImageData(im, 0, 0);
+      const out = document.createElement("canvas"); out.width = W; out.height = H;
+      const og = out.getContext("2d");
+      if ("filter" in og) og.filter = "blur(2px)";
+      og.drawImage(raw, 0, 0);
+      return out;
+    }
+    function drawTourMask(p) {
+      const cv = $("tourMask");
+      if (!p.mask) p.mask = buildTourMask(p.ks);
+      cv.width = p.mask.width; cv.height = p.mask.height;
+      cv.getContext("2d").drawImage(p.mask, 0, 0);
       cv.hidden = false;
       cv.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 700, fill: "forwards" });
     }
     function tourFocus(i) {
       const p = tourParts[i], wrap = $("artWrap");
       if (!p) return;
-      drawTourMask(p.ks);
+      drawTourMask(p);
       if (!reduceMotion()) {
         const M = lastData.touchMap;
         const bw = (p.x1 - p.x0 + 1) / M.W, bh = (p.y1 - p.y0 + 1) / M.H;
@@ -2387,6 +2399,39 @@
         im.src = dataURL;
       });
     }
+    // [수정 6-16] 갤러리 원본 사진은 IndexedDB(폰 브라우저 안의 큰 저장소)에 — 예전에는 작은 그림(가로 360px)만 저장해서
+    //   다시 느끼기를 하면 화질이 떨어지고, 사진을 다시 나누니 부분이 달라지고, 재질도 AI에게 다시 물었음
+    //   지금: 처음 분석한 사진 그대로 + AI가 붙인 이름·재질·중요도까지 저장 → 다시 느끼기 = 처음과 똑같은 나누기·재질 (AI 다시 안 부름)
+    const IDB_NAME = "digical.gallery.img", IDB_STORE = "img";
+    function idbOpen() {
+      return new Promise((res, rej) => {
+        if (!window.indexedDB) return rej(new Error("no idb"));
+        const r = indexedDB.open(IDB_NAME, 1);
+        r.onupgradeneeded = () => r.result.createObjectStore(IDB_STORE);
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      });
+    }
+    async function idbDo(mode, fn) {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const tx = db.transaction(IDB_STORE, mode), st = tx.objectStore(IDB_STORE);
+        let out; const rq = fn(st); if (rq) rq.onsuccess = () => { out = rq.result; };
+        tx.oncomplete = () => { db.close(); res(out); }; tx.onerror = () => { db.close(); rej(tx.error); };
+      });
+    }
+    const idbGet = (k) => idbDo("readonly", (st) => st.get(k)).catch(() => null);
+    const idbPut = (k, v) => idbDo("readwrite", (st) => st.put(v, k)).catch(() => null);
+    function idbPrune(keep) {                                         // 갤러리에서 빠진 작품의 원본은 지움
+      idbDo("readonly", (st) => st.getAllKeys()).then((keys) => {
+        const gone = (keys || []).filter((k) => !keep.includes(k));
+        if (gone.length) idbDo("readwrite", (st) => { gone.forEach((k) => st.delete(k)); });
+      }).catch(() => {});
+    }
+    // 재질 묻기가 끝나면(또는 이미 끝났으면) 그 결과를 갤러리 원본과 함께 저장
+    function galleryKeepParts(d) {
+      if (!d || !d.galleryId || d.fromGallery) return;
+      idbPut(d.galleryId, { image: d.images[0], seg: d.segMaterials || null, segN: d.segMaterials ? d.segMaterials.length : 0 });
+    }
     async function addToGallery(d, r) {
       if (!d || !r || !d.images || !d.images[0]) return;
       const thumb = await thumbOf(d.images[0]);
@@ -2397,11 +2442,13 @@
         id: Date.now(), t: new Date().toISOString(), type: d.type, title: title, artist: (d.work && d.work.artist) || "",
         kind: r.kind || "", summary: r.summary || "", interpretation: r.interpretation || "", mood_line: r.mood_line || "",
         tags: (r.whole && r.whole.mood_tags) || [], genre: P.genreName, material: r.material || "",
-        scenes: (r.scenes || []).map((s) => ({ name: s.name, text: s.text })), whole: r.whole, pixel: d.pixel || null, thumb: thumb, text: d.text || ""
+        scenes: (r.scenes || []).map((s) => ({ name: s.name, text: s.text, sense: s.sense })), whole: r.whole, pixel: d.pixel || null, thumb: thumb, text: d.text || "",
+        meta: { model: r.model, version: r.version, ms: r.ms, clientMs: r.clientMs, check: r.check, senseMethod: r.senseMethod, is_artwork: r.is_artwork }
       };
       const list = galleryList();
       list.unshift(item);
       gallerySave(list.slice(0, GALLERY_MAX));
+      if (d.type === "photo") { d.galleryId = item.id; galleryKeepParts(d); idbPrune(galleryList().map((x) => x.id)); }
     }
     function fmtDate(iso) { const d = new Date(iso); return (d.getMonth() + 1) + "월 " + d.getDate() + "일"; }
     function openGallery() {
@@ -2439,20 +2486,26 @@
       if (b.dataset.g === "close") { $("galDetail").hidden = true; window.scrollTo(0, 0); }
       if (b.dataset.g === "del") {
         if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "정말 지울까요? 한 번 더 누르세요"; return; }
-        const list = galleryList(); list.splice(Number(b.dataset.i), 1); gallerySave(list); renderGallery();
+        const list = galleryList(); list.splice(Number(b.dataset.i), 1); gallerySave(list); idbPrune(list.map((x) => x.id)); renderGallery();
       }
       if (b.dataset.g === "replay") replayGallery(galleryList()[Number(b.dataset.i)]);
     });
     // 저장해 둔 기록으로 감상 화면 열기 (AI를 다시 부르지 않음)
-    function replayGallery(it) {
+    async function replayGallery(it) {
       if (!it) return;
-      lastData = { type: it.type === "text" ? "text" : "photo", images: [it.thumb], source: "내 갤러리", pixel: it.pixel, text: it.text, fromGallery: true };
+      const rec = it.type === "text" ? null : await idbGet(it.id);     // [수정 6-16] 처음 분석한 원본 사진 + 나누기·재질 결과
+      const img = rec && rec.image ? rec.image : it.thumb;
+      const m = it.meta || {};
+      lastData = { type: it.type === "text" ? "text" : "photo", images: [img], source: "내 갤러리" + (rec && rec.image ? " (원본 사진)" : " (작은 그림 — 6-15 이전에 저장된 작품)"),
+                   pixel: it.pixel, text: it.text, fromGallery: true, cropInfo: "사진 전체 표시" };
+      if (rec && rec.seg) lastData.segMaterials = rec.seg;            // 같은 사진 → 같은 나누기 → 저장한 이름·재질을 그대로 붙임
       lastResult = { summary: it.summary, interpretation: it.interpretation, mood_line: it.mood_line, kind: it.kind, material: it.material,
-                     whole: it.whole, scenes: (it.scenes || []).map((s) => ({ name: s.name, text: s.text, sense: it.whole, cells: [] })),
-                     check: {}, ms: {}, version: "갤러리", model: "-" };
+                     whole: it.whole, scenes: (it.scenes || []).map((s) => ({ name: s.name, text: s.text, sense: s.sense || it.whole, cells: [] })),
+                     check: m.check || {}, ms: m.ms || {}, clientMs: m.clientMs, senseMethod: m.senseMethod, is_artwork: m.is_artwork,
+                     version: (m.version || "?") + " (갤러리에 저장된 기록)", model: m.model || "-" };
       clearViewLight(); setArtMode(false); stopTour();
       $("art").classList.remove("mooded");
-      $("artImg").src = it.thumb;
+      $("artImg").src = img;
       go("view");
       renderTexts(lastResult);
       if (lastResult.whole) preloadFor(lastResult.whole);
@@ -2481,6 +2534,7 @@
         setMood(lastResult.whole);
         if (!viewLight) viewLight = buildLight(lastResult.whole);
         tourParts = pickTourParts();
+        tourParts.forEach((p) => { p.mask = buildTourMask(p.ks); });   // [수정 6-16] 미리 만들어 둠
         const bars = Math.max(PLAY_BARS, 4 + 2 * tourParts.length);   // 전체 2마디 + 부분마다 2마디 + 전체 2마디
         startSense(lastResult.whole, null, allColors(), bars);
         startTour(planOf(lastResult.whole));
@@ -2850,6 +2904,7 @@
         arr.forEach((x, k) => Object.assign(M.seg.st[k], x));
         lastData.segMaterials = arr;
         M.matSeen = r.seen || ""; M.matFixed = r.fixed || 0;
+        galleryKeepParts(lastData);                                     // [수정 6-16] 갤러리에도 같이 저장
         mergeSameThing(M);
         M.matState = "done"; M.matMs = Math.round(performance.now() - t0);
         if (curSeg >= 0 && tSyn) touchSegSound(curSeg, tSyn.base);      // 지금 만지는 덩어리에 바로 적용
@@ -2861,10 +2916,14 @@
       const S = M.seg, W = M.W, N = W * M.H, comp = S.comp;
       const key = (k) => { const t = S.st[k]; return t.material && t.material !== "모름" && t.thing ? t.material + "|" + t.thing : null; };
       const to = S.st.map((_, k) => k), root = (k) => { while (to[k] !== k) k = to[k]; return k; };
+      // [수정 6-16] 이름이 같아도 '색이 크게 다른' 이웃은 합치지 않음 (앨범 표지에서 빨간 배경과 검은 붓 글씨를 AI가 둘 다
+      //   '추상 형태'라고 불러 한 덩어리가 됐던 문제) — 두 덩어리 평균 색의 차이가 0.25(0~1.7 눈금)보다 크면 따로 둠
+      const mc = S.st.map((t) => [t.r / t.n / 255, t.g / t.n / 255, t.b / t.n / 255]);
+      const near = (a, b) => Math.hypot(mc[a][0] - mc[b][0], mc[a][1] - mc[b][1], mc[a][2] - mc[b][2]) < 0.25;
       for (let i = 0; i < N; i++) {
         const x = i % W;
         for (const j of [x < W - 1 ? i + 1 : -1, i + W < N ? i + W : -1]) {
-          if (j < 0) continue;
+          if (j < 0 || comp[i] === comp[j] || !near(comp[i], comp[j])) continue;
           const a = root(comp[i]), b = root(comp[j]);
           if (a !== b && key(a) && key(a) === key(b)) to[Math.max(a, b)] = Math.min(a, b);
         }
@@ -3488,7 +3547,11 @@
     //   악기마다 C·E♭·G♭·A 음(3반음 간격)만 저장하고, 그 사이 음은 재생 속도를 살짝 바꿔 만듦 (±1.5반음 이내라 자연스러움)
     //   먼저 우리 저장소의 sounds 폴더에서 찾고, 없으면 원래 공개 주소에서, 그것도 안 되면 예전 합성음으로 연주
     // ==========================================================
-    const SAMPLE_BASES = ["sounds/", "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/"];
+    // [수정 6-16] 음질: 같은 악기를 세 사운드폰트에서 비교해 보니 MusyngKite가 높은 소리까지 더 살아 있음
+    //   (첼로: 소리의 99.9%가 담긴 높이 FluidR3 3.4kHz → MusyngKite 6.0kHz, 일렉 기타 5.8 → 10.2kHz)
+    //   → MusyngKite(공개 주소)를 먼저 쓰고, 안 되면 우리 저장소(FluidR3), 그다음 FluidR3 공개 주소
+    const SAMPLE_BASES = ["https://gleitz.github.io/midi-js-soundfonts/MusyngKite/", "sounds/", "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/"];
+    const SAMPLE_SRC_KO = { 0: "MusyngKite 공개 주소", 1: "우리 저장소(FluidR3)", 2: "FluidR3 공개 주소" };
     const INST_FILE = { epiano: "acoustic_grand_piano", bell: "vibraphone", flute: "flute", pluck: "orchestral_harp",
                         reed: "cello", pad: "string_ensemble_1", bass: "cello",
                         lofi: "electric_piano_1", jbass: "acoustic_bass", taiko: "taiko_drum",
@@ -3525,7 +3588,7 @@
           }));
           sampleBank[file] = bank;
           sampleState[file] = "ready";
-          sampleState[file + ":from"] = base.startsWith("http") ? "공개 주소" : "우리 저장소";
+          sampleState[file + ":from"] = SAMPLE_SRC_KO[SAMPLE_BASES.indexOf(base)];
           return;
         } catch (e) { /* 다음 주소로 */ }
       }
@@ -3558,19 +3621,27 @@
       outEnd.connect(dest || e.mix);
       if (e.send && !dest) outEnd.connect(e.send);
       // 녹음은 약 3초. 길게 이어지는 악기가 그보다 길게 울려야 하면 2.4초마다 새로 겹쳐 이어 붙임
-      const seg = 2.4, release = sus ? 0.35 : 0.8;
+      // [수정 6-16] '끊기거나 잡음' 원인: 녹음 파일은 3.1초에서 소리가 아직 큰 채로 '뚝' 잘려 있음(첼로는 거의 최대 크기)
+      //   예전에는 음을 줄이는 시간(release)이 파일 끝을 넘어가서, 파일이 끝나는 순간 '틱' 잡음이 났음
+      //   → 파일이 끝나기 0.03초 전까지 반드시 소리가 0이 되도록 끝 시각을 당김
+      const bufLen = (smp.buf.duration - smp.off) / rate;               // 이 음으로 재생할 수 있는 길이(초)
+      const seg = Math.min(2.4, bufLen - 0.5), release = sus ? 0.35 : 0.8;
       const total = sus ? dur : Math.min(dur, 2.8);
       for (let k = 0; k * seg < total && (sus || k === 0); k++) {     // 저절로 사라지는 악기는 한 번만
         const st = t + k * seg, src = ctx.createBufferSource(), g = ctx.createGain();
         src.buffer = smp.buf; src.playbackRate.value = rate;
         const fadeIn = k === 0 ? Math.max(0.004, attack || 0) : 0.4;
-        const end = Math.min(t + total, st + seg + 0.4);
+        const last = st + seg + 0.4 >= t + total;
+        const rel = last ? release : 0.4;                              // 마지막 조각 = 음 끝 사라짐, 중간 조각 = 다음 조각과 겹쳐 바뀜
+        const hardEnd = st + bufLen - 0.03;                             // 파일이 끝나는 시각
+        const end = Math.min(last ? t + total : st + seg, hardEnd - Math.min(rel, 0.25));
+        const fadeEnd = Math.min(end + rel, hardEnd);
         g.gain.setValueAtTime(0, st);
         g.gain.linearRampToValueAtTime(1, st + fadeIn);
-        g.gain.setValueAtTime(1, Math.max(st + fadeIn, end - (end >= t + total ? 0 : 0.4)));
-        g.gain.linearRampToValueAtTime(0, end + (end >= t + total ? release : 0));
+        g.gain.setValueAtTime(1, Math.max(st + fadeIn, end));
+        g.gain.linearRampToValueAtTime(0, Math.max(st + fadeIn + 0.01, fadeEnd));
         src.connect(g); g.connect(out);
-        src.start(st, smp.off); src.stop(end + release + 0.05);
+        src.start(st, smp.off); src.stop(hardEnd + 0.02);
         if (e.srcList) e.srcList.push(src);                      // (만져보기에서 손을 떼면 바로 멈추려고 기억)
       }
       out.gain.value = peak * SAMPLE_GAIN * (FILE_GAIN[file] || 1);
@@ -3582,6 +3653,25 @@
         (sampleState[f] === "ready" ? "✅ 녹음 소리 (" + sampleState[f + ":from"] + ")" : sampleState[f] === "loading" ? "⏳ 불러오는 중 (그동안 합성음)" : "❌ 못 불러옴 → 합성음")).join("<br>") || "아직 불러오지 않음";
     }
 
+    // [수정 6-16] 잔향(공간 울림) — 장르마다 양을 다르게 (클래식·시네마틱·명상은 넓은 홀, 록·힙합은 작은 방)
+    const REVERB_SEND = { classic: 0.32, calm: 0.38, cinema: 0.32, ballad: 0.26, musicbox: 0.22, jazz: 0.16, lofi: 0.12,
+                          rnb: 0.18, pop: 0.16, rock: 0.12, metal: 0.08, hiphop: 0.1, electro: 0.15, festival: 0.18, folk: 0.16 };
+    let reverbIR = null;
+    function getReverbIR(ctx) {
+      if (reverbIR && reverbIR.sampleRate === ctx.sampleRate) return reverbIR;
+      const sr = ctx.sampleRate, len = Math.floor(sr * 2.2);
+      reverbIR = ctx.createBuffer(2, len, sr);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = reverbIR.getChannelData(ch);
+        let lp = 0;
+        for (let i = 0; i < len; i++) {
+          const tt = i / sr, decay = Math.pow(1 - i / len, 2.2) * Math.exp(-tt * 1.6);
+          lp += 0.35 * ((Math.random() * 2 - 1) - lp);                // 높은 소리는 빨리 사라지게(약하게 거름) → 따뜻한 홀 느낌
+          d[i] = (tt < 0.012 ? 0 : lp * decay) * 0.6;                  // 처음 12ms는 비움(직접 소리와 울림 사이 틈)
+        }
+      }
+      return reverbIR;
+    }
     function startEngine(s, I, out) {
       stopEngine();
       const ctx = getAudio();
@@ -3590,7 +3680,8 @@
       const t = ctx.currentTime;
       const mix = ctx.createGain(), level = ctx.createGain(), fade = ctx.createGain();
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -14; comp.ratio.value = 4;
+      // [수정 6-16] '폰으로 녹음한 소리 같다'는 의견 → ① 압축을 부드럽게(소리가 눌려 납작해지지 않게)
+      comp.threshold.value = -16; comp.knee.value = 10; comp.ratio.value = 2.5; comp.attack.value = 0.01; comp.release.value = 0.3;
       level.gain.value = 1;
       fade.gain.setValueAtTime(0, t);
       fade.gain.linearRampToValueAtTime(1, t + FADE_IN);           // [수정 6-4] 2초 동안 서서히 커짐
@@ -3598,7 +3689,16 @@
         const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = P.mixLP; lp.Q.value = 0.5;
         mix.connect(lp); lp.connect(level);
       } else mix.connect(level);
-      level.connect(fade); fade.connect(comp); comp.connect(ctx.destination);
+      // ② 공간 울림(잔향): 실제 연주회장처럼 소리가 공간에 퍼지는 느낌 — 마른 녹음 소리를 덜 '폰 녹음'처럼
+      //    (잔향 = 짧은 잡음이 2초 동안 점점 작아지는 '방의 지문'을 계산으로 만들어 소리에 겹침, 왼쪽·오른쪽을 조금 다르게)
+      // ③ 높은 소리를 살짝 밝게(5kHz 위 +3dB): 원래 녹음 파일이 높은 소리가 부족함
+      const air = ctx.createBiquadFilter(); air.type = "highshelf"; air.frequency.value = 5000; air.gain.value = P.mixLP ? 0 : 3;
+      level.connect(air); air.connect(fade); fade.connect(comp); comp.connect(ctx.destination);
+      const verb = ctx.createConvolver(), verbIn = ctx.createGain(), verbOut = ctx.createGain();
+      verb.buffer = getReverbIR(ctx);
+      verbIn.gain.value = REVERB_SEND[P.genre] !== undefined ? REVERB_SEND[P.genre] : 0.22;
+      verbOut.gain.value = 1;
+      mix.connect(verbIn); verbIn.connect(verb); verb.connect(verbOut); verbOut.connect(level);   // 자동 크기 맞춤 앞에 넣어 울림까지 같이 잼
       const phone = ctx.createBiquadFilter(); phone.type = "highpass"; phone.frequency.value = 250;
       const meter = ctx.createAnalyser(); meter.fftSize = 2048;
       level.connect(phone); phone.connect(meter);
@@ -4155,6 +4255,9 @@
                         ang: Math.atan2(gy, gx) + Math.PI / 2,       // 붓터치 방향: 밝기가 바뀌는 방향의 직각 = 윤곽을 따라감
                         edge: Math.min(1, Math.hypot(gx, gy) * 4) });
       }
+      // [수정 6-16] 별빛: '밝기 0.45 넘는 곳'만 별이 되니 어두운 작품은 별이 거의 없었음 → 그 작품 안에서 밝은 위쪽 35%를 별로 (작품마다 상대적으로)
+      const ls = artParts.map((q) => q.l).sort((a, b) => a - b), thr = ls[Math.floor(ls.length * 0.65)], top = ls[ls.length - 1] || 1;
+      artParts.forEach((q) => { q.st = q.l <= thr ? 0 : Math.min(1, (q.l - thr) / Math.max(0.05, top - thr)); });
       artP = { s: planOf(s), W: W, H: H, dpr: dpr, step: step, t0: performance.now(), style0: Math.floor(Math.random() * ART_STYLES.length) };
       waitArtInfo = "보여 줌 (알갱이 " + artParts.length + "개)";
       return true;
@@ -4191,13 +4294,14 @@
           g.fillRect(-sz / 2, -sz / 2, sz, sz);
         } else {                                                               // 별빛
           // [수정 6-15] 빛이 너무 세다는 의견 → 하얀 가운데를 흐리게, 크기·반짝임 폭을 줄이고 어두운 곳은 더 흐리게
-          if (p.l < 0.45) { g.globalAlpha = alpha * 0.16; g.fillRect(p.x0 - 1, p.y0 - 1, 2, 2); continue; }
+          // [수정 6-16] 6-15에서 너무 약해졌다는 의견 → 6-14와 6-15의 중간 세기
+          if (!p.st) { g.globalAlpha = alpha * 0.22; g.fillStyle = p.c; g.fillRect(p.x0 - 1.5, p.y0 - 1.5, 3, 3); continue; }
           const tw = 0.5 + 0.5 * Math.sin(time * (1.5 + p.ph % 1.5) + p.ph);
-          g.globalAlpha = alpha * (0.18 + 0.4 * tw);
-          const rr = step * (0.15 + 0.4 * p.l) * (0.75 + 0.4 * tw);
-          const gr = g.createRadialGradient(p.x0, p.y0, 0, p.x0, p.y0, rr * 1.8);
-          gr.addColorStop(0, "rgba(255,255,255,0.55)"); gr.addColorStop(0.35, p.c); gr.addColorStop(1, "rgba(0,0,0,0)");
-          g.fillStyle = gr; g.beginPath(); g.arc(p.x0, p.y0, rr * 1.8, 0, 6.283); g.fill();
+          g.globalAlpha = alpha * (0.25 + 0.55 * tw) * (0.55 + 0.45 * p.st);
+          const rr = step * (0.2 + 0.45 * p.st) * (0.75 + 0.5 * tw);
+          const gr = g.createRadialGradient(p.x0, p.y0, 0, p.x0, p.y0, rr * 2.1);
+          gr.addColorStop(0, "rgba(255,255,255,0.78)"); gr.addColorStop(0.35, p.c); gr.addColorStop(1, "rgba(0,0,0,0)");
+          g.fillStyle = gr; g.beginPath(); g.arc(p.x0, p.y0, rr * 2.1, 0, 6.283); g.fill();
         }
       }
       g.setTransform(P.dpr, 0, 0, P.dpr, 0, 0);                              // (모자이크가 돌린 좌표를 되돌림)
@@ -4293,7 +4397,7 @@
       };
       const tick = () => {
         if (senseRun !== myRun || ended) return;
-        while (next < ctx.currentTime + 0.12) {
+        while (next < ctx.currentTime + 0.3) {                // [수정 6-16] 0.12 → 0.3초 앞까지 미리 예약 (화면 작업으로 잠깐 멈춰도 소리가 끊기지 않게)
           if (bars && stepNo >= bars * (P.bpb || 4)) {                       // 정한 마디를 다 연주하면 → 끝맺음 화음
             ended = true;
             if (withSound && eng) scheduleEnding(eng, next, RING_SEC);
@@ -4420,16 +4524,19 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-15 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-16 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
+        (d.fromGallery ? "📚 <b>내 갤러리에서 다시 느끼기</b> — AI를 다시 부르지 않고, 처음 감상할 때 저장한 해설·감각 수치를 그대로 씀<br>" : "") +
+        (r.ms && isFinite(r.ms.total) ?
         "걸린 시간: 폰 기준 " + ((r.clientMs || r.ms.total) / 1000).toFixed(1) + "초 (해설 " + (r.ms.text / 1000).toFixed(1) +
-        "초 + 감각 " + (r.ms.sense / 1000).toFixed(1) + "초)<br>" +
+        "초 + 감각 " + (r.ms.sense / 1000).toFixed(1) + "초)" + (d.fromGallery ? " — 처음 감상할 때" : "") + "<br>" : "") +
+        (c.tries ?
         "쉬운 말 규칙: " + (c.passed ? "통과 ✅" : "위반 " + (c.violations || []).length + "개 ⚠️") + " (쓴 횟수 " + c.tries + "번) · " +
         "문장 " + st.sentences + "개 · 평균 " + st.avgWords + "어절 · 최장 " + st.maxWords + "어절<br>" +
         ((c.violations || []).length ? "<span class='note'>" + c.violations.map(esc).join("<br>") + "</span><br>" : "") +
-        "감각표 검사: " + (c.sensePassed ? "통과 ✅" : "⚠️ " + (c.senseProblems || []).map(esc).join(", ")) + " (만든 횟수 " + c.senseTries + "번)<br>" +
+        "감각표 검사: " + (c.sensePassed ? "통과 ✅" : "⚠️ " + (c.senseProblems || []).map(esc).join(", ")) + " (만든 횟수 " + c.senseTries + "번)<br>" : "") +
         "<b>감각 수치 방법</b>: " + esc(r.senseMethod || "-") + "<br>" +
         "<b>감각 세기 법칙</b>: " + (law === "stevens" ? "스티븐스" : "베버–페히너") + " · 합계 상한 " + CAP + " (🔬 탐구 노트에서 바꿀 수 있어요)<br>" +
         "<b>전체 감각</b>: " + senseLine(r.whole) + "<br>" +
@@ -4443,7 +4550,7 @@
         "<br><br><b>✨ 기다리는 동안 빛 그림</b>: " + esc(waitArtInfo) +
         "<br><br><b>📳 진동 방식</b>: " + (canVibrate ? "웹 진동 (패턴·길이 조절 가능)" : iosHaptic ? "아이폰 '톡' 진동 (스위치 우회 방법, 길이 조절 불가)" : "진동 없음 → 화면 두근거림") +
         "<br><br><b>👁 감정 색</b>: <span class='sw' style='background:" + emotionColor(r.whole || {}) + "'></span> (기분·활기 → 색) · 빛 세기 = 스티븐스 자극을 화면 밝기(감마 2.2)로 변환" +
-        "<br><br><b>🎻 악기 소리</b><br><span id='sampleNow'>" + sampleText() + "</span><br><span class='note'>출처: FluidR3_GM 사운드폰트 (CC BY 3.0)</span>" +
+        "<br><br><b>🎻 악기 소리</b><br><span id='sampleNow'>" + sampleText() + "</span><br><span class='note'>출처: MusyngKite 사운드폰트 (CC BY-SA 3.0) · 없으면 FluidR3_GM (CC BY 3.0)</span>" +
         "<br><br><b>🔊 소리 크기 자동 맞춤</b><br><span id='levelNow'>" + levelText() + "</span>" +
         "<br><br><b>✋ 나누기·재질 (눈길 안내·만져보기)</b><br><span id='touchNow'>" + touchText() + "</span>" +
         "<br><b>픽셀에서 잰 사실</b>: " + (lastData && lastData.pixel ? (lastData.pixel.gray ? "흑백" : "컬러") + " (색 진하기 평균 " + lastData.pixel.sat + ") · 대표 색 " + swatch(lastData.pixel.hex) + " " + esc(lastData.pixel.names.join(", ")) +

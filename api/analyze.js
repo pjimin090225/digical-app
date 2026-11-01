@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-9";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-10";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -235,7 +235,10 @@ function sensePrompt() {
     "- 장면마다 사진에서 그 부분만 보고 매긴다. 장면 순서와 개수는 입력과 똑같이.",
     "- whole은 사진 전체를 처음 봤을 때의 종합적인 느낌이다.",
     "",
-    '[출력] JSON만: {"whole":{"mood_tags":["…"], ...}, "scenes":[{...}, ...]}  (whole에는 mood_tags를 꼭 넣는다. 각 {...}는 위 9가지 값을 모두 가짐)'
+    "[출력] JSON만. 아래 모양 그대로, 모든 칸을 빠짐없이 채운다 (scenes는 입력 장면 수만큼):",
+    '{"whole":{"mood_tags":["강렬한"],"emotion":"강렬함","valence":0.45,"arousal":0.8,"brightness":0.3,"weight":0.6,"roughness":0.5,"flow":0.4,"colors":["#AA0000"],"why":"…"},' +
+    ' "scenes":[{"emotion":"…","valence":0.5,"arousal":0.5,"brightness":0.5,"weight":0.5,"roughness":0.5,"flow":0.5,"colors":["#000000"],"why":"…"}]}',
+    "(숫자는 예시일 뿐 — 사진을 보고 새로 매긴다. 장면의 emotion도 그 장면의 느낌으로 꼭 쓴다)"
   ].join("\n");
 }
 
@@ -353,14 +356,17 @@ function labelsOf(o) {
 function cleanSense(s) {
   s = s || {};
   const o = {
-    emotion: String(s.emotion || "평온").slice(0, 12),
+    emotion: String(s.emotion || "").slice(0, 12),
     colors: (Array.isArray(s.colors) ? s.colors : []).filter((c) => /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 3),
     why: String(s.why || "").slice(0, 40)
   };
   DIMS.forEach((k) => { o[k] = n01(s[k], 0.5); });
   if (s.spread) o.spread = s.spread;
   if (Array.isArray(s.mood_tags)) o.mood_tags = s.mood_tags.filter((t) => MOOD_TAGS.includes(t)).slice(0, 3);
-  return labelsOf(o);
+  labelsOf(o);
+  // [수정 6-10] AI가 감정 낱말을 빠뜨리면 예전에는 '평온'으로 채워서, 강렬한 작품의 장면이 '평온'으로 보였음 → 숫자로 계산한 분위기 이름으로
+  if (!o.emotion) o.emotion = { "긴장": "긴장감", "슬픔": "쓸쓸함", "신비": "신비로움", "신남": "신남", "밝음": "밝음", "차분함": "차분함" }[o.mode] || "차분함";
+  return o;
 }
 
 // [새로] 장면 간 대비 강조: AI가 장면들을 너무 비슷하게 매기면, 차이를 키워서 감각으로 구분되게 함
@@ -385,10 +391,12 @@ function spreadScenes(list) {
 function averageSense(list, n) {
   const avgOne = (objs) => {
     const cl = objs.map(cleanSense);
-    const out = Object.assign({}, objs[0] || {});
+    const out = Object.assign({}, objs.find((o) => o && o.emotion) || objs[0] || {});
     const spread = {};
     DIMS.forEach((k) => {
-      const v = cl.map((o) => o[k]);
+      // [수정 6-10] 빠뜨린 값(0.5로 채워진 것)은 평균에서 빼고, 실제로 매긴 값만 평균
+      const real = objs.map((o, i) => (isFinite(Number(o && o[k])) && o[k] !== null && o[k] !== "" ? cl[i][k] : null)).filter((x) => x !== null);
+      const v = real.length ? real : cl.map((o) => o[k]);
       const m = v.reduce((a, b) => a + b, 0) / v.length;
       out[k] = +m.toFixed(2);
       spread[k] = +(v.reduce((a, b) => a + Math.abs(b - m), 0) / v.length).toFixed(3);   // 평균에서 벗어난 정도
@@ -473,6 +481,7 @@ module.exports = async (req, res) => {
         "사진에는 앱이 색·밝기로 나눈 영역들이 색 테두리와 1~" + n + "번 번호로 표시되어 있다. 번호와 테두리는 표시일 뿐 재질이 아니다.",
         "먼저 seen에 사진 전체에 보이는 주요 물체를 한 줄로 적는다. 그다음 각 번호 영역마다:",
         "- thing: 그 영역이 무엇인지 5자 안팎 (같은 물건이면 여러 영역에 똑같은 이름을 쓴다. 예: '의자 등받이' 둘이면 둘 다 '의자 등받이')",
+        "  배경과 그 위에 놓인 모양·글자·로고는 서로 다른 이름을 쓴다 (예: '빨간 배경', '검은 붓 글씨', '제목 글자'). 추상화라도 색이 다른 형태는 나눠 부른다.",
         "- material: 손으로 만지면 어떤 재질일지. 다음 중 하나만: " + MATERIALS.join(", ") + ".",
         "- heavy: 그 물체가 묵직하면 true(큰 조각상, 두꺼운 돌, 철 덩어리, 큰 가구), 얇고 가벼우면 false(장신구, 얇은 판, 단추, 작은 소품)",
         "- imp: 이 작품을 감상할 때 눈여겨볼 정도. 3 = 주인공(인물의 얼굴, 중심 물체), 2 = 중요한 소품·특징(손에 든 물건, 상징), 1 = 보조, 0 = 배경·바닥·벽·빈 곳",
