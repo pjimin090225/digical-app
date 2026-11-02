@@ -323,6 +323,7 @@
     .wait-info { position: absolute; left: 0; right: 0; bottom: 6vh; text-align: center; color: #FFF; font-size: 22px; font-weight: 800; line-height: 1.5; text-shadow: 0 0 8px #000; }
     .wait-style { font-size: 16px; opacity: 0.75; font-weight: 600; }
     .art-wrap { transition: transform 1.4s cubic-bezier(.4,0,.2,1); transform-origin: 50% 50%; }
+    .art-video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
     .tour-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
     .tour-cap { position: absolute; left: 12px; bottom: 12px; background: rgba(0,0,0,0.78); color: #FFF; font-size: 24px; font-weight: 800; padding: 6px 16px; border-radius: 999px; pointer-events: none; line-height: 1.4; }
     .light-ring { position: absolute; width: 40%; aspect-ratio: 1; border-radius: 50%; border: 6px solid var(--mood); pointer-events: none; transform: translate(-50%, -50%); }
@@ -565,7 +566,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-16: 음질(잔향·MusyngKite·끊김 고침) + 갤러리 원본 저장 + 촬영실 공통 디자인<br>
+    6단계 · 앱 6-18: 🎬 영상 따라가기 (원래 영상 + 장면 자막 + 소리 박자 → 진동·빛)<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -1399,6 +1400,7 @@
         if (sigDiff(cands[i].sig, cands[i - 1].sig) > 25 && !sel.includes(cands[i])) sel.push(cands[i]);
       }
       sel.sort((a, b) => a.t - b.t);
+      pickScenes.times = sel.map((c) => +c.t.toFixed(2));          // [수정 6-18] 장면 사진마다 영상 속 시각(초) — 영상 따라가기에 씀
       return sel.map((c) => c.img);
     }
 
@@ -1453,14 +1455,15 @@
         g.drawImage(v, 0, 0, c.width, c.height);
         cands.push({ img: c.toDataURL("image/jpeg", 0.8), sig: signature(v), t: t });
       }
-      URL.revokeObjectURL(url);
+      // [수정 6-18] 영상 따라가기: 원래 영상을 감상 화면에서 다시 틀어야 하므로 주소를 버리지 않고 보관 (다음 영상을 열 때 버림)
       let audio = null;
       // 큰 영상(약 40MB 이상)은 소리를 통째로 풀면 브라우저가 꺼질 수 있어 소리 분석을 건너뜀
       if (file.size < 40 * 1024 * 1024) {
         try { audio = await analyzeAudioFile(file, use); } catch (e) { audio = null; }
       }
+      const imgs = pickScenes(cands);
       return {
-        type: "video", images: pickScenes(cands), dur: use, audio: audio, source: source,
+        type: "video", images: imgs, times: pickScenes.times, dur: use, audio: audio, source: source, videoUrl: url,
         cands: cands.length, longNote: dur > 30 ? "(앞 30초만 사용)" : ""
       };
     }
@@ -1563,6 +1566,18 @@
       $("recTime").textContent = "0";
       setShutter(true);
       if (await startMic()) startAnalysis();   // 담는 동안 소리를 따라 진동
+      // [수정 6-18] 영상 따라가기를 하려면 '진짜 영상'이 있어야 함 → 카메라 화면 + 마이크 소리를 함께 녹화
+      try {
+        if (rec && window.MediaRecorder && camStream) {
+          const tracks = camStream.getVideoTracks().concat(micStream ? micStream.getAudioTracks() : []);
+          const type = ["video/mp4", "video/webm;codecs=vp8,opus", "video/webm"].find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+          const mr = new MediaRecorder(new MediaStream(tracks), type ? { mimeType: type } : undefined);
+          rec.chunks = []; rec.mr = mr;
+          mr.ondataavailable = (ev) => { if (ev.data && ev.data.size) rec && rec.chunks.push(ev.data); };
+          mr.start(500);
+          rec.mrStart = (performance.now() - rec.start) / 1000;     // 녹화가 시작된 시각(장면 시각을 맞추려고)
+        }
+      } catch (e) { if (rec) rec.mr = null; }
     }
 
     function clearRec() {
@@ -1570,19 +1585,26 @@
       $("recBadge").hidden = true;
       setShutter(false);
     }
-    function cancelRecording() { if (rec) { clearRec(); rec = null; stopAnalysis(); } }
+    function cancelRecording() { if (rec) { clearRec(); try { rec.mr && rec.mr.state !== "inactive" && rec.mr.stop(); } catch (e) {} rec = null; stopAnalysis(); } }
 
-    function stopRecording() {
+    async function stopRecording() {
       if (!rec) return;
       const dur = (performance.now() - rec.start) / 1000;
       clearRec();
       const summary = soundSummary();
       stopAnalysis();
-      const cands = rec.cands;
+      const r0 = rec;
       rec = null;
+      let videoUrl = null;
+      if (r0.mr && r0.mr.state !== "inactive") {                      // 녹화 파일 마무리 (최대 1.5초 기다림)
+        await new Promise((res) => { r0.mr.onstop = res; try { r0.mr.stop(); } catch (e) { res(); } setTimeout(res, 1500); });
+        if (r0.chunks && r0.chunks.length) videoUrl = URL.createObjectURL(new Blob(r0.chunks, { type: r0.mr.mimeType || "video/webm" }));
+      }
+      const cands = r0.cands;
       if (dur < 3) { $("camMsg").textContent = "3초 이상 담아 주세요."; return; }
-      showConfirm({ type: "video", images: pickScenes(cands), dur: dur, audio: summary,
-                    source: "앱 카메라", cands: cands.length, longNote: "" });
+      const imgs = pickScenes(cands);
+      showConfirm({ type: "video", images: imgs, times: pickScenes.times.map((t) => Math.max(0, +(t - (r0.mrStart || 0)).toFixed(2))),
+                    dur: dur, audio: summary, videoUrl: videoUrl, source: "앱 카메라", cands: cands.length, longNote: "" });
     }
 
     // ==========================================================
@@ -2080,6 +2102,8 @@
 
     // 사진·영상을 받으면 → 바로 감상 화면으로
     function showConfirm(d) {
+      if (lastData && lastData.videoUrl && lastData.videoUrl !== d.videoUrl) { try { URL.revokeObjectURL(lastData.videoUrl); } catch (e) {} }
+      setupArtVideo(d);
       lastData = d; lastResult = null;
       clearViewLight(); setArtMode(false); stopTour();
       $("art").classList.remove("mooded");
@@ -2119,6 +2143,7 @@
                                 pixel: pix ? { gray: pix.gray, colors: pix.names } : null,
                                 text: d.type === "text" ? d.text : undefined,
                                 work: d.work ? { title: d.work.title || "", artist: d.work.artist || "", year: d.work.year || "", note: d.work.note || "" } : undefined,
+                                times: d.type === "video" ? d.times || null : undefined,
                                 audio: d.audio || null, explain: profile.explain, target: target });
         if (seq !== analyzeSeq || currentScreen !== "view") return;   // 기다리는 사이 다른 화면으로 갔으면 무시
         if (r.needs_choice) { stop(); showChoice(d, r); return; }
@@ -2278,7 +2303,10 @@
       });
       let list = [...groups.values()].filter((g) => g.part > 0.008 && g.part < 0.5);
       const hasImp = list.some((g) => g.imp >= 0);
-      if (hasImp) list = list.filter((g) => g.imp >= 2).sort((a, b) => b.imp - a.imp || b.part - a.part);
+      // [수정 6-17] 넓기만 한 곳(옷·하의·의자처럼 사진의 25% 넘는 곳)과 옷 이름은 '중요 3'이 아니면 빼고, 같은 중요도면 '작은 것(또렷한 대상)' 먼저
+      const WIDE = /하의|상의|바지|치마|옷|의상|재킷|배경|바닥|벽|커튼|의자|소파|몸/;
+      if (hasImp) list = list.filter((g) => g.imp >= 2 && (g.imp >= 3 || (g.part < 0.25 && !WIDE.test(g.thing))))
+                            .sort((a, b) => b.imp - a.imp || a.part - b.part);
       else list = list.filter((g) => !/배경|벽|바닥|하늘|어둠|그림자/.test(g.thing)).sort((a, b) => b.part - a.part);   // (예전 서버: 중요도 없음)
       return list.slice(0, 3);
     }
@@ -2437,7 +2465,8 @@
       const thumb = await thumbOf(d.images[0]);
       if (!thumb) return;
       const P = planOf(r.whole || {});
-      const title = (d.work && d.work.title) || r.title_guess || String(r.summary || "작품").replace(/(이에요|예요|입니다)\.?$/, "").slice(0, 24);
+      // [수정 6-17] 제목 기준: ① QR 작품 안내판의 제목 → ② AI가 확실히 아는 작품 제목 → ③ AI가 지은 짧은 이름(12자) → ④ 해설 첫 문장
+      const title = (d.work && d.work.title) || r.title_guess || r.short_name || String(r.summary || "작품").replace(/(이에요|예요|입니다)\.?$/, "").slice(0, 24);
       const item = {
         id: Date.now(), t: new Date().toISOString(), type: d.type, title: title, artist: (d.work && d.work.artist) || "",
         kind: r.kind || "", summary: r.summary || "", interpretation: r.interpretation || "", mood_line: r.mood_line || "",
@@ -2505,6 +2534,7 @@
                      version: (m.version || "?") + " (갤러리에 저장된 기록)", model: m.model || "-" };
       clearViewLight(); setArtMode(false); stopTour();
       $("art").classList.remove("mooded");
+      setupArtVideo(null);
       $("artImg").src = img;
       go("view");
       renderTexts(lastResult);
@@ -2519,6 +2549,7 @@
     let wholeTimer = null;
     const PLAY_BARS = 8;               // [수정 6-3] 4마디 구절 × 2번 (느린 곡 약 30초, 빠른 곡 약 18초) + 끝맺음 3.5초
     function playWhole() {
+      if (lastData && lastData.type === "video" && lastData.videoUrl && vf.el) { playVideoFollow(); return; }   // [수정 6-18]
       setViewParts("whole");
       setHighlight(null);
       $("touchLabel").hidden = true;
@@ -2549,6 +2580,136 @@
         .forEach((c) => { if (!cs.includes(c)) cs.push(c); });
       return cs.slice(0, 6);
     }
+    // ==========================================================
+    // [수정 6-18] 🎬 영상 따라가기 — 원래 영상을 그대로 틀고, 그 위에 '장면 해설 + 빛 + 진동'을 시간에 맞춰 얹음
+    //   ① 장면 시각: AI가 장면마다 '어느 장면 사진(몇 초)'에 해당하는지 frames로 알려 줌 → 그 시각이 되면 자막·빛 색·진동 성격이 그 장면으로 바뀜
+    //   ② 원래 소리 → 진동·빛 (소리 → 촉각·시각 전이): 영상 소리를 실시간으로 쪼개 들어(FFT, 약 23ms마다)
+    //      '소리가 갑자기 커지는 순간'(박·강세: 스펙트럼 변화량이 최근 1초 평균보다 크게 튀는 때)마다 짧은 진동과 빛
+    //      세기 = 그 순간 소리 크기 × 장면의 감각 세기(스티븐스 법칙으로 정한 진동·빛 출력)
+    //   ③ 안전: 빛은 1초에 3번 넘게 번쩍이지 않게 (0.34초 간격), 진동은 0.18초 간격 이상
+    //   ④ 소리는 원래 소리 그대로 (우리 음악을 덧입히지 않음). 크기만 내 감각 설정의 소리 단계에 맞춤
+    // ==========================================================
+    const vf = { el: null, src: null, an: null, gain: null, raf: 0, scenes: [], cur: -1, onsets: 0, lastVib: 0, lastLight: 0, hist: [], prev: null };
+    function setupArtVideo(d) {
+      stopVideoFollow();
+      if (vf.el) { vf.el.remove(); vf.el = null; vf.src = null; }
+      if (!d || d.type !== "video" || !d.videoUrl) return;
+      const v = document.createElement("video");
+      v.className = "art-video"; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.src = d.videoUrl;
+      v.hidden = true;
+      $("artWrap").insertBefore(v, $("artImg").nextSibling);
+      vf.el = v;
+    }
+    // 장면마다 시작 시각 (AI가 준 frames → 장면 사진의 시각, 없으면 영상 길이를 고르게 나눔)
+    function videoSceneTimes() {
+      const sc = (lastResult && lastResult.scenes) || [], times = lastData.times || [], dur = Math.min(lastData.dur || 30, 30);
+      const out = sc.map((s, i) => {
+        const fr = (s.frames || []).map((f) => times[f - 1]).filter((x) => isFinite(x));
+        return { i: i, t: fr.length ? Math.min(...fr) : i * dur / Math.max(1, sc.length), s: s };
+      }).sort((a, b) => a.t - b.t);
+      if (out.length) out[0].t = 0;                                       // 첫 장면은 처음부터
+      return out;
+    }
+    async function playVideoFollow() {
+      stopSense(); stopVoice && stopVoice();
+      setViewParts("whole");
+      setHighlight(null);
+      clearViewLight();
+      const v = vf.el, ctx = getAudio();
+      if (!v) return;
+      vf.scenes = videoSceneTimes(); vf.cur = -1; vf.onsets = 0; vf.hist = []; vf.prev = null; vf.lastVib = 0; vf.lastLight = 0;
+      $("artImg").style.visibility = "hidden"; v.hidden = false;
+      // 원래 소리를 '듣는 장치'(분석기)를 거쳐 스피커로: 영상 소리 → 분석기 → 크기 조절 → 스피커
+      if (ctx && !vf.src) {
+        try {
+          vf.src = ctx.createMediaElementSource(v);
+          vf.an = ctx.createAnalyser(); vf.an.fftSize = 1024; vf.an.smoothingTimeConstant = 0.2;
+          vf.gain = ctx.createGain();
+          vf.src.connect(vf.an); vf.an.connect(vf.gain); vf.gain.connect(ctx.destination);
+        } catch (e) { vf.src = null; }
+      }
+      const on = profile.sound.on && soundUsable();
+      if (vf.gain) vf.gain.gain.value = on ? [0.35, 0.55, 0.75, 0.9, 1][Math.max(0, Math.min(4, profile.sound.level - 1))] : 0;
+      else v.muted = !on;
+      try { if (ctx && ctx.state === "suspended") await ctx.resume(); } catch (e) {}
+      v.currentTime = 0;
+      try { await v.play(); } catch (e) { $("sceneBar").textContent = "⚠️ 영상을 틀 수 없어요. 한 번 더 눌러 주세요."; stopVideoFollow(); return; }
+      $("sceneBar").textContent = "🎬 영상을 따라가요";
+      renderButtons();
+      const end = Math.min(lastData.dur || 30, 30);
+      const loop = () => {
+        if (!vf.el || vf.el.paused) return;
+        const t = vf.el.currentTime;
+        if (t >= end - 0.05 || vf.el.ended) { finishVideoFollow(); return; }
+        // 장면 바뀜
+        let k = -1; vf.scenes.forEach((sc, j) => { if (t >= sc.t) k = j; });
+        if (k !== vf.cur && k >= 0) videoSceneChange(k);
+        videoOnset(t);
+        vf.raf = requestAnimationFrame(loop);
+      };
+      vf.raf = requestAnimationFrame(loop);
+    }
+    function videoSceneChange(k) {
+      vf.cur = k;
+      const sc = vf.scenes[k].s, sense = sc.sense || lastResult.whole;
+      setMood(sense);                                                      // 테두리 = 그 장면의 감정 색
+      vf.P = planOf(sense);
+      vf.out = senseOutputs(clamp01(Number(sense.intensity) || 0.5));
+      const cap = $("tourCap");
+      cap.textContent = "①②③④⑤⑥".charAt(k) + " " + (sc.name || "장면");
+      cap.hidden = false;
+      $("sceneBar").textContent = "🎬 " + (sc.text || sc.name || "");
+      if (profile.touch.on && vibeUsable()) buzz(Math.round(40 + 40 * vf.out.vibe));   // 장면이 바뀌면 '톡' 한 번
+    }
+    // 소리의 '박·강세' 찾기 (스펙트럼 변화량)
+    function videoOnset(t) {
+      if (!vf.an || !vf.out) return;
+      const n = vf.an.frequencyBinCount, d = new Uint8Array(n);
+      vf.an.getByteFrequencyData(d);
+      const top = Math.floor(n * 0.4);                                    // 약 0~8.8kHz
+      let flux = 0, lev = 0;
+      for (let i = 1; i < top; i++) { const m = d[i] / 255; lev += m; if (vf.prev) flux += Math.max(0, m - vf.prev[i]); }
+      vf.prev = Array.from(d, (x) => x / 255);
+      lev /= top;
+      const now = performance.now();
+      vf.hist.push(flux); if (vf.hist.length > 60) vf.hist.shift();      // 최근 약 1초
+      const mean = vf.hist.reduce((a, b) => a + b, 0) / vf.hist.length;
+      const sd = Math.sqrt(vf.hist.reduce((a, b) => a + (b - mean) ** 2, 0) / vf.hist.length);
+      vf.level = lev;
+      if (vf.hist.length < 15 || flux < mean + 1.6 * sd || flux < 0.6) return;
+      vf.onsets++;
+      const k = Math.min(1, 0.35 + 1.4 * lev);                             // 그 순간 소리 크기
+      const lat = (getAudio() ? outLatency(getAudio()) : 0) * 1000;        // 소리가 스피커로 나오는 지연만큼 늦춰 맞춤
+      const accent = flux > mean + 3 * sd;
+      if (profile.touch.on && vibeUsable() && now - vf.lastVib > 180) {
+        vf.lastVib = now;
+        const pat = vibeForNote(vf.P.c, vf.out.vibe * k, accent ? 260 : 160, accent);
+        setTimeout(() => { if (vf.el && !vf.el.paused) buzz(pat); }, lat);
+      }
+      if (profile.visual.on && now - vf.lastLight > 340) {
+        vf.lastLight = now;
+        setTimeout(() => { if (vf.el && !vf.el.paused) pulseView(vf.out.glow * k, accent ? 500 : 320, false); }, lat);
+      }
+    }
+    function finishVideoFollow() {
+      stopVideoFollow();
+      $("sceneBar").textContent = "🎬 영상이 끝났어요";
+      renderButtons();
+    }
+    function stopVideoFollow() {
+      cancelAnimationFrame(vf.raf);
+      if (vf.el) { try { vf.el.pause(); } catch (e) {} vf.el.hidden = true; }
+      if ($("artImg")) $("artImg").style.visibility = "";
+      if ($("tourCap") && vf.cur >= 0) $("tourCap").hidden = true;
+      vf.cur = -1;
+    }
+    function videoInfoText() {
+      if (!lastData || lastData.type !== "video") return "";
+      const sc = (lastResult && lastData.videoUrl) ? videoSceneTimes() : [];
+      return "<br><br><b>🎬 영상 따라가기</b><br>" + (lastData.videoUrl ? "원래 영상 있음 · 장면 시작 시각: " + sc.map((x) => esc(x.s.name) + " " + x.t.toFixed(1) + "초").join(" → ") +
+        "<br>장면 사진 시각: " + esc(JSON.stringify(lastData.times || [])) + "<br>소리에서 찾은 박·강세: " + vf.onsets + "번 (진동은 0.18초, 빛은 0.34초 간격 이상)" : "원래 영상이 없어 장면 사진으로만 감상");
+    }
+
     let readyMode = false;
     function showReady() {
       readyMode = true;
@@ -2886,6 +3047,54 @@
       });
       return cv.toDataURL("image/jpeg", 0.85);
     }
+    // [수정 6-17] 영역 낱장 모음(접촉 인화지처럼): 6-16에서 '남성'이라고 하면서 의자를, 머리카락을 '팔'이라고 한 문제
+    //   원인 = 한 장에 번호 24개를 찍어 보내면 AI가 '어느 번호가 어디인지' 헷갈림 (번호와 영역을 잘못 짝지음)
+    //   → 영역마다 따로 잘라서 '그 영역만 밝게, 나머지는 어둡게' 보여 주는 작은 칸을 모아 한 장으로 보냄
+    //     AI는 각 칸에서 '밝게 남은 부분이 무엇인지'만 보면 되니 짝을 잘못 지을 일이 크게 줄어듦
+    function makeSegSheet() {
+      const img = $("artImg"), M = touchMap, S = M.seg;
+      const HW = M.hi ? M.hi.W : M.W, HH = M.hi ? M.hi.H : M.H, lab = M.hi ? M.hi.lab : S.comp, f = HW / M.W;
+      const base = document.createElement("canvas"); base.width = HW; base.height = HH;
+      const bg = base.getContext("2d"); bg.drawImage(img, 0, 0, HW, HH);
+      const src = bg.getImageData(0, 0, HW, HH).data;
+      const COLS = 4, T = 256, rows = Math.ceil(S.n / COLS);
+      const cv = document.createElement("canvas"); cv.width = COLS * T; cv.height = rows * T;
+      const g = cv.getContext("2d");
+      g.fillStyle = "#222"; g.fillRect(0, 0, cv.width, cv.height);
+      S.st.forEach((s, k) => {
+        // 영역 둘레를 조금 넓게 잘라서(주변이 살짝 보이게) 정사각형 칸에 맞춤
+        let x0 = s.x0 * f, y0 = s.y0 * f, x1 = (s.x1 + 1) * f, y1 = (s.y1 + 1) * f;
+        let side = Math.max(x1 - x0, y1 - y0) * 1.35;
+        side = Math.max(side, Math.min(HW, HH) * 0.22);
+        const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+        const sx = Math.round(cx - side / 2), sy = Math.round(cy - side / 2), sd = Math.max(4, Math.round(side));
+        const tile = document.createElement("canvas"); tile.width = sd; tile.height = sd;
+        const tg = tile.getContext("2d"), im = tg.createImageData(sd, sd), d = im.data;
+        // 어두운 작품에서는 '안은 그대로, 밖은 어둡게'로는 구별이 안 됨(둘 다 검정) → 안쪽은 밝기를 끌어올리고, 바깥은 흐린 남색으로 덮음
+        const gain = Math.max(1, Math.min(4, 0.45 / Math.max(0.03, s.lum)));
+        const isEdge = (q, X, Y) => (X > 0 && lab[q - 1] !== k) || (X < HW - 1 && lab[q + 1] !== k) || (Y > 0 && lab[q - HW] !== k) || (Y < HH - 1 && lab[q + HW] !== k)
+          || (X > 1 && lab[q - 2] !== k) || (X < HW - 2 && lab[q + 2] !== k) || (Y > 1 && lab[q - 2 * HW] !== k) || (Y < HH - 2 && lab[q + 2 * HW] !== k);
+        for (let yy = 0; yy < sd; yy++) for (let xx = 0; xx < sd; xx++) {
+          const X = sx + xx, Y = sy + yy, o = (yy * sd + xx) * 4;
+          d[o + 3] = 255;
+          if (X < 0 || Y < 0 || X >= HW || Y >= HH) { d[o] = 18; d[o + 1] = 22; d[o + 2] = 40; continue; }
+          const q = (Y * HW + X), p4 = q * 4;
+          if (lab[q] !== k) {                                              // 그 영역 밖: 흐린 남색 (무엇이 있는지는 아주 약하게만)
+            const l = (src[p4] + src[p4 + 1] + src[p4 + 2]) / 3;
+            d[o] = 18 + l * 0.12; d[o + 1] = 22 + l * 0.12; d[o + 2] = 46 + l * 0.15; continue;
+          }
+          if (isEdge(q, X, Y)) { d[o] = 255; d[o + 1] = 220; d[o + 2] = 0; continue; }   // 영역 테두리 노란 선 (2칸 두께)
+          d[o] = Math.min(255, src[p4] * gain); d[o + 1] = Math.min(255, src[p4 + 1] * gain); d[o + 2] = Math.min(255, src[p4 + 2] * gain);
+        }
+        tg.putImageData(im, 0, 0);
+        const tx = (k % COLS) * T, ty = Math.floor(k / COLS) * T;
+        g.drawImage(tile, tx + 3, ty + 3, T - 6, T - 6);
+        g.fillStyle = "rgba(0,0,0,0.85)"; g.fillRect(tx + 3, ty + 3, 54, 40);
+        g.fillStyle = "#FFF"; g.font = "bold 30px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+        g.fillText(String(k + 1), tx + 30, ty + 24);
+      });
+      return cv.toDataURL("image/jpeg", 0.85);
+    }
     async function requestMaterials() {
       const M = touchMap;
       if (!M) return;
@@ -2897,7 +3106,7 @@
       M.matState = "asking";
       const t0 = performance.now();
       try {
-        const r = await askAI({ type: "photo", task: "materials", images: [makeSegImage()], n: M.seg.n }, false);
+        const r = await askAI({ type: "photo", task: "materials", images: [makeSegImage(), makeSegSheet()], n: M.seg.n }, false);
         if (M !== touchMap) return;
         const arr = M.seg.st.map(() => ({ material: "모름", thing: "", heavy: false, imp: -1, sure: false }));
         (r.regions || []).forEach((x) => { if (arr[x.n - 1]) arr[x.n - 1] = { material: x.material, thing: x.thing, heavy: x.heavy === undefined ? undefined : !!x.heavy, imp: x.imp === undefined ? -1 : x.imp, sure: x.sure !== false }; });
@@ -3527,6 +3736,7 @@
     const syncLog = [];                 // 소리 예약 시각과 빛·진동 실행 시각의 차이
 
     function stopSense() {
+      if (typeof stopVideoFollow === "function") stopVideoFollow();
       if (typeof stopTour === "function") stopTour();
       clearInterval(senseTimer);
       senseTimer = null;
@@ -3621,28 +3831,42 @@
       outEnd.connect(dest || e.mix);
       if (e.send && !dest) outEnd.connect(e.send);
       // 녹음은 약 3초. 길게 이어지는 악기가 그보다 길게 울려야 하면 2.4초마다 새로 겹쳐 이어 붙임
-      // [수정 6-16] '끊기거나 잡음' 원인: 녹음 파일은 3.1초에서 소리가 아직 큰 채로 '뚝' 잘려 있음(첼로는 거의 최대 크기)
-      //   예전에는 음을 줄이는 시간(release)이 파일 끝을 넘어가서, 파일이 끝나는 순간 '틱' 잡음이 났음
-      //   → 파일이 끝나기 0.03초 전까지 반드시 소리가 0이 되도록 끝 시각을 당김
-      const bufLen = (smp.buf.duration - smp.off) / rate;               // 이 음으로 재생할 수 있는 길이(초)
-      const seg = Math.min(2.4, bufLen - 0.5), release = sus ? 0.35 : 0.8;
+      // [수정 6-16] 녹음 파일은 3.1초에서 소리가 아직 큰 채로 '뚝' 잘려 있음 → 파일이 끝나기 전에 반드시 소리가 0이 되게
+      // [수정 6-17] '여전히 끊긴다'는 의견 → 길게 이어지는 악기(첼로·현악)를 이어 붙일 때 예전에는 녹음을 '처음부터' 다시 틀어서
+      //   2.4초마다 활을 새로 긋는 소리(어택)가 들리고, 겹치는 0.4초 동안 소리가 살짝 작아졌음(직선으로 줄이고 키우면 약 3dB 꺼짐)
+      //   → 두 번째 조각부터는 녹음의 '가운데(이미 울리고 있는 부분, 0.9초 뒤)'부터 틀고, 겹칠 때는 '같은 힘 곡선'(사인·코사인)으로 바꿔 크기가 일정
+      const XF = 0.35, CURVE_N = 32;
+      const fadeInC = new Float32Array(CURVE_N), fadeOutC = new Float32Array(CURVE_N);
+      for (let i = 0; i < CURVE_N; i++) { const x = i / (CURVE_N - 1); fadeInC[i] = Math.sin(x * Math.PI / 2); fadeOutC[i] = Math.cos(x * Math.PI / 2); }
+      const release = sus ? 0.35 : 0.8;
       const total = sus ? dur : Math.min(dur, 2.8);
-      for (let k = 0; k * seg < total && (sus || k === 0); k++) {     // 저절로 사라지는 악기는 한 번만
-        const st = t + k * seg, src = ctx.createBufferSource(), g = ctx.createGain();
+      const tEnd = t + total;
+      let st = t;
+      for (let k = 0; k < 12; k++) {
+        const offB = k === 0 ? smp.off : Math.min(smp.off + 0.9, smp.buf.duration - 1.3);
+        const avail = (smp.buf.duration - offB) / rate - 0.03;           // 이 조각을 틀 수 있는 실제 길이(초)
+        if (avail < XF + 0.3) break;
+        const fileEnd = st + avail;                                     // 이 조각의 파일이 끝나는 시각
+        const src = ctx.createBufferSource(), g = ctx.createGain();
         src.buffer = smp.buf; src.playbackRate.value = rate;
-        const fadeIn = k === 0 ? Math.max(0.004, attack || 0) : 0.4;
-        const last = st + seg + 0.4 >= t + total;
-        const rel = last ? release : 0.4;                              // 마지막 조각 = 음 끝 사라짐, 중간 조각 = 다음 조각과 겹쳐 바뀜
-        const hardEnd = st + bufLen - 0.03;                             // 파일이 끝나는 시각
-        const end = Math.min(last ? t + total : st + seg, hardEnd - Math.min(rel, 0.25));
-        const fadeEnd = Math.min(end + rel, hardEnd);
-        g.gain.setValueAtTime(0, st);
-        g.gain.linearRampToValueAtTime(1, st + fadeIn);
-        g.gain.setValueAtTime(1, Math.max(st + fadeIn, end));
-        g.gain.linearRampToValueAtTime(0, Math.max(st + fadeIn + 0.01, fadeEnd));
+        // 켜기
+        if (k === 0) { g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(1, st + Math.max(0.004, attack || 0)); }
+        else g.gain.setValueCurveAtTime(fadeInC, st, XF);
+        const handoff = fileEnd - XF;                                   // 다음 조각으로 넘길 시각
+        const last = !sus || handoff >= tEnd - 0.05;
+        if (last) {                                                     // 마지막 조각: 음 끝에서 서서히 사라짐 (파일 끝 전에 0)
+          const holdTo = Math.max(st + (k === 0 ? Math.max(0.004, attack || 0) : XF) + 0.01, Math.min(tEnd, fileEnd - 0.25));
+          const rel = Math.max(0.05, Math.min(release, fileEnd - holdTo));
+          g.gain.setValueAtTime(1, holdTo);
+          g.gain.linearRampToValueAtTime(0, holdTo + rel);
+        } else {
+          g.gain.setValueCurveAtTime(fadeOutC, handoff, XF);
+        }
         src.connect(g); g.connect(out);
-        src.start(st, smp.off); src.stop(hardEnd + 0.02);
+        src.start(st, offB); src.stop(fileEnd + 0.02);
         if (e.srcList) e.srcList.push(src);                      // (만져보기에서 손을 떼면 바로 멈추려고 기억)
+        if (last) break;
+        st = handoff;
       }
       out.gain.value = peak * SAMPLE_GAIN * (FILE_GAIN[file] || 1);
       return true;
@@ -4524,7 +4748,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-16 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-18 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -4542,6 +4766,7 @@
         "<b>전체 감각</b>: " + senseLine(r.whole) + "<br>" +
         "<b>장면</b><br>" + (r.scenes || []).map((s, i) => (i + 1) + ". " + esc(s.name) + " → " + senseLine(s.sense) +
           ((s.cells || []).length ? "<br>&nbsp;&nbsp;&nbsp;칸 " + esc(JSON.stringify(s.cells)) : "")).join("<br>") +
+        videoInfoText() +
         "<br><br><b>⏱ 감각 동시 출력 (공통 박자 시계)</b><br>소리–빛·진동 시각 차이: <span id='syncNow'>" + syncText() + "</span>" +
         "<br><br><b>🎨 디자인 시안</b>: " + Object.keys(THEMES).map((k) => "<button class='mini' data-theme-btn='" + k + "'>" + THEMES[k] + "</button>").join(" ") +
         (r.think ? "<br><br><b>🧠 AI의 생각 메모 (CoT)</b><br>① 보이는 것: " + esc((r.think.see || []).join(", ")) + "<br>② 가장 중요한 것: " + esc(r.think.main || "-") +

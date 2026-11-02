@@ -11,10 +11,13 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-10";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "6-12";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
+// [수정 6-11] '어느 영역이 무엇인지' 짚는 일(재질·이름 붙이기)은 gpt-4o-mini가 자주 틀림(머리카락을 '팔'로, 의자를 '남성'으로)
+//   → 이 일만 그림 위치를 더 잘 보는 큰 모델을 먼저 씀 (없으면 차례로 다음 모델). 1번에 약 10원 안팎 더 듦
+const VISION_MODELS = [process.env.OPENAI_VISION_MODEL, "gpt-4.1", "gpt-4o", "gpt-4o-mini"].filter(Boolean);
 
 // 쉬운 말 규칙 (CEFR A1/A2의 능력 기준을 한국어 쉬운 글 규칙으로 응용)
 const RULES = { maxWords: 12, maxSummaryWords: 15, minScenes: 2, maxScenes: 5 };
@@ -154,7 +157,8 @@ function textPrompt(type, explain, target, cropped, pixel) {
         "- frame_cells: 작품(느낄 대상)이 들어 있는 칸 번호를 모두 쓴다. 화면 속 글자·가격·버튼·책상·벽만 있는 칸은 뺀다.\n" +
         "- 각 장면의 cells: 그 장면이 실제로 보이는 칸 번호를 모두 쓴다. 한 칸에 조금이라도 걸치면 넣는다. 장면마다 칸이 달라야 한다."
       : "- cells와 frame_cells는 빈 목록 [] 으로 둔다.",
-    type === "video" ? "- 영상은 '무엇이 일어나는지'를 말한다. '보여요', '보여줘요'를 반복하지 않는다." : "",
+    type === "video" ? "- 영상은 '무엇이 일어나는지'를 말한다. '보여요', '보여줘요'를 반복하지 않는다.\n" +
+      "- 영상이면 scenes는 '시간 순서대로 나눈 장면'이다(앞 장면이 먼저). 각 장면에 frames: 그 장면에 해당하는 장면 사진 번호들(1부터, 겹치지 않게, 장면 순서대로 이어지게)을 쓴다. 모든 장면 사진이 어느 한 장면에 들어가야 한다." : "",
     type === "text" ? "- 글이면: summary는 '무엇에 대한 글인지', interpretation과 scenes는 글의 중요한 내용을 쉬운 말로. 글에 없는 내용은 지어내지 않는다. 장면 대신 '중요한 부분'으로 나눈다. material은 글에 나온 중심 대상의 재질(모르면 '모름')." : "",
     "",
     "[쉬운 말 규칙 — 반드시 지킬 것]",
@@ -169,6 +173,7 @@ function textPrompt(type, explain, target, cropped, pixel) {
     "8. 소리, 냄새, 바람, 온도처럼 사진에 찍히지 않는 것은 쓰지 않는다.",
     "",
     "[정직 규칙]",
+    "- short_name: 갤러리 액자 아래에 붙일 짧은 이름 (12자 이내, 보이는 것으로. 예: '검은 옷의 남성', '빨간 붓글씨'). 제목을 안다면 제목.",
     "- 작품 이름은 확실할 때만 title_guess에, 아니면 빈 문자열. '작품 안내판 정보'가 주어지면 그 제목을 title_guess에 쓰고, 해설에 작가·연도를 써도 된다.",
     "- 보이지 않는 것은 지어내지 않는다. 잘 안 보이면 '잘 보이지 않아요'라고 쓴다.",
     pixel && pixel.gray ? "- 앱이 사진의 픽셀을 직접 재 보니 이 사진은 흑백이다. 빨강·파랑·노랑 같은 색 이름이나 '화려한 색'을 쓰지 않는다. 흰색·검은색·회색, 밝고 어두움만 쓴다." : "",
@@ -176,7 +181,7 @@ function textPrompt(type, explain, target, cropped, pixel) {
     "- 사람이 보이면 누구인지 추측하지 않고, 얼굴 생김새를 자세히 묘사하지 않는다.",
     "",
     "[좋은 예 — 밤하늘 그림]",
-    '{"think":{"see":["밤하늘","소용돌이","노란 별","작은 마을"],"main":"하늘의 소용돌이 — 그림의 대부분을 차지함","easy":"붓질 → 굵은 선"},"kind":"그림","is_artwork":true,"title_guess":"","needs_choice":false,"material":"천","mood_line":"조용한 밤에 마음이 들뜨는 느낌이에요.","candidates":[],"frame_cells":[작품이 있는 칸 번호들],',
+    '{"think":{"see":["밤하늘","소용돌이","노란 별","작은 마을"],"main":"하늘의 소용돌이 — 그림의 대부분을 차지함","easy":"붓질 → 굵은 선"},"kind":"그림","is_artwork":true,"title_guess":"","short_name":"소용돌이치는 밤하늘","needs_choice":false,"material":"천","mood_line":"조용한 밤에 마음이 들뜨는 느낌이에요.","candidates":[],"frame_cells":[작품이 있는 칸 번호들],',
     ' "summary":"밤하늘과 작은 마을을 그린 그림이에요.",',
     ' "interpretation":"하늘에 소용돌이 모양이 크게 그려져 있어요. 마을은 화면 아래에 작게 있어요.",',
     ' "scenes":[{"name":"하늘","text":"하늘에 굵은 선이 빙글빙글 돌아요.","look":"짙은 파랑, 크게 휘도는 붓질","cells":[하늘이 보이는 칸 번호들]},',
@@ -252,9 +257,9 @@ function audioText(a) {
 // ---------------------------------------------------------------------
 // OpenAI 부르기 (모델을 앞에서부터 시도)
 // ---------------------------------------------------------------------
-async function callAI(messages, temperature) {
+async function callAI(messages, temperature, models) {
   let lastErr = null;
-  for (const model of MODELS) {
+  for (const model of (models || MODELS)) {
     const isReasoning = /^gpt-5|^o\d/.test(model);
     const payload = { model: model, messages: messages, response_format: { type: "json_object" } };
     if (isReasoning) {
@@ -478,13 +483,16 @@ module.exports = async (req, res) => {
       const n = Math.max(1, Math.min(24, Number(body.n) || 1));
       const sys = [
         "너는 사진 속 물체와 재질을 알아보는 도우미다.",
-        "사진에는 앱이 색·밝기로 나눈 영역들이 색 테두리와 1~" + n + "번 번호로 표시되어 있다. 번호와 테두리는 표시일 뿐 재질이 아니다.",
+        "사진 두 장을 준다. 1번 사진 = 전체 그림 위에 앱이 색·밝기로 나눈 영역의 테두리와 1~" + n + "번 번호.",
+        "2번 사진 = 영역마다 따로 잘라 모은 칸들. 각 칸 왼쪽 위 숫자가 영역 번호이고, 그 칸에서 '밝게 남아 있고 노란 선으로 둘러싸인 부분'만 그 영역이다(어둡게 가려진 곳은 다른 영역).",
+        "각 영역이 무엇인지는 반드시 2번 사진의 그 번호 칸을 보고 정한다. 1번 사진은 그것이 전체에서 어디인지 확인하는 데만 쓴다. 번호·테두리·노란 선은 표시일 뿐 재질이 아니다.",
         "먼저 seen에 사진 전체에 보이는 주요 물체를 한 줄로 적는다. 그다음 각 번호 영역마다:",
         "- thing: 그 영역이 무엇인지 5자 안팎 (같은 물건이면 여러 영역에 똑같은 이름을 쓴다. 예: '의자 등받이' 둘이면 둘 다 '의자 등받이')",
         "  배경과 그 위에 놓인 모양·글자·로고는 서로 다른 이름을 쓴다 (예: '빨간 배경', '검은 붓 글씨', '제목 글자'). 추상화라도 색이 다른 형태는 나눠 부른다.",
         "- material: 손으로 만지면 어떤 재질일지. 다음 중 하나만: " + MATERIALS.join(", ") + ".",
         "- heavy: 그 물체가 묵직하면 true(큰 조각상, 두꺼운 돌, 철 덩어리, 큰 가구), 얇고 가벼우면 false(장신구, 얇은 판, 단추, 작은 소품)",
-        "- imp: 이 작품을 감상할 때 눈여겨볼 정도. 3 = 주인공(인물의 얼굴, 중심 물체), 2 = 중요한 소품·특징(손에 든 물건, 상징), 1 = 보조, 0 = 배경·바닥·벽·빈 곳",
+        "- imp: 이 작품을 감상할 때 눈여겨볼 정도. 3 = 주인공의 얼굴 또는 작품의 중심 물체(1~2곳만), 2 = 손, 손에 든 물건, 상징적인 소품·장식, 1 = 보조, 0 = 배경·바닥·벽·빈 곳",
+        "  옷(상의·하의·바지·치마), 몸 전체, 의자·가구, 커튼처럼 넓기만 한 곳은 1 이하로 한다.",
         "- sure: 재질이 확실하면 true, 헷갈리면 false (그래도 가장 그럴듯한 재질을 고른다)",
         "[재질 규칙]",
         "- 그림·포스터·사진 속 물체도 '그 물체'의 재질을 고른다 (인쇄물이라서 종이로 고르지 않는다).",
@@ -497,7 +505,7 @@ module.exports = async (req, res) => {
         '[출력] JSON만: {"seen":"…","regions":[{"n":1,"thing":"얼굴","material":"피부","heavy":false,"imp":3,"sure":true}, ...]} (1~' + n + '번 모두)'
       ].join("\n");
       const first = await callAI([{ role: "system", content: sys },
-        { role: "user", content: [{ type: "text", text: "영역 수: " + n }, { type: "image_url", image_url: { url: images[0], detail: "high" } }] }], 0.2);
+        { role: "user", content: [{ type: "text", text: "영역 수: " + n }].concat(images.slice(0, 2).map((u) => ({ type: "image_url", image_url: { url: u, detail: "high" } }))) }], 0.2, VISION_MODELS);
       let fixed = 0;
       const regs = (Array.isArray(first.data.regions) ? first.data.regions : []).map((r) => {
         const thing = String(r.thing || "").slice(0, 12);
@@ -526,10 +534,11 @@ module.exports = async (req, res) => {
       (w.artist ? " / 작가: " + String(w.artist).slice(0, 40) : "") + (w.year ? " / 연도: " + String(w.year).slice(0, 20) : "") +
       (w.note ? " / 설명: " + String(w.note).slice(0, 200) : "") + "\n" : "";
     const userParts = [{ type: "text", text: workInfo + (type === "text" ? "[사용자가 넣은 글]\n" + inText : (type === "video" ? "장면 사진은 시간 순서예요. " : "") + audioText(body.audio)) }];
-    images.forEach((url) => userParts.push({
-      type: "image_url",
-      image_url: { url: url, detail: type === "photo" ? "high" : "low" }   // 영상 장면은 저해상도로 (빠르고 저렴)
-    }));
+    const times = Array.isArray(body.times) ? body.times.map(Number) : [];
+    images.forEach((url, i) => {
+      if (type === "video") userParts.push({ type: "text", text: "[장면 사진 " + (i + 1) + (isFinite(times[i]) ? " · 약 " + times[i].toFixed(1) + "초" : "") + "]" });   // [수정 6-12] 번호·시각을 사진 바로 앞에
+      userParts.push({ type: "image_url", image_url: { url: url, detail: type === "photo" ? "high" : "low" } });   // 영상 장면은 저해상도로 (빠르고 저렴)
+    });
     const msgs = [
       { role: "system", content: textPrompt(type, explain, target, cropped, pixel) },
       { role: "user", content: userParts }
@@ -605,6 +614,7 @@ module.exports = async (req, res) => {
       kind: text.kind || "기타",
       is_artwork: !!text.is_artwork,
       title_guess: text.title_guess || "",
+      short_name: String(text.short_name || "").slice(0, 16),
       grid: GRID,
       frame_cells: cleanCells(text.frame_cells),
       target: target,
@@ -618,7 +628,8 @@ module.exports = async (req, res) => {
       material: MATERIALS.includes(text.material) ? text.material : "모름",
       whole: wholeOut,
       senseMethod: "사진 직접 보기 + 눈금 예시 + " + senseTries + "번 평균",
-      scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), look: s.look || "", sense: sScenes[i] })),
+      scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), look: s.look || "", sense: sScenes[i],
+        frames: type === "video" && Array.isArray(s.frames) ? s.frames.map((f) => Math.round(Number(f))).filter((f) => f >= 1 && f <= images.length).slice(0, 12) : undefined })),
       contrast: contrast,
       check: { passed: violations.length === 0, violations: violations, tries: tries, stats: stats(text),
                sensePassed: sProblems.length === 0, senseProblems: sProblems, senseTries: senseTries },
