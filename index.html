@@ -566,7 +566,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-19: 🗣 폰 목소리가 없는 브라우저는 AI 목소리로 대신 읽기<br>
+    6단계 · 앱 6-20: 🔈 아이폰 무음 스위치에도 소리 나오게 + 소리가 꺼진 이유 안내<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -916,8 +916,24 @@
       if (audioCtx.state === "suspended") audioCtx.resume();
       return audioCtx;
     }
+    // 아이폰: 옆면 무음 스위치가 켜져 있으면 웹 소리가 통째로 꺼짐 → '재생' 모드로 바꿔 무음 스위치와 상관없이 나오게 함
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    // 옛 아이폰(iOS 16 이하)용: 아주 짧은 무음 파일을 한 번 틀면 같은 효과
+    function unlockSilentSwitch() {
+      try {
+        if (navigator.audioSession) return;
+        const sr = 8000, n = 800, b = new ArrayBuffer(44 + n * 2), d = new DataView(b);
+        const w = (o, t) => { for (let i = 0; i < t.length; i++) d.setUint8(o + i, t.charCodeAt(i)); };
+        w(0, "RIFF"); d.setUint32(4, 36 + n * 2, true); w(8, "WAVEfmt "); d.setUint32(16, 16, true);
+        d.setUint16(20, 1, true); d.setUint16(22, 1, true); d.setUint32(24, sr, true); d.setUint32(28, sr * 2, true);
+        d.setUint16(32, 2, true); d.setUint16(34, 16, true); w(36, "data"); d.setUint32(40, n * 2, true);
+        const a = new Audio(URL.createObjectURL(new Blob([b], { type: "audio/wav" })));
+        a.setAttribute("playsinline", ""); a.volume = 0.01;
+        const pr = a.play(); if (pr && pr.catch) pr.catch(() => {});
+      } catch (e) {}
+    }
     // 첫 터치에 소리 기능을 미리 깨워 둠 (첫 소리 뭉개짐 방지)
-    document.addEventListener("pointerdown", () => { getAudio(); }, { once: true });
+    document.addEventListener("pointerdown", () => { unlockSilentSwitch(); getAudio(); }, { once: true });
 
     // 세기(1~5) → 실제 출력값 (임시 표. 다음 단계에서 스티븐스 법칙으로 바꿈)
     const GAIN = [0, 0.05, 0.12, 0.22, 0.35, 0.5];
@@ -4748,7 +4764,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-19 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-20 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -5023,6 +5039,8 @@
         body.innerHTML =
           (last ? '<div class="hero"><img alt="" src="' + last.thumb + '"><div class="hero-cap"><span>최근에 만난 작품</span><b>' + esc(last.title) + "</b></div></div>" : "") +
           '<div class="tip">🔔 무음·방해 금지를 끄고 볼륨을 올려 주세요.</div>' +
+          (check && check.sound === "no" ? '<div class="note">🔇 처음 확인에서 소리가 "안 들려요"로 정해져 있어 <b>모든 소리를 끄고</b> 화면으로만 알려 드리고 있어요. 소리를 쓰려면 아래 <b>🔔 소리·진동 다시 확인</b>을 눌러 주세요.</div>' : "") +
+          (profile.sound && !profile.sound.on ? '<div class="note">🔇 내 감각에서 소리가 꺼져 있어요. <b>⚙️ 내 감각 바꾸기</b>에서 켤 수 있어요.</div>' : "") +
           '<button class="big primary" id="btnMeet">🎨 작품 만나기</button>' +
           '<div class="card"><b>내 감각</b>: ' + mainSenses(profile) + "<br>" + summaryHTML(profile) + "</div>" +
           '<button class="big ghost" id="btnMySense">⚙️ 내 감각 바꾸기</button>' +
