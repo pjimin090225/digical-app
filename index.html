@@ -566,7 +566,7 @@
   </section>
 
   <footer>
-    6단계 · 앱 6-18: 🎬 영상 따라가기 (원래 영상 + 장면 자막 + 소리 박자 → 진동·빛)<br>
+    6단계 · 앱 6-19: 🗣 폰 목소리가 없는 브라우저는 AI 목소리로 대신 읽기<br>
     <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a>
   </footer>
 
@@ -949,7 +949,7 @@
     }
 
     function speakSample(speed) {
-      if (!("speechSynthesis" in window)) return "🗣 이 브라우저는 읽기 기능이 없어요";
+      if (!("speechSynthesis" in window)) return "🗣 이 브라우저는 폰 기본 목소리가 없어요. 설정에서 'AI 목소리'를 고르면 읽어 드려요." + inAppHint();
       const u = new SpeechSynthesisUtterance("안녕하세요. 이렇게 읽어 드릴게요.");
       u.lang = "ko-KR";
       u.rate = SPEED[speed];
@@ -4748,7 +4748,7 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 6-18 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: 앱 6-19 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +
@@ -4851,7 +4851,23 @@
       const mySeq = voiceSeq;
       if (info) info.textContent = "🗣 목소리를 준비하고 있어요…";
       const voice = profile.voice.name || "device";
-      if (voice === "device") { speakDevice(text, info, mySeq, () => { if (mySeq === voiceSeq) finish(); }); return; }
+      const fin = () => { if (mySeq === voiceSeq) finish(); };
+      if (voice === "device") {
+        const dv = await deviceVoice();
+        if (mySeq !== voiceSeq) return;
+        if (dv.ok) {
+          // 폰 목소리가 시작하자마자 실패하면(음성 엔진 없음 등) AI 목소리로 다시 읽기
+          speakDevice(text, info, mySeq, fin, () => speakCloud(text, emotion, "coral", info, mySeq, fin, NO_DEVICE_MSG));
+        } else {
+          speakCloud(text, emotion, "coral", info, mySeq, fin, NO_DEVICE_MSG + (dv.why ? " " + dv.why : ""));
+        }
+        return;
+      }
+      speakCloud(text, emotion, voice, info, mySeq, fin, "");
+    }
+
+    // AI 목소리 (서버 /api/tts). note: 읽은 뒤 보여 줄 안내 (없으면 "AI 음성이에요")
+    async function speakCloud(text, emotion, voice, info, mySeq, finish, note) {
       const key = voice + "|" + profile.voice.speed + "|" + text;
       try {
         let buf = ttsCache.get(key);
@@ -4882,32 +4898,90 @@
         voiceSrc = src;
         setSpeaking(true);
         src.start();
-        if (info) info.textContent = "🗣 AI 음성이에요";
+        if (info) info.textContent = note || "🗣 AI 음성이에요";
       } catch (e) {
         if (mySeq !== voiceSeq) return;
-        speakDevice(text, info, mySeq, () => { if (mySeq === voiceSeq) finish(); });
+        if (note) {                                        // 폰 목소리도 없고 AI 목소리도 실패
+          if (info) info.textContent = "🗣 지금은 읽어 드릴 수 없어요. 글로 읽어 주세요." + inAppHint();
+          finish();
+          return;
+        }
+        speakDevice(text, info, mySeq, finish, null);
         if (info) info.textContent = "🗣 AI 음성을 못 불러와서 폰 기본 목소리로 읽었어요";
       }
     }
 
     // 폰 기본 목소리 (갤럭시는 삼성 음성, 아이폰은 Siri 음성 등 — 기기마다 다름)
+    const NO_DEVICE_MSG = "🗣 이 브라우저에는 폰 기본 목소리가 없어서 AI 목소리로 읽었어요.";
+    // 카카오톡·네이버·인스타그램 등 앱 안에서 연 화면은 폰 목소리를 못 쓰는 경우가 많음
+    function isInApp() { return /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\/|DaumApps|everytimeApp|; wv\)/i.test(navigator.userAgent || ""); }
+    function inAppHint() { return isInApp() ? " (카카오톡 등 앱 안에서 열었다면, 크롬이나 삼성 인터넷으로 열어 보세요.)" : ""; }
+    function koVoices() {
+      return ("speechSynthesis" in window) ? speechSynthesis.getVoices().filter((v) => /^ko/i.test(v.lang)) : [];
+    }
     function pickKoreanVoice() {
-      const vs = ("speechSynthesis" in window) ? speechSynthesis.getVoices().filter((v) => /^ko/i.test(v.lang)) : [];
+      const vs = koVoices();
       return vs.find((v) => v.localService && /samsung/i.test(v.name)) || vs.find((v) => v.localService) ||
              vs.find((v) => /google/i.test(v.name)) || vs[0] || null;
     }
-    function speakDevice(text, info, mySeq, onDone) {
-      if (!("speechSynthesis" in window)) { if (info) info.textContent = "🗣 이 브라우저는 폰 기본 목소리가 없어요"; if (onDone) onDone(); return; }
+    // 폰 목소리를 쓸 수 있는지 확인. 목소리 목록은 처음에 비어 있다가 조금 뒤 채워지는 폰이 있어 최대 1.5초 기다림
+    let deviceVoiceCache = null;
+    function deviceVoice() {
+      if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") return Promise.resolve({ ok: false, why: "" });
+      if (deviceVoiceCache && deviceVoiceCache.ok) return Promise.resolve(deviceVoiceCache);
+      return new Promise((resolve) => {
+        const check = () => {
+          const all = speechSynthesis.getVoices();
+          if (koVoices().length) return { ok: true };
+          if (all.length) return { ok: false, why: "(한국어 목소리가 깔려 있지 않아요)" };
+          return null;
+        };
+        const now = check();
+        if (now) { deviceVoiceCache = now; resolve(now); return; }
+        let doneV = false;
+        const end = () => {
+          if (doneV) return; doneV = true;
+          speechSynthesis.removeEventListener("voiceschanged", onCh);
+          // 목록이 끝까지 비어 있으면: 아이폰 등 목록을 안 주는 기기도 있어 일단 시도해 봄 (실패하면 AI로)
+          deviceVoiceCache = check() || { ok: true, unknown: true };
+          resolve(deviceVoiceCache);
+        };
+        const onCh = () => { if (check()) end(); };
+        speechSynthesis.addEventListener("voiceschanged", onCh);
+        setTimeout(end, 1500);
+      });
+    }
+    // onFail: 시작하자마자 오류가 나면 부를 대신 읽기 (없으면 그냥 끝냄)
+    function speakDevice(text, info, mySeq, onDone, onFail) {
+      if (!("speechSynthesis" in window)) {
+        if (onFail) { onFail(); return; }
+        if (info) info.textContent = "🗣 이 브라우저는 폰 기본 목소리가 없어요." + inAppHint();
+        if (onDone) onDone(); return;
+      }
       const u = new SpeechSynthesisUtterance(text);
       u.lang = "ko-KR";
       const v = pickKoreanVoice();
       if (v) u.voice = v;
       u.rate = SPEED[profile.voice.speed];
       setSpeaking(true);
-      let ended = false;
-      const end = () => { if (ended) return; ended = true; clearTimeout(guard); if (mySeq === voiceSeq) setSpeaking(false); if (onDone) onDone(); };
-      u.onend = end; u.onerror = end;
+      let ended = false, started = false;
+      const t0 = Date.now();
+      const end = () => { if (ended) return; ended = true; clearTimeout(guard); clearTimeout(startGuard); if (mySeq === voiceSeq) setSpeaking(false); if (onDone) onDone(); };
+      const fail = () => {
+        if (ended) return; ended = true; clearTimeout(guard); clearTimeout(startGuard);
+        deviceVoiceCache = { ok: false, why: "" };
+        if (mySeq !== voiceSeq) return;
+        if (onFail) onFail(); else { setSpeaking(false); if (onDone) onDone(); }
+      };
+      u.onstart = () => { started = true; };
+      u.onend = () => { if (!started && Date.now() - t0 < 400 && text.length > 8) fail(); else end(); };   // 소리 없이 바로 끝남 = 엔진 없음
+      u.onerror = (e) => {
+        const er = e && e.error;
+        if (er === "interrupted" || er === "canceled") { end(); return; }
+        if (!started) fail(); else end();
+      };
       const guard = setTimeout(end, 4000 + text.length * 180);    // 끝 신호가 안 오는 폰 대비 (글 길이로 넉넉히)
+      const startGuard = setTimeout(() => { if (!started && !ended && speechSynthesis.speaking === false && speechSynthesis.pending === false) fail(); }, 2500);  // 2.5초 지나도 시작 안 함
       speechSynthesis.cancel();
       speechSynthesis.speak(u);
       if (info) info.textContent = "🗣 폰 기본 목소리예요" + (v ? " (" + v.name + ")" : "");
