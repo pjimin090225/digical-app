@@ -579,6 +579,11 @@
       #camera .guide { left: calc(50% - 150px); }
     }
 
+    .splash { position: fixed; inset: 0; z-index: 60; background: #141414; color: #F2EFEA; display: flex; align-items: center; justify-content: center; }
+    .splash-in { display: flex; flex-direction: column; align-items: center; gap: 18px; animation: splashIn .7s ease-out; }
+    .splash-wm { font-family: var(--font-title); font-weight: 900; font-size: 34px; letter-spacing: 0.02em; margin: 14px 0 0; }
+    .splash-sub { font-size: 15px; color: #BDB8B0; margin: 0; }
+    @keyframes splashIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
     /* ---------- ⑦ 느껴보기 [MuSE 7-3] — 종이 바탕 · 작품은 그림자 없이 · 탭 4개 ---------- */
     body[data-screen="view"] { max-width: 1240px; }
     #view .topbar .back { font-size: 16px; }
@@ -597,6 +602,7 @@
     .vtabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 12px 2px 10px; font-size: 16px; font-weight: 500; color: #6B665E; min-height: 48px; }
     .vtabs button[aria-selected="true"] { color: #111; font-weight: 700; border-bottom-color: #111; }
     .vtabs button:focus-visible { outline: 2px solid var(--muse-accent, #FF5A1F); outline-offset: -2px; }
+    .vstatus:empty { min-height: 0; margin: 6px 0 0; }
     .vstatus { min-height: 26px; margin: 14px 0 0; font-size: 17px; font-weight: 700; line-height: 1.45; }
     .vpane { padding: 4px 0 8px; }
     .vpane .big { margin: 12px 0 0; }
@@ -612,10 +618,11 @@
     .ai-feel { margin: 16px 0 0; padding: 14px 16px; background: #ECE8E1; font-size: 16px; line-height: 1.6; }
     .ai-feel small { display: block; font-size: 13px; color: #5E5A53; margin-bottom: 4px; }
     .ai-feel .chip { display: inline-block; margin: 6px 6px 0 0; padding: 2px 10px; border: 1px solid #111; border-radius: 999px; font-size: 13px; }
-    .why-row { display: grid; grid-template-columns: 70px 1fr; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 16px; line-height: 1.6; }
+    .why-row { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 16px; line-height: 1.6; }
+    .why-row > em { font-style: normal; font-family: var(--mono); font-size: 12px; color: #6B665E; white-space: nowrap; }
     .why-row:first-child { border-top: 1px solid var(--rule); }
-    .why-row > span { font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: #6B665E; padding-top: 3px; }
-    .why-row .sw { display: inline-block; width: 16px; height: 16px; border-radius: 50%; vertical-align: -3px; margin-right: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,0.12); }
+    .why-row > span { font-size: 14px; font-weight: 700; color: #3D3A35; }
+    .why-row .sw { font-style: normal; display: inline-block; width: 16px; height: 16px; border-radius: 50%; vertical-align: -3px; margin-right: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,0.12); }
     .why-row .vbars { display: flex; align-items: flex-end; gap: 3px; height: 22px; margin-top: 6px; }
     .why-row .vbars i { display: block; background: #D63FD1; width: 6px; border-radius: 1px; }
     .why-row .vbars i.off { background: transparent; }
@@ -631,24 +638,24 @@
     .sense-live span.off { opacity: 0.35; text-decoration: line-through; }
     .sense-live span[data-s="see"] i.lit { background: #3F6BFF; } .sense-live span[data-s="hear"] i.lit { background: #FF7A2F; } .sense-live span[data-s="feel"] i.lit { background: #D63FD1; }
     /* 글·소리의 움직이는 그림 (작품 자리) */
-    .kin { position: absolute; inset: 0; overflow: hidden; }
-    #view .art.kinetic { width: 100%; aspect-ratio: 4 / 5; max-height: 58vh; background: #16161A; }
+    .kin { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
+    /* [MuSE 7-4] 글·소리 그림은 종이 바탕 + 흐릿한 빛 + 고운 입자 (감각 구슬과 같은 그림 말) */
+    #view .art.kinetic { width: 100%; aspect-ratio: 4 / 5; max-height: 58vh; background: #F3F1ED; box-shadow: 0 0 0 1px rgba(0,0,0,0.06) !important; }
     #view .art.kinetic .art-wrap { visibility: hidden; position: absolute; }
     #view .art.kinetic.sound-art { aspect-ratio: 1 / 1; }
     .kin canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-    .kin .kin-text { position: absolute; left: 7%; right: 7%; top: 50%; transform: translateY(-50%); color: #F2EFEA; font-family: var(--font-title); font-weight: 700; font-size: clamp(22px, 6.2vw, 34px); line-height: 1.55; word-break: keep-all; overflow-wrap: anywhere; }
-    .kin .kin-text .w { display: inline-block; opacity: 0.18; transform: translateY(6px); transition: opacity .45s ease, transform .45s ease, color .45s ease; margin-right: 0.28em; }
+    .kin .kin-text { position: absolute; left: 8%; right: 8%; top: 50%; transform: translateY(-50%); color: #1A1917; font-family: var(--font-title); font-weight: 700; font-size: clamp(22px, 6.2vw, 34px); line-height: 1.55; word-break: keep-all; overflow-wrap: anywhere; }
+    .kin .kin-text .w { display: inline-block; opacity: 0.14; transform: translateY(6px); transition: opacity .45s ease, transform .45s ease; margin-right: 0.28em; }
     .kin .kin-text .w.on { opacity: 1; transform: none; }
-    .kin .kin-text .w.key { color: var(--kc, #FFD08A); }
-    .kin .kin-text .w.key.on { text-shadow: 0 0 18px var(--kc, #FFD08A); }
+    .kin .kin-text .w.key { color: var(--kc, #8A2C6B); }
     .kin .kin-text .w.hit { animation: kinHit .5s ease-out; }
-    @keyframes kinHit { 0% { transform: scale(1); } 35% { transform: scale(1.12); } 100% { transform: scale(1); } }
-    .kin .kin-no { position: absolute; left: 7%; top: 6%; font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: rgba(242,239,234,0.6); }
-    .kin .kin-cap { position: absolute; left: 7%; right: 7%; bottom: 6%; font-family: var(--mono); font-size: 12px; color: rgba(242,239,234,0.75); display: flex; justify-content: space-between; gap: 10px; }
-    .kin .kin-bar { position: absolute; left: 7%; right: 7%; bottom: 4%; height: 2px; background: rgba(255,255,255,0.15); }
-    .kin .kin-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #F2EFEA; }
+    @keyframes kinHit { 0% { transform: scale(1); } 35% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    .kin .kin-no, .kin .kin-tr { position: absolute; top: 6%; font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: #3D3A35; }
+    .kin .kin-no { left: 8%; } .kin .kin-tr { right: 8%; }
+    .kin .kin-cap { position: absolute; left: 8%; right: 8%; bottom: 7%; font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: #3D3A35; display: flex; justify-content: space-between; gap: 10px; }
+    .kin .kin-bar { position: absolute; left: 8%; right: 8%; bottom: 5%; height: 1px; background: rgba(0,0,0,0.12); }
+    .kin .kin-bar i { position: absolute; left: 0; top: -0.5px; height: 2px; width: 0; background: #1A1917; }
     @media (prefers-reduced-motion: reduce) { .kin .kin-text .w { transition: none; } .kin .kin-text .w.hit { animation: none; } }
-    .kin .kin-glow { position: absolute; inset: -20%; background: radial-gradient(closest-side, var(--kc, #FFD08A), transparent 70%); opacity: 0.15; pointer-events: none; }
     .wsteps { list-style: none; padding: 0; margin: 18px 0 0; border-top: 1px solid var(--rule); }
     .wsteps li { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 17px; color: #9A958C; transition: color .4s; }
     .wsteps li i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid currentColor; flex-shrink: 0; }
@@ -754,6 +761,8 @@
   <div id="banner" hidden></div>
 
   <!-- ===================== ① 처음 화면 (처음 온 사람만. 다시 온 사람은 바로 카메라) ===================== -->
+  <!-- [MuSE 7-4] 여는 화면 (다시 온 사람: 카메라가 켜지는 동안 1~2초) -->
+  <div class="splash" id="splash" hidden><div class="splash-in"><div class="orb" data-orb style="--size:132px;--blur:8px"></div><p class="splash-wm">MuSE</p><p class="splash-sub">작품을 내 감각으로</p></div></div>
   <section id="home" class="screen">
     <p class="wm">MuSE</p>
     <div class="home-orb"><div class="orb" data-orb style="--size:220px;--blur:11px;--se:3;--he:3;--fl:3"></div></div>
@@ -919,9 +928,6 @@
           <div class="tour-cap" id="tourCap" hidden></div>
           <div class="kin" id="kin" hidden></div>
         </div>
-        <div class="sense-live" id="senseLive" aria-hidden="true">
-          <span data-s="see"><i></i>보기</span><span data-s="hear"><i></i>듣기</span><span data-s="feel"><i></i>떨림</span>
-        </div>
       </div>
       <div class="view-panel">
         <p class="kicker" id="viewKicker"></p>
@@ -1011,7 +1017,7 @@
     // 0) 기본 도구
     // ==========================================================
     const $ = (id) => document.getElementById(id);
-    const APP_VER = "MuSE · 앱 7-3 — 소리 모드 새로 · 감상 화면 탭 · 움직이는 글 · 음악 끊김 고침";
+    const APP_VER = "MuSE · 앱 7-4 — 소리 그림 새로 · 소리·떨림 고침 · 글 분위기 · 여는 화면";
     const copy = (obj) => JSON.parse(JSON.stringify(obj));   // 사본 만들기
     let currentScreen = "home";
 
@@ -1035,6 +1041,16 @@
       const sr = $("soundResult"); if (sr && !sr.hidden) { sr.hidden = true; $("soundDim").hidden = true; }
     }
     // 처음 온 사람 = 처음 화면 / 다시 온 사람 = 바로 카메라 (홈 화면을 따로 두지 않음)
+    function showSplash() {
+      const sp = $("splash"); if (!sp) return;
+      setOrb(sp.querySelector(".orb"), profile);
+      sp.hidden = false;
+      const t0 = performance.now();
+      const done = () => { if (sp.dataset.out) return; sp.dataset.out = "1"; sp.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, easing: "ease-in" }).onfinish = () => { sp.hidden = true; }; };
+      sp.onclick = done;
+      const wait = () => { const el = performance.now() - t0; if (el > 1300 && (camStream || el > 2600)) done(); else setTimeout(wait, 100); };
+      setTimeout(wait, 1300);
+    }
     function goHome() {
       if (!profile) { renderHome(); go("home"); return; }
       if (!check) { startReady("camera"); return; }
@@ -2061,6 +2077,7 @@
       const t = $("textIn").value.trim();
       if (t.length < 2) { $("camMsg").textContent = "글을 조금 더 넣어 주세요."; return; }
       showConfirm({ type: "text", text: t, images: [textCard(t)], source: "글 입력" });
+      $("textIn").value = "";                       // [MuSE 7-4] 돌아왔을 때 넣었던 글이 남아 있지 않게
     }
     // QR 읽기: 안드로이드 크롬은 폰에 들어 있는 BarcodeDetector, 없으면 jsQR(오픈소스, Apache-2.0)
     let qrTimer = null, jsQRLoading = null, qrBusy = false;
@@ -2766,7 +2783,7 @@
     //     ④ Text to Sense → 소리 입력의 출력은 '시각 + 촉각': 원래 소리를 다시 틀며 그 박에 맞춰 빛(구슬)과 떨림
     //   녹음은 이 폰 안에만 있고, AI 분석에 한 번 보낸 뒤 서버에 저장하지 않음 (갤러리에 넣으면 이 폰 저장소에만)
     // ==========================================================
-    const SND_SR = 22050, SND_HOP = 1024, SND_MAX = 30;           // 다시 틀기용 22.05kHz, 조각 1024개 = 약 46ms, 최대 30초
+    const SND_SR = 32000, SND_HOP = 1024, SND_MAX = 30;           // [MuSE 7-4] 다시 틀기용 32kHz(예전 22.05kHz보다 맑게), 조각 1024개 = 32ms, 최대 30초
     let recPCM = null;                                              // 마이크로 듣는 동안 모으는 소리 조각들
 
     // 마이크 소리를 모으기 (ScriptProcessor: 오래됐지만 모든 폰 브라우저에서 작동)
@@ -2854,6 +2871,8 @@
       const re = new Float32Array(FFT_N), im = new Float32Array(FFT_N), mag = new Float32Array(FFT_N / 2), prev = new Float32Array(FFT_N / 2);
       const db = new Float32Array(Math.max(0, n)), cen = new Float32Array(Math.max(0, n)), flux = new Float32Array(Math.max(0, n));
       const binHz = sr / FFT_N, top = Math.min(FFT_N / 2 - 1, Math.round(8000 / binHz)), seg = new Float32Array(FFT_N);
+      // [MuSE 7-4] 세 높이 띠의 세기: 낮은 소리(~250Hz) · 가운데(250~2000Hz) · 높은 소리(2000Hz~) → 소리 그림의 파랑·자주·주황
+      const b1 = Math.round(250 / binHz), b2 = Math.round(2000 / binHz), raw = [new Float32Array(Math.max(0, n)), new Float32Array(Math.max(0, n)), new Float32Array(Math.max(0, n))];
       for (let f = 0; f < n; f++) {
         const o = f * SND_HOP;
         let sq = 0;
@@ -2861,7 +2880,9 @@
         db[f] = 20 * Math.log10(Math.sqrt(sq / FFT_N) + 1e-9);
         fftMag(seg, re, im, mag);
         let tot = 0, w = 0, fl = 0;
-        for (let i = 1; i <= top; i++) { const m = Math.log1p(mag[i] * 10); tot += m; w += m * i; const d = m - prev[i]; if (d > 0) fl += d; prev[i] = m; }
+        let e0 = 0, e1 = 0, e2 = 0;
+        for (let i = 1; i <= top; i++) { const m = Math.log1p(mag[i] * 10); tot += m; w += m * i; const d = m - prev[i]; if (d > 0) fl += d; prev[i] = m; if (i < b1) e0 += m; else if (i < b2) e1 += m; else e2 += m; }
+        raw[0][f] = e0 / Math.max(1, b1 - 1); raw[1][f] = e1 / Math.max(1, b2 - b1); raw[2][f] = e2 / Math.max(1, top - b2 + 1);
         cen[f] = tot > 0 ? (w / tot) * binHz : 0; flux[f] = fl / top;
       }
       const sorted = Array.from(db).sort((a, b) => a - b);
@@ -2873,14 +2894,24 @@
         if (L[f] > 0.05 && cen[f] > 0) pS += (clamp01((Math.log2(cen[f]) - Math.log2(200)) / (Math.log2(4000) - Math.log2(200))) - pS) * 0.25;
         P[f] = pS;
       }
+      const B = raw.map((r) => {                                       // 띠마다 그 소리 안에서 비교 (하위 10% → 0, 상위 5% → 1)
+        const so = Array.from(r).sort((a, b) => a - b), lo2 = so[Math.floor(so.length * 0.1)] || 0, hi2 = Math.max(so[Math.floor(so.length * 0.95)] || 1, lo2 + 1e-4);
+        const o = new Float32Array(n); for (let f = 0; f < n; f++) o[f] = L[f] < 0.03 ? 0 : clamp01((r[f] - lo2) / (hi2 - lo2)); return o;
+      });
       // 박: 바로 전보다 새로 커진 양(스펙트럼 변화량)이 최근 1초 평균보다 확 튀는 순간 · 0.33초 간격 이상(1초에 3번 이하, 광과민성 예방)
-      const W = Math.round(1 / hop), acc = [];
-      let last = -1e9;
-      for (let f = 1; f < n; f++) {
-        let m = 0, c = 0; for (let k = Math.max(0, f - W); k < f; k++) { m += flux[k]; c++; } m /= c || 1;
-        let v = 0; for (let k = Math.max(0, f - W); k < f; k++) v += (flux[k] - m) ** 2; const sd = Math.sqrt(v / (c || 1));
-        const t = f * hop;
-        if (flux[f] > m + 1.5 * sd && flux[f] > 0.02 && L[f] > 0.2 && t - last > 0.333) { on[f] = flux[f] > m + 3 * sd ? 2 : 1; last = t; acc.push(t * 1000); }
+      // [MuSE 7-4] 잔잔한 소리는 박이 거의 안 잡혀 떨림이 없었음 → 너무 적으면(4초에 1번 미만) 기준을 낮춰 다시 찾음
+      const W = Math.round(1 / hop);
+      let acc = [];
+      for (const kz of [1.5, 1.0, 0.6]) {
+        on.fill(0); acc = [];
+        let last = -1e9;
+        for (let f = 1; f < n; f++) {
+          let m = 0, c = 0; for (let k = Math.max(0, f - W); k < f; k++) { m += flux[k]; c++; } m /= c || 1;
+          let v = 0; for (let k = Math.max(0, f - W); k < f; k++) v += (flux[k] - m) ** 2; const sd = Math.sqrt(v / (c || 1));
+          const t = f * hop;
+          if (flux[f] > m + kz * sd && flux[f] > 0.01 && L[f] > 0.15 && t - last > 0.333) { on[f] = flux[f] > m + 3 * sd ? 2 : 1; last = t; acc.push(t * 1000); }
+        }
+        if (acc.length >= n * hop / 4) break;
       }
       const Ls = Array.from(L), mL = mean(Ls), sL = stdev(Ls, mL), mP = mean(Array.from(P));
       const sec = n * hop;
@@ -2890,7 +2921,7 @@
         accents: acc.length, bpm: bpmFrom(acc), windowMs: FFT_N / sr * 1000, procMs: null,
         quiet: Ls.filter((x) => x < 0.08).length / Math.max(1, n)      // 조용한 부분 비율 (말소리 사이 쉼 등)
       };
-      return { L: L, P: P, on: on, hop: hop, n: n, sec: sec, summary: summary };
+      return { L: L, P: P, B: B, on: on, hop: hop, n: n, sec: sec, summary: summary };
     }
     // WAV(16bit) 만들기 → AI에게 보낼 base64
     function wavBase64(pcm, sr) {
@@ -2905,44 +2936,212 @@
       for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
       return btoa(s);
     }
-    // 소리 그림 (소리의 지문): 시계 방향으로 시간, 바깥으로 갈수록 큰 소리, 색 = 높낮이(낮음 남색 ↔ 높음 노랑), 점 = 박
-    function soundPicture(F, size) {
-      const W = size || 720, c = document.createElement("canvas"); c.width = W; c.height = W;
-      drawSoundRing(c.getContext("2d"), F, W, 1, 1);
+    // ==========================================================
+    // [MuSE 7-4] 🎨 소리 그림 엔진 — '종이 바탕 + 흐릿한 빛 구슬 + 입자(그레인)' (감각 구슬과 같은 그림 말)
+    //   소리를 세 높이로 나눔(DFT): 낮은 소리 = 파랑, 가운데 = 자주, 높은 소리 = 주황  ← 앱 전체의 세 감각 색과 같음
+    //   크기 → 구슬 크기·밝기 / 높낮이 → 색이 도는 자리 / 박(강세) → 퍼지는 빛 물결
+    //   그림체 3가지: orb(빛 구슬) · rain(빛 줄기) · grain(입자 꽃) — 기본 orb
+    // ==========================================================
+    const SART_BG = "#F3F1ED";
+    const SART_COL = [[75, 91, 255], [224, 79, 208], [255, 138, 61]];   // 낮은 · 가운데 · 높은 소리
+    const sartRGBA = (c, a) => "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + Math.max(0, Math.min(1, a)).toFixed(3) + ")";
+    let sartGrainTile = null;
+    function sartGrain() {                                   // 필름 알갱이 무늬 (한 번만 만듦)
+      if (sartGrainTile) return sartGrainTile;
+      const c = document.createElement("canvas"); c.width = c.height = 192;
+      const g = c.getContext("2d"), im = g.createImageData(192, 192);
+      for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = Math.random() < 0.5 ? 40 : 0; }
+      g.putImageData(im, 0, 0);
+      sartGrainTile = c;
       return c;
     }
-    function drawSoundRing(g, F, W, upto, alpha) {
-      const cx = W / 2, cy = W / 2, r0 = W * 0.2, r1 = W * 0.44;
-      g.fillStyle = "#16161A"; g.fillRect(0, 0, W, W);
-      const m = Math.max(1, Math.floor(F.n * upto)), step = Math.max(1, Math.floor(F.n / 360));
-      g.lineCap = "round";
-      for (let f = 0; f < m; f += step) {
-        let L = 0, P = 0; for (let k = f; k < Math.min(F.n, f + step); k++) { L = Math.max(L, F.L[k]); P += F.P[k]; } P /= step;
-        const a = -Math.PI / 2 + 2 * Math.PI * f / F.n, rr = r0 + (r1 - r0) * (0.06 + 0.94 * L);
-        g.strokeStyle = pitchColor(P).replace("rgb(", "rgba(").replace(")", "," + (0.35 + 0.65 * L) * alpha + ")");
-        g.lineWidth = Math.max(1.5, W * 0.006);
-        g.beginPath(); g.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); g.stroke();
-      }
-      g.fillStyle = "rgba(242,239,234," + 0.85 * alpha + ")";
-      for (let f = 0; f < m; f++) if (F.on[f]) {
-        const a = -Math.PI / 2 + 2 * Math.PI * f / F.n, rr = r1 + W * 0.025;
-        g.beginPath(); g.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, F.on[f] === 2 ? W * 0.008 : W * 0.005, 0, Math.PI * 2); g.fill();
-      }
+    function hexRGB(h) { const m = /^#?([0-9a-f]{6})$/i.exec(String(h || "")); if (!m) return null; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+    function sartStyle() {
+      try { const q = new URLSearchParams(location.search).get("art"); if (q) localStorage.setItem("digical.sart.v1", q); return localStorage.getItem("digical.sart.v1") || "orb"; } catch (e) { return "orb"; }
     }
+    // 그림 하나 만들기: cv = 화면 캔버스, F = 소리 시간표(없으면 글), opt = { mood:[r,g,b], style }
+    function sartMake(cv, F, opt) {
+      opt = opt || {};
+      const st = { cv: cv, F: F, style: opt.style || sartStyle(), mood: opt.mood || [255, 196, 140], lo: document.createElement("canvas"),
+                   Ls: 0.3, B: [0.4, 0.4, 0.4], P: 0.5, bump: 0, rings: [], beads: [], parts: null, ptr: null, t0: performance.now(), seed: 7 };
+      st.lo.width = st.lo.height = 120;
+      return st;
+    }
+    // 시간표의 f번째 조각 값 (f < 0 = 평균 → 멈춘 그림)
+    function sartSample(st, f) {
+      const F = st.F;
+      if (!F) return { L: 0.35, B: [0.4, 0.45, 0.35], P: 0.5, on: 0 };
+      if (f < 0) {
+        if (!F.avg) F.avg = { L: mean(Array.from(F.L)), B: [0, 1, 2].map((k) => mean(Array.from(F.B[k]))), P: mean(Array.from(F.P)), on: 0 };
+        return F.avg;
+      }
+      const i = Math.max(0, Math.min(F.n - 1, f));
+      return { L: F.L[i], B: [F.B[0][i], F.B[1][i], F.B[2][i]], P: F.P[i], on: F.on[i] };
+    }
+    // 한 장면 그리기. f = 지금 조각(-1 = 멈춤), onset = 이번에 박이 있었는지(0/1/2), live = 움직이는 중
+    function sartDraw(st, f, onset, live) {
+      const cv = st.cv; if (!cv || !cv.width) return;
+      const g = cv.getContext("2d"), W = cv.width, H = cv.height;
+      const now = performance.now(), t = (now - st.t0) / 1000;
+      const s = sartSample(st, f);
+      const k = live ? 0.25 : 1;                                 // 부드럽게 따라감 (갑자기 바뀌어 눈이 피로하지 않게)
+      st.Ls += (s.L - st.Ls) * k; st.P += (s.P - st.P) * (live ? 0.08 : 1);
+      for (let i = 0; i < 3; i++) st.B[i] += (s.B[i] - st.B[i]) * k;
+      if (onset) { st.bump = Math.min(1, st.bump + (onset === 2 ? 0.7 : 0.45)); st.rings.push({ r: 0, a: onset === 2 ? 0.55 : 0.35 }); }
+      st.bump *= 0.9;
+      const vis = profile && profile.visual ? (profile.visual.on ? 0.5 + 0.1 * profile.visual.level : 0.35) : 0.8;   // 보기 세기만큼 움직임 크기
+      const still = reduceMotion() || (profile && profile.visual && !profile.visual.on);
+      const tt = still ? 0 : t;
+      g.fillStyle = SART_BG; g.fillRect(0, 0, W, H);
+      if (st.style === "rain") sartRain(st, g, W, H, tt, onset, vis);
+      else if (st.style === "grain") sartGrainDraw(st, g, W, H, tt, onset, vis);
+      else sartOrb(st, g, W, H, tt, vis);
+      // 필름 알갱이
+      const gt = sartGrain(), ox = still ? 0 : Math.floor(Math.random() * 192), oy = still ? 0 : Math.floor(Math.random() * 192);
+      g.save(); g.globalAlpha = 0.26; g.globalCompositeOperation = "multiply";
+      const pat = g.createPattern(gt, "repeat"); g.translate(-ox, -oy); g.fillStyle = pat; g.fillRect(ox, oy, W + 192, H + 192); g.restore();
+      st.rings.forEach((r) => { r.r += 0.022; r.a *= 0.94; }); st.rings = st.rings.filter((r) => r.a > 0.02);
+    }
+    // ① 빛 구슬 — 흐릿한 구 안에서 세 높이의 색이 돌고, 크기는 소리 크기, 박마다 빛이 번짐
+    function sartOrb(st, g, W, H, t, vis) {
+      const lo = st.lo, q = lo.getContext("2d"), N = lo.width, c = N / 2;
+      q.clearRect(0, 0, N, N);
+      const R = N * (0.235 + 0.075 * st.Ls * vis * 2 + 0.025 * st.bump);
+      const dom = st.B.indexOf(Math.max(...st.B));
+      const px = st.ptr ? (st.ptr.x - 0.5) * N * 0.12 : 0, py = st.ptr ? (st.ptr.y - 0.5) * N * 0.12 : 0;
+      // 바깥 번짐 (가장 센 높이의 색)
+      let gr = q.createRadialGradient(c, c, R * 0.8, c, c, R * 1.55);
+      gr.addColorStop(0, sartRGBA(SART_COL[dom], 0.12 + 0.22 * st.Ls)); gr.addColorStop(1, sartRGBA(SART_COL[dom], 0));
+      q.fillStyle = gr; q.fillRect(0, 0, N, N);
+      st.rings.forEach((r) => {
+        const rr = R * (1 + r.r * 3);
+        const rg = q.createRadialGradient(c, c, rr * 0.82, c, c, rr * 1.12);
+        rg.addColorStop(0, sartRGBA(st.mood, 0)); rg.addColorStop(0.5, sartRGBA(st.mood, r.a)); rg.addColorStop(1, sartRGBA(st.mood, 0));
+        q.fillStyle = rg; q.fillRect(0, 0, N, N);
+      });
+      q.save(); q.beginPath(); q.arc(c, c, R, 0, Math.PI * 2); q.clip();
+      gr = q.createLinearGradient(c - R, c - R, c + R, c + R);
+      gr.addColorStop(0, "#EEF0FF"); gr.addColorStop(0.5, "#FBEFF6"); gr.addColorStop(1, "#FFF2E4");
+      q.fillStyle = gr; q.fillRect(0, 0, N, N);
+      for (let i = 0; i < 3; i++) {                                // 세 높이의 색 덩어리가 천천히 돎
+        const a = t * (0.22 + 0.1 * st.Ls) + i * 2.094 + st.P * 2.2;
+        const x = c + Math.cos(a) * R * 0.42 + px, y = c + Math.sin(a) * R * 0.42 + py, rr = R * (0.45 + 0.75 * st.B[i]);
+        const bg = q.createRadialGradient(x, y, 0, x, y, rr);
+        bg.addColorStop(0, sartRGBA(SART_COL[i], 0.95)); bg.addColorStop(0.55, sartRGBA(SART_COL[i], 0.5)); bg.addColorStop(1, sartRGBA(SART_COL[i], 0));
+        q.fillStyle = bg; q.fillRect(0, 0, N, N);
+      }
+      q.save(); q.translate(c + px * 0.5, c + py * 0.5); q.rotate(-0.6 + t * 0.12 + st.P);   // 가운데를 가로지르는 분위기 색 물결 (곡선 띠)
+      const wv = q.createLinearGradient(0, -R * 0.4, 0, R * 0.4);
+      wv.addColorStop(0, sartRGBA(st.mood, 0)); wv.addColorStop(0.5, sartRGBA(st.mood, 0.32 + 0.3 * st.bump)); wv.addColorStop(1, sartRGBA(st.mood, 0));
+      q.fillStyle = wv; q.beginPath();                                // S자로 휜 물결 띠
+      const wy = R * 0.12 * Math.sin(t * 0.7), th = R * (0.16 + 0.16 * st.Ls);
+      q.moveTo(-R * 1.2, wy); q.bezierCurveTo(-R * 0.4, wy - R * 0.55, R * 0.4, wy + R * 0.55, R * 1.2, wy);
+      q.lineTo(R * 1.2, wy + th); q.bezierCurveTo(R * 0.4, wy + R * 0.55 + th, -R * 0.4, wy - R * 0.55 + th, -R * 1.2, wy + th); q.closePath(); q.fill(); q.restore();
+      const sh = q.createRadialGradient(c - R * 0.38, c - R * 0.42, 0, c - R * 0.38, c - R * 0.42, R * 0.8);
+      sh.addColorStop(0, "rgba(255,255,255,0.75)"); sh.addColorStop(1, "rgba(255,255,255,0)");
+      q.fillStyle = sh; q.fillRect(0, 0, N, N);
+      q.restore();
+      g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+      const S = Math.min(W, H), ox = (W - S) / 2, oy = (H - S) / 2;
+      g.drawImage(lo, ox, oy, S, S);                              // 작은 그림을 크게 → 저절로 흐릿하게 (흐림 필터보다 훨씬 가벼움)
+      g.restore();
+    }
+    // ② 빛 줄기 — 흐릿한 색 바탕 위로 가는 줄이 내려오고, 박마다 그 높이의 자리에 빛방울이 맺혀 흘러내림
+    function sartRain(st, g, W, H, t, onset, vis) {
+      const lo = st.lo, q = lo.getContext("2d"), N = lo.width;
+      q.fillStyle = SART_BG; q.fillRect(0, 0, N, N);
+      for (let i = 0; i < 3; i++) {
+        const x = N * (0.25 + 0.25 * i) + Math.sin(t * 0.2 + i) * N * 0.08, y = N * (0.4 + 0.15 * Math.cos(t * 0.17 + i * 2));
+        const rr = N * (0.3 + 0.35 * st.B[i]);
+        const bg = q.createRadialGradient(x, y, 0, x, y, rr);
+        bg.addColorStop(0, sartRGBA(SART_COL[i], 0.25 + 0.35 * st.B[i])); bg.addColorStop(1, sartRGBA(SART_COL[i], 0));
+        q.fillStyle = bg; q.fillRect(0, 0, N, N);
+      }
+      g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(lo, 0, 0, W, H); g.restore();
+      const T = 11, xs = [];
+      for (let i = 0; i < T; i++) xs.push(W * (0.08 + 0.84 * i / (T - 1)));
+      g.lineWidth = Math.max(1, W / 500);
+      xs.forEach((x, i) => { g.strokeStyle = sartRGBA(SART_COL[Math.min(2, Math.floor(i / T * 3))], 0.18); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); });
+      if (onset) {
+        const i = Math.round(st.P * (T - 1)), col = SART_COL[Math.min(2, Math.floor(st.P * 3))];
+        st.beads.push({ x: xs[i], y: H * (0.1 + 0.3 * Math.random()), v: H * 0.002 * (1 + st.Ls), r: W * (0.012 + 0.02 * st.Ls) * (onset === 2 ? 1.4 : 1), a: 1, c: col });
+      }
+      if (Math.random() < 0.06 + 0.25 * st.B[2]) {                     // 높은 소리가 많으면 작은 빛방울이 자주
+        const i = Math.floor(Math.random() * T), col = SART_COL[Math.min(2, Math.floor(i / T * 3))];
+        st.beads.push({ x: xs[i], y: H * Math.random() * 0.6, v: H * 0.0012, r: W * 0.006, a: 0.7, c: col });
+      }
+      if (st.ptr && Math.random() < 0.3) st.beads.push({ x: st.ptr.x * W, y: st.ptr.y * H, v: H * 0.0015, r: W * 0.01, a: 0.8, c: st.mood });
+      st.beads.forEach((b) => {
+        b.y += b.v; b.v *= 1.01; b.a *= 0.985;
+        const gl = g.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 4);
+        gl.addColorStop(0, sartRGBA(b.c, 0.9 * b.a)); gl.addColorStop(0.25, sartRGBA(b.c, 0.4 * b.a)); gl.addColorStop(1, sartRGBA(b.c, 0));
+        g.fillStyle = gl; g.fillRect(b.x - b.r * 4, b.y - b.r * 4, b.r * 8, b.r * 8);
+        g.strokeStyle = sartRGBA(b.c, 0.35 * b.a); g.beginPath(); g.moveTo(b.x, b.y - b.r * 10); g.lineTo(b.x, b.y); g.stroke();
+        g.fillStyle = "rgba(255,255,255," + (0.85 * b.a).toFixed(3) + ")"; g.beginPath(); g.arc(b.x, b.y, b.r * 0.45, 0, Math.PI * 2); g.fill();
+      });
+      st.beads = st.beads.filter((b) => b.a > 0.05 && b.y < H + 20).slice(-60);
+    }
+    // ③ 입자 꽃 — 고운 입자들이 세 높이의 색 덩어리로 모여 있다가, 박마다 퍼졌다 다시 모임
+    function sartGrainDraw(st, g, W, H, t, onset, vis) {
+      const S = Math.min(W, H), cx = W / 2, cy = H / 2;
+      if (!st.parts || st.parts.W !== W) {
+        const rnd = seeded(st.seed), n = 1500, arr = [];
+        const gauss = () => { let u = 0; for (let i = 0; i < 4; i++) u += rnd(); return (u - 2) / 2; };
+        for (let i = 0; i < n; i++) arr.push({ k: i % 3, gx: gauss(), gy: gauss(), x: cx, y: cy, vx: 0, vy: 0, z: rnd() });
+        st.parts = arr; st.parts.W = W;
+      }
+      if (onset) st.parts.forEach((p) => { const a = Math.random() * 6.283; const f = S * 0.006 * (onset === 2 ? 1.6 : 1) * (0.5 + p.z); p.vx += Math.cos(a) * f; p.vy += Math.sin(a) * f; });
+      const ctr = [0, 1, 2].map((i) => { const a = t * 0.18 + i * 2.094 + st.P * 1.5; return [cx + Math.cos(a) * S * 0.14, cy + Math.sin(a) * S * 0.12]; });
+      if (st.ptr) ctr.forEach((c) => { c[0] += (st.ptr.x * W - c[0]) * 0.25; c[1] += (st.ptr.y * H - c[1]) * 0.25; });
+      // 색 덩어리 바탕 (흐릿하게)
+      const lo = st.lo, q = lo.getContext("2d"), N = lo.width;
+      q.clearRect(0, 0, N, N);
+      ctr.forEach((c, i) => {
+        const x = c[0] / W * N, y = c[1] / H * N, rr = N * (0.14 + 0.16 * st.B[i]);
+        const bg = q.createRadialGradient(x, y, 0, x, y, rr * 1.3);
+        bg.addColorStop(0, sartRGBA(SART_COL[i], 0.7)); bg.addColorStop(1, sartRGBA(SART_COL[i], 0));
+        q.fillStyle = bg; q.fillRect(0, 0, N, N);
+      });
+      g.drawImage(lo, 0, 0, W, H);
+      const dot = Math.max(1.5, S / 230);
+      st.parts.forEach((p) => {
+        const sp = S * (0.1 + 0.13 * st.B[p.k]) * (0.9 + 0.35 * st.Ls);
+        const hx = ctr[p.k][0] + p.gx * sp, hy = ctr[p.k][1] + p.gy * sp;
+        p.vx += (hx - p.x) * 0.04; p.vy += (hy - p.y) * 0.04; p.vx *= 0.86; p.vy *= 0.86;
+        p.x += p.vx; p.y += p.vy;
+        g.fillStyle = sartRGBA(p.z > 0.85 ? st.mood : SART_COL[p.k], 0.35 + 0.45 * p.z);
+        g.fillRect(p.x, p.y, dot, dot);
+      });
+    }
+    // 멈춘 그림 한 장 (갤러리 썸네일 · 기다리기 전) — 앨범 표지처럼 글씨도 함께
+    function sartStill(F, mood, W, label) {
+      const cv = document.createElement("canvas"); cv.width = cv.height = W || 720;
+      const st = sartMake(cv, F, { mood: mood, style: "orb" });
+      st.t0 = performance.now() - 4000;
+      sartDraw(st, -1, 0, false);
+      if (label) {
+        const g = cv.getContext("2d"), w = cv.width;
+        g.fillStyle = "#2A2723"; g.font = "500 " + Math.round(w * 0.028) + "px 'IBM Plex Mono', monospace";
+        g.fillText(label[0] || "", w * 0.08, w * 0.1); g.textAlign = "right"; g.fillText(label[1] || "", w * 0.92, w * 0.1);
+        g.textAlign = "left"; g.fillText(label[2] || "", w * 0.08, w * 0.93);
+      }
+      return cv;
+    }
+
     // 소리 한 덩어리(파일 또는 녹음) → 감상 화면으로
-    async function soundToView(pcm, sr, source, fileUrl, fullDur) {
+    async function soundToView(pcm, sr, source, isFile, fullDur) {
       $("camMsg").textContent = "소리를 읽는 중이에요…";
-      let p22 = await resamplePCM(pcm, sr, SND_SR);
-      const from = fileUrl ? pickWindow(p22, SND_SR) : Math.max(0, p22.length / SND_SR - SND_MAX);
-      p22 = p22.slice(Math.floor(from * SND_SR), Math.floor((from + SND_MAX) * SND_SR));
-      const F = soundFeatures(p22, SND_SR);
-      if (F.n < 10) { $("camMsg").textContent = "소리가 너무 짧아요. 2초 넘게 들려주세요."; return; }
-      const p16 = await resamplePCM(p22, SND_SR, 16000);
-      const pic = soundPicture(F, 720);
+      let p = await resamplePCM(pcm, sr, SND_SR);
+      const from = isFile ? pickWindow(p, SND_SR) : Math.max(0, p.length / SND_SR - SND_MAX);
+      p = p.slice(Math.floor(from * SND_SR), Math.floor((from + SND_MAX) * SND_SR));
+      const F = soundFeatures(p, SND_SR);
+      if (F.n < 30) { $("camMsg").textContent = "소리가 너무 짧아요. 2초 넘게 들려주세요."; return; }
+      const p16 = await resamplePCM(p, SND_SR, 16000);
+      const still = sartStill(F, null, 720, ["SOUND", fmtSec(F.sec), ""]);
       $("camMsg").textContent = "";
       showConfirm({
-        type: "sound", images: [pic.toDataURL("image/jpeg", 0.88)], source: source, audio: F.summary,
-        snd: { pcm: p22, sr: SND_SR, from: from, dur: F.sec, F: F, fileUrl: fileUrl || null, full: fullDur || F.sec },
+        type: "sound", images: [still.toDataURL("image/jpeg", 0.9)], source: source, audio: F.summary,
+        snd: { pcm: p, sr: SND_SR, from: from, dur: F.sec, F: F, full: fullDur || F.sec },
         wav: wavBase64(p16, 16000)
       });
     }
@@ -2953,13 +3152,14 @@
       $("camMsg").textContent = "소리 파일을 여는 중이에요…";
       try {
         const m = await decodeToMono(file);
-        await soundToView(m.pcm, m.sr, "소리 파일: " + String(file.name || "").slice(0, 40), URL.createObjectURL(file), m.pcm.length / m.sr);
+        await soundToView(m.pcm, m.sr, "소리 파일: " + String(file.name || "").slice(0, 40), true, m.pcm.length / m.sr);
       } catch (e) {
         $("camMsg").textContent = "이 소리 파일은 열 수 없어요. mp3, m4a, wav 파일로 골라 주세요.";
       }
     }
 
-    // ---------- 감상 화면: 작품 자리에 '움직이는 그림' (소리 = 소리 그림 + 구슬, 글 = 움직이는 글자) ----------
+    // ---------- 감상 화면: 작품 자리에 '움직이는 그림' (소리 = 빛 구슬, 글 = 움직이는 글자) ----------
+    let sartSt = null;
     function setArtKind(d) {
       const art = $("art"), kin = $("kin");
       const k = d && ((d.type === "sound" && d.snd) || d.type === "text");
@@ -2967,60 +3167,37 @@
       art.classList.toggle("sound-art", !!(d && d.type === "sound"));
       kin.hidden = !k;
       kin.innerHTML = "";
+      sartSt = null;
       if (!k) return;
-      if (d.type === "sound") {
-        kin.innerHTML = '<canvas id="kinCanvas"></canvas><div class="kin-no" id="kinNo">SOUND · ' + (d.snd && d.snd.full > d.snd.dur + 1 ? "전체 " + fmtSec(d.snd.full) + " 중 " + fmtSec(d.snd.from) + "–" + fmtSec(d.snd.from + d.snd.dur) : fmtSec(d.snd ? d.snd.dur : 0)) + '</div><div class="kin-cap"><span id="kinCapL"></span><span id="kinCapR"></span></div><div class="kin-bar"><i id="kinBar"></i></div>';
-        sizeKin(); drawSoundFrame(-1);
-      } else {
-        kin.innerHTML = '<div class="kin-glow" id="kinGlow"></div><div class="kin-no" id="kinNo">TEXT</div><div class="kin-text" id="kinText"></div><div class="kin-cap"><span id="kinCapL"></span><span id="kinCapR"></span></div>';
-        kinShowText(d.text || "", false);
-      }
+      const head = d.type === "sound"
+        ? "SOUND" : "TEXT";
+      const right = d.type === "sound" ? (d.snd.full > d.snd.dur + 1 ? fmtSec(d.snd.from) + " — " + fmtSec(d.snd.from + d.snd.dur) : fmtSec(d.snd.dur)) : "";
+      kin.innerHTML = '<canvas id="kinCanvas"></canvas><div class="kin-no" id="kinNo">' + head + '</div><div class="kin-tr" id="kinTR">' + esc(right) + "</div>" +
+        (d.type === "text" ? '<div class="kin-text" id="kinText"></div>' : "") +
+        '<div class="kin-cap"><span id="kinCapL"></span><span id="kinCapR"></span></div>' + (d.type === "sound" ? '<div class="kin-bar"><i id="kinBar"></i></div>' : "");
+      sizeKin();
+      sartSt = sartMake($("kinCanvas"), d.type === "sound" ? d.snd.F : null, { style: d.type === "text" ? "field" : sartStyle() });
+      if (d.type === "sound") drawSoundFrame(-1);
+      else { kinShowText(d.text || "", false); textField(0); }
     }
     function sizeKin() {
       const cv = $("kinCanvas"); if (!cv) return;
       const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
-      const s = Math.max(200, Math.round(Math.min(r.width || 360, r.height || 360) * dpr));
-      if (cv.width !== s) { cv.width = s; cv.height = s; }
+      const w = Math.max(200, Math.round((r.width || 360) * dpr)), h = Math.max(200, Math.round((r.height || 360) * dpr));
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; if (sartSt) sartSt.parts = null; }
     }
-    window.addEventListener("resize", () => { if (currentScreen === "view" && lastData && lastData.type === "sound") { sizeKin(); drawSoundFrame(sndF ? sndF.f : -1); } });
-    // 소리 한 장면 그리기: f = 지금 조각 번호 (-1 = 멈춤)
-    function drawSoundFrame(f, ripples) {
-      const cv = $("kinCanvas"); if (!cv || !lastData || !lastData.snd) return;
-      const F = lastData.snd.F, g = cv.getContext("2d"), W = cv.width;
-      drawSoundRing(g, F, W, 1, f < 0 ? 1 : 0.32);
-      const cx = W / 2, cy = W / 2;
-      if (f >= 0) {
-        drawSoundRingPart(g, F, W, f);
-        const L = F.L[Math.min(F.n - 1, f)], P = F.P[Math.min(F.n - 1, f)];
-        const vis = profile.visual.on ? profile.visual.level / 5 : 0.35;
-        const R = W * (0.1 + 0.08 * L * (0.4 + 0.6 * vis));
-        const col = pitchColor(P);
-        const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R * 1.9);
-        gr.addColorStop(0, col); gr.addColorStop(0.45, col.replace("rgb(", "rgba(").replace(")", ",0.55)")); gr.addColorStop(1, "rgba(0,0,0,0)");
-        g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R * 1.9, 0, Math.PI * 2); g.fill();
-        (ripples || []).forEach((rp) => {
-          g.strokeStyle = "rgba(242,239,234," + (rp.a * 0.8).toFixed(3) + ")"; g.lineWidth = W * 0.006;
-          g.beginPath(); g.arc(cx, cy, R * (1 + rp.k * 2.4), 0, Math.PI * 2); g.stroke();
-        });
-        const a = -Math.PI / 2 + 2 * Math.PI * f / F.n;                 // 지금 시각을 가리키는 바늘
-        g.strokeStyle = "#F2EFEA"; g.lineWidth = W * 0.004;
-        g.beginPath(); g.moveTo(cx + Math.cos(a) * W * 0.19, cy + Math.sin(a) * W * 0.19); g.lineTo(cx + Math.cos(a) * W * 0.47, cy + Math.sin(a) * W * 0.47); g.stroke();
-      } else {
-        const L = mean(Array.from(F.L)), P = mean(Array.from(F.P)), R = W * 0.12, col = pitchColor(P);
-        const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R * 1.6);
-        gr.addColorStop(0, col); gr.addColorStop(1, "rgba(0,0,0,0)");
-        g.globalAlpha = 0.5 + 0.4 * L; g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, R * 1.6, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1;
-      }
-    }
-    function drawSoundRingPart(g, F, W, f) {                            // 이미 지나간 부분은 밝게
-      const cx = W / 2, cy = W / 2, r0 = W * 0.2, r1 = W * 0.44, step = Math.max(1, Math.floor(F.n / 360));
-      g.lineCap = "round"; g.lineWidth = Math.max(1.5, W * 0.006);
-      for (let k = 0; k <= f && k < F.n; k += step) {
-        const a = -Math.PI / 2 + 2 * Math.PI * k / F.n, rr = r0 + (r1 - r0) * (0.06 + 0.94 * F.L[k]);
-        g.strokeStyle = pitchColor(F.P[k]).replace("rgb(", "rgba(").replace(")", "," + (0.45 + 0.55 * F.L[k]) + ")");
-        g.beginPath(); g.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); g.stroke();
-      }
-    }
+    window.addEventListener("resize", () => { if (currentScreen === "view" && sartSt) { sizeKin(); if (lastData.type === "sound") drawSoundFrame(sndF ? sndF.f : -1); else textField(0); } });
+    function setMoodOf(r) { if (sartSt && r && r.whole) sartSt.mood = hexRGB(emotionColor(r.whole)) || sartSt.mood; }
+    function drawSoundFrame(f, onset) { if (sartSt && sartSt.style !== "field") sartDraw(sartSt, f, onset || 0, f >= 0); }
+    // 손가락(마우스)을 그림에 대면: 구슬이 손 쪽으로 기울고, 그동안 떨림이 소리 크기를 그대로 따라감
+    (function () {
+      const k = $("kin");
+      const at = (e) => { if (!sartSt) return; const r = k.getBoundingClientRect(); sartSt.ptr = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height, held: e.buttons & 1 || e.pointerType !== "mouse" }; };
+      k.addEventListener("pointerdown", (e) => { at(e); if (!sndF && lastData && lastData.type === "sound") drawSoundFrame(-1); });
+      k.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse" && !(e.buttons & 1)) return; at(e); if (!sndF && lastData && lastData.type === "sound") drawSoundFrame(-1); });
+      const end = () => { if (sartSt) sartSt.ptr = null; if (!sndF && lastData && lastData.type === "sound") drawSoundFrame(-1); };
+      k.addEventListener("pointerup", end); k.addEventListener("pointerleave", end); k.addEventListener("pointercancel", end);
+    })();
     // 소리의 부분마다 시작·끝 시각 (AI가 준 from/to → 없으면 고르게 나눔)
     function soundPartTimes(r) {
       const sc = (r && r.scenes) || [], dur = (lastData && lastData.snd && lastData.snd.dur) || (lastData && lastData.audio && lastData.audio.sec) || 30;
@@ -3031,81 +3208,67 @@
       if (out.length) { out[0].from = 0; out[out.length - 1].to = dur; }
       return out;
     }
-    // ▶ 소리 따라가기: 원래 소리를 다시 틀고, 그 시간표(미리 잰 크기·높낮이·박)에 맞춰 빛과 떨림
+    // ▶ 소리 따라가기: 원래 소리를 다시 틀고, 미리 잰 시간표(크기·높낮이·세 높이·박)에 맞춰 빛과 떨림
+    //   [MuSE 7-4] '소리가 안 나요' 고침: 예전에는 파일을 <audio>로 틀었는데, 그 전에 기다림(await)이 끼어 있어
+    //   폰이 '사용자가 누른 것이 아님'으로 보고 재생을 막을 수 있었음 → 이제 녹음·파일 모두 이미 풀어 둔 소리를 바로 틈 (누르는 순간에)
     let sndF = null;
-    async function playSoundFollow() {
+    function playSoundFollow() {
       stopSense(); stopVoice(); stopSoundFollow();
       const d = lastData, S = d && d.snd;
       if (!S) { $("sceneBar").textContent = "다시 틀 소리가 없어요"; return; }
       setViewParts("whole");
       const ctx = getAudio();
-      try { if (ctx && ctx.state === "suspended") await ctx.resume(); } catch (e) {}
+      if (ctx && ctx.state === "suspended") ctx.resume();
       const audible = profile.sound.on && soundUsable();
-      const vol = audible ? [0.45, 0.6, 0.75, 0.9, 1][Math.max(0, Math.min(4, profile.sound.level - 1))] : 0;
-      const run = { playing: true, f: -1, lastF: -1, lastVib: 0, lastPwm: 0, part: -1, ripples: [], raf: 0, onsets: 0, src: null, el: null, gain: null };
+      const vol = audible ? [0.55, 0.7, 0.85, 1, 1.15][Math.max(0, Math.min(4, profile.sound.level - 1))] : 0;
+      const run = { playing: true, f: -1, lastF: -1, lastVib: 0, lastEnv: 0, part: -1, raf: 0, onsets: 0, src: null, gain: null };
       sndF = run;
       let clock;
       if (ctx) {
         const gain = ctx.createGain(); gain.gain.value = vol; gain.connect(ctx.destination); run.gain = gain;
-        if (S.fileUrl) {
-          const el = new Audio(S.fileUrl); el.preload = "auto"; run.el = el;
-          try { const ms = ctx.createMediaElementSource(el); ms.connect(gain); } catch (e) { el.volume = vol; }
-          el.currentTime = S.from;
-          try { await el.play(); } catch (e) { $("sceneBar").textContent = "소리를 틀 수 없어요. 한 번 더 눌러 주세요."; stopSoundFollow(); renderButtons(); return; }
-          clock = () => el.currentTime - S.from;
-        } else {
-          const b = ctx.createBuffer(1, S.pcm.length, S.sr); b.getChannelData(0).set(S.pcm);
-          const src = ctx.createBufferSource(); src.buffer = b; src.connect(gain);
-          const t0 = ctx.currentTime + 0.06; src.start(t0); run.src = src;
-          clock = () => ctx.currentTime - t0;
-        }
+        const b = ctx.createBuffer(1, S.pcm.length, S.sr); b.getChannelData(0).set(S.pcm);
+        const src = ctx.createBufferSource(); src.buffer = b; src.connect(gain);
+        const t0 = ctx.currentTime + 0.05; src.start(t0); run.src = src;
+        clock = () => ctx.currentTime - t0;
       } else { const p0 = performance.now(); clock = () => (performance.now() - p0) / 1000; }
       const lat = ctx && audible ? outLatency(ctx) : 0;                  // 스피커로 나오는 지연만큼 빛·떨림을 늦춤
       const parts = soundPartTimes(lastResult);
-      const out = senseOutputs(clamp01(Number(lastResult && lastResult.whole && lastResult.whole.intensity) || 0.5));
       const P = planOf((lastResult && lastResult.whole) || {});
-      $("sceneBar").textContent = "소리를 따라가요";
+      const tl = profile.touch.on ? profile.touch.level / 5 : 0;
+      $("sceneBar").textContent = audible ? "" : "소리는 꺼져 있어요 · 빛과 떨림으로 따라가요";
       renderButtons();
       const loop = () => {
         if (sndF !== run) return;
         const t = clock() - lat;
-        if (t >= S.dur - 0.03 || (run.el && run.el.ended)) { finishSoundFollow(); return; }
-        const f = Math.max(0, Math.min(S.F.n - 1, Math.floor(t / S.F.hop)));
+        if (t >= S.dur - 0.03) { finishSoundFollow(); return; }
+        const f = Math.max(0, Math.min(S.F.n - 1, Math.floor(Math.max(0, t) / S.F.hop)));
         const now = performance.now();
-        // 지나간 조각 중 박이 있었으면 → 떨림 + 빛 물결 (박을 건너뛰지 않게 지난번 조각부터 확인)
-        for (let k = Math.max(0, run.lastF + 1); k <= f; k++) {
-          if (!S.F.on[k]) continue;
-          run.onsets++;
-          const L = S.F.L[k], acc = S.F.on[k] === 2;
-          if (profile.touch.on && vibeUsable() && now - run.lastVib > 180) {
-            run.lastVib = now;
-            buzz(vibeForNote(P.c, out.vibe * Math.min(1, 0.35 + L), acc ? 240 : 150, acc));
-          } else if (profile.touch.on && !vibeUsable()) heartGlow();
-          if (profile.visual.on) run.ripples.push({ k: 0, a: 0.6 + 0.4 * L });
-          senseBlink(profile.visual.on, audible, profile.touch.on, acc ? 420 : 260);
-        }
-        // 박이 없이 길게 이어지는 큰 소리(예: 긴 음, 바람 소리)는 약한 떨림으로 크기를 이어서 알려 줌
-        if (profile.touch.on && vibeUsable() && canVibrate && now - run.lastVib > 420 && now - run.lastPwm > 200) {
-          run.lastPwm = now;
-          const v = S.F.L[f] * (profile.touch.level / 5);
-          if (v > 0.35) { const on = Math.round(10 + 40 * v); navigator.vibrate([on, 100 - on]); }
+        let onset = 0;
+        for (let k = Math.max(0, run.lastF + 1); k <= f; k++) if (S.F.on[k]) { onset = Math.max(onset, S.F.on[k]); run.onsets++; }
+        // ✋ 떨림 ① 박: 짧고 또렷하게
+        if (onset && tl && vibeUsable() && now - run.lastVib > 160) {
+          run.lastVib = now;
+          buzz(Math.round((onset === 2 ? 70 : 45) + 50 * S.F.L[f] * tl));
+        } else if (onset && tl && !vibeUsable()) heartGlow();
+        // ✋ 떨림 ② 소리 크기를 계속 따라감 (0.1초마다 켜짐 비율로 세기 흉내) — 잔잔한 소리도 느껴지게, 손을 대고 있으면 더 진하게
+        if (tl && canVibrate && now - run.lastVib > 140 && now - run.lastEnv > 100) {
+          run.lastEnv = now;
+          const held = sartSt && sartSt.ptr ? 1.4 : 1;
+          const v = Math.min(1, Math.pow(S.F.L[f], 0.8) * (0.45 + 0.55 * tl) * held);
+          if (v > 0.12) { const on = Math.round(8 + 62 * v); navigator.vibrate([on, 100 - on]); } else navigator.vibrate(0);
         }
         run.lastF = f; run.f = f;
-        run.ripples.forEach((rp) => { rp.k += 0.035; rp.a *= 0.93; });
-        run.ripples = run.ripples.filter((rp) => rp.a > 0.04);
-        if (profile.visual.on || f % 3 === 0) drawSoundFrame(profile.visual.on ? f : f, run.ripples);
-        // 부분이 바뀌면 자막
+        drawSoundFrame(f, onset);
         let k = -1; parts.forEach((p, j) => { if (t >= p.from) k = j; });
         if (k !== run.part && k >= 0 && lastResult.scenes[k]) {
           run.part = k;
           const sc = lastResult.scenes[k];
-          $("sceneBar").textContent = (k + 1) + " / " + parts.length + " · " + (sc.text || sc.name || "");
-          if (profile.touch.on && vibeUsable() && k > 0) buzz(Math.round(40 + 40 * out.vibe));
+          $("sceneBar").textContent = sc.text || sc.name || "";
+          const L = $("kinCapL"); if (L) L.textContent = String(k + 1).padStart(2, "0") + " " + (sc.name || "");
         }
-        const L = $("kinCapL"), R = $("kinCapR"), B = $("kinBar");
-        if (L) L.textContent = lastResult.scenes[run.part] ? String(run.part + 1).padStart(2, "0") + " " + lastResult.scenes[run.part].name : "";
+        const R = $("kinCapR"), Bb = $("kinBar");
         if (R) R.textContent = fmtSec(t) + " / " + fmtSec(S.dur);
-        if (B) B.style.width = (100 * t / S.dur).toFixed(2) + "%";
+        if (Bb) Bb.style.width = (100 * t / S.dur).toFixed(2) + "%";
         run.raf = requestAnimationFrame(loop);
       };
       run.raf = requestAnimationFrame(loop);
@@ -3115,45 +3278,53 @@
       sndF = null;
       cancelAnimationFrame(r.raf);
       try { if (r.src) r.src.stop(); } catch (e) {}
-      try { if (r.el) { r.el.pause(); r.el.removeAttribute("src"); r.el.load(); } } catch (e) {}
-      try { if (r.gain) r.gain.disconnect(); } catch (e) {}
+      try { if (r.gain) { r.gain.gain.setTargetAtTime(0, getAudio().currentTime, 0.03); const g = r.gain; setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 300); } } catch (e) {}
       if (canVibrate) navigator.vibrate(0);
       const B = $("kinBar"); if (B) B.style.width = "0%";
-      const R = $("kinCapR"); if (R && lastData && lastData.snd) R.textContent = "";
+      const R = $("kinCapR"); if (R) R.textContent = "";
       const Lc = $("kinCapL"); if (Lc) Lc.textContent = "";
       drawSoundFrame(-1);
     }
     function finishSoundFollow() {
-      const n = sndF ? sndF.onsets : 0;
       stopSoundFollow();
-      lastSoundOnsets = n;
       $("sceneBar").textContent = "끝났어요";
       renderButtons();
     }
-    let lastSoundOnsets = 0;
+    function senseBlink() {}          // [MuSE 7-4] 작품 아래 '보기·듣기·떨림' 점은 뺌 (깜빡여서 정신없다는 의견)
+    function senseLiveState() {}
 
-    // ---------- 지금 나오는 감각 표시 (작품 아래 점 3개) ----------
-    let blinkT = {};
-    function senseBlink(see, hear, feel, ms) {
-      const box = $("senseLive"); if (!box || currentScreen !== "view") return;
-      [["see", see], ["hear", hear], ["feel", feel]].forEach(([k, on]) => {
-        if (!on) return;
-        const i = box.querySelector('[data-s="' + k + '"] i'); if (!i) return;
-        i.classList.add("lit"); clearTimeout(blinkT[k]);
-        blinkT[k] = setTimeout(() => i.classList.remove("lit"), Math.max(120, ms || 250));
+    // ---------- 📝 글: 움직이는 글자 (계획서의 '시각적 리듬': 낱말의 중요도에 따라 색) ----------
+    //   [MuSE 7-4] 바탕 = 글의 분위기 색(AI가 글을 읽고 고른 색)이 흐릿하게 번지는 종이 · 박마다 숨 쉬듯 진해짐
+    let kinRun = null, kinStarting = false, fieldRaf = 0, fieldE = 0;
+    function textColors() {
+      const W = lastResult && lastResult.whole;
+      const cs = ((W && W.colors) || []).map(hexRGB).filter(Boolean);
+      const mood = W ? hexRGB(emotionColor(W)) : null;
+      const out = cs.slice(0, 2); if (mood) out.push(mood);
+      while (out.length < 3) out.push(SART_COL[out.length]);
+      return out.map((c) => { const l = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]; return l < 70 ? c.map((v) => Math.round(v + (200 - v) * 0.35)) : c; });   // 너무 어두운 색은 조금 밝게 (글자가 보이게)
+    }
+    function textField(energy) {
+      const cv = $("kinCanvas"); if (!cv || !sartSt) return;
+      const g = cv.getContext("2d"), W = cv.width, H = cv.height, lo = sartSt.lo, q = lo.getContext("2d"), N = lo.width;
+      const t = reduceMotion() ? 0 : (performance.now() - sartSt.t0) / 1000, cols = lastResult ? textColors() : SART_COL;
+      q.fillStyle = SART_BG; q.fillRect(0, 0, N, N);
+      cols.forEach((c, i) => {
+        const x = N * (0.3 + 0.4 * ((i * 0.37) % 1)) + Math.sin(t * 0.23 + i * 2) * N * 0.12;
+        const y = N * (0.25 + 0.25 * i) + Math.cos(t * 0.19 + i) * N * 0.08;
+        const rr = N * (0.32 + 0.1 * energy);
+        const bg = q.createRadialGradient(x, y, 0, x, y, rr);
+        bg.addColorStop(0, sartRGBA(c, 0.42 + 0.3 * energy)); bg.addColorStop(1, sartRGBA(c, 0));
+        q.fillStyle = bg; q.fillRect(0, 0, N, N);
       });
+      g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(lo, 0, 0, W, H); g.restore();
+      const gt = sartGrain(); g.save(); g.globalAlpha = 0.45; g.globalCompositeOperation = "multiply"; g.fillStyle = g.createPattern(gt, "repeat"); g.fillRect(0, 0, W, H); g.restore();
     }
-    function senseLiveState() {
-      const box = $("senseLive"); if (!box || !profile) return;
-      const t = lastData && lastData.type;
-      const hearOn = profile.sound.on && soundUsable() && t !== "sound" ? true : (t === "sound" ? profile.sound.on && soundUsable() : false);
-      box.querySelector('[data-s="see"]').classList.toggle("off", !profile.visual.on);
-      box.querySelector('[data-s="hear"]').classList.toggle("off", !hearOn);
-      box.querySelector('[data-s="feel"]').classList.toggle("off", !profile.touch.on);
+    function fieldLoop() {
+      cancelAnimationFrame(fieldRaf);
+      const step = () => { if (!kinRun || !kinRun.on) { fieldE = 0; textField(0); return; } fieldE *= 0.94; textField(fieldE); fieldRaf = requestAnimationFrame(step); };
+      fieldRaf = requestAnimationFrame(step);
     }
-
-    // ---------- 📝 글: 움직이는 글자 (계획서의 '시각적 리듬': 낱말의 중요도에 따라 색과 크기) ----------
-    let kinRun = null, kinStarting = false;
     function kinKeys(r) {                                              // 중요한 낱말: AI가 고른 부분 이름 + 생각 단계에서 본 것
       const ks = [];
       (r.scenes || []).forEach((s) => String(s.name || "").split(/\s+/).forEach((w) => { if (w.length >= 2) ks.push(w); }));
@@ -3168,8 +3339,10 @@
     function kinShowText(text, easy, keys, upto) {
       const el = $("kinText"); if (!el) return;
       const words = String(text).split(/\s+/).filter(Boolean);
-      const col = lastResult && lastResult.whole ? emotionColor(lastResult.whole) : "#FFD08A";
-      $("kin").style.setProperty("--kc", col);
+      const kc = lastResult && lastResult.whole ? textColors()[0] : [17, 17, 17];
+      const dk = kc.map((v) => Math.round(v * 0.55));                    // 중요한 낱말 색 (종이 위에서 잘 보이게 진하게)
+      $("kin").style.setProperty("--kc", "rgb(" + dk.join(",") + ")");
+      el.hidden = !easy && !words.length;
       el.style.fontSize = easy ? "" : "clamp(17px, 4.6vw, 24px)";
       el.innerHTML = words.map((w, i) => {
         const key = keys && keys.some((k) => w.indexOf(k) >= 0);
@@ -3180,28 +3353,29 @@
       if (!lastResult || !$("kinText")) return;
       const s = kinSentences(lastResult);
       kinShowText(s[0] || "", true, kinKeys(lastResult));
-      const n = $("kinNo"); if (n) n.textContent = "TEXT · 쉬운 해설";
-      const L = $("kinCapL"), R = $("kinCapR"); if (L) L.textContent = ""; if (R) R.textContent = s.length + "문장";
+      const L = $("kinCapL"), R = $("kinCapR"); if (L) L.textContent = ""; if (R) R.textContent = "";
+      textField(0);
     }
     function startKinetic(barsMin) {
       const r = lastResult, P = planOf(r.whole);
       const sents = kinSentences(r), keys = kinKeys(r);
       const words = sents.map((s) => s.split(/\s+/).filter(Boolean).length);
-      const perBar = Math.max(1, P.rhythm.filter(Boolean).length);
+      const perBar = (P.bpb || 4) * (P.bpm < 100 ? 2 : 1);
       const need = words.reduce((a, b) => a + b, 0) + 3 * sents.length + 2;
       const bars = Math.max(barsMin || 8, Math.min(32, Math.ceil(need / perBar)));
       kinRun = { on: true, sents: sents, keys: keys, si: 0, wi: -1, hold: 0 };
       kinShowText(sents[0] || "", true, keys, -1);
-      const R = $("kinCapR"); if (R) R.textContent = "";
-      const n = $("kinNo"); if (n) n.textContent = "TEXT · 01 / " + String(sents.length).padStart(2, "0");
-      $("sceneBar").textContent = "한 낱말씩 따라 읽어요";
+      const R = $("kinCapR"); if (R) R.textContent = "01 / " + String(sents.length).padStart(2, "0");
+      $("sceneBar").textContent = "";
       kinStarting = true;
       try { startSense(r.whole, null, allColors(), bars); } finally { kinStarting = false; }
+      fieldLoop();
     }
     function kinBeat(accent) {
       const k = kinRun; if (!k || !k.on) return;
       const el = $("kinText"); if (!el) return;
       const ws = el.querySelectorAll(".w");
+      fieldE = Math.min(1, fieldE + (profile.visual.on ? (accent ? 0.5 : 0.25) * (profile.visual.level / 5 + 0.4) : 0));
       if (k.wi < ws.length - 1) {
         k.wi++;
         const w = ws[k.wi]; w.classList.add("on");
@@ -3213,15 +3387,12 @@
         k.hold = 0; k.wi = -1; k.si++;
         if (k.si >= k.sents.length) { k.si = k.sents.length - 1; k.wi = ws.length - 1; return; }
         kinShowText(k.sents[k.si], true, k.keys, -1);
-        const R = $("kinCapR"); if (R) R.textContent = "";
-        const n = $("kinNo"); if (n) n.textContent = "TEXT · " + String(k.si + 1).padStart(2, "0") + " / " + String(k.sents.length).padStart(2, "0");
+        const R = $("kinCapR"); if (R) R.textContent = String(k.si + 1).padStart(2, "0") + " / " + String(k.sents.length).padStart(2, "0");
       }
-      const gl = $("kinGlow");
-      if (gl && profile.visual.on && !reduceMotion()) gl.animate([{ opacity: 0.15 }, { opacity: 0.15 + 0.5 * (profile.visual.level / 5) * (accent ? 1 : 0.6) }, { opacity: 0.15 }], { duration: 700, easing: "ease-in-out" });
     }
-    function stopKinetic() { if (!kinRun) return; kinRun = null; kinIdle(); }
+    function stopKinetic() { if (!kinRun) return; kinRun = null; cancelAnimationFrame(fieldRaf); kinIdle(); }
 
-    // ---------- 기다리는 동안 (글·소리) — '원래 → 쉬운 말 → 감각' 흐름을 그대로 보여 줌 ----------
+    // ---------- 기다리는 동안 — 사진은 '빛 그림', 글은 '글자가 입자로 흩어져 감각 구슬이 됨', 소리는 '들은 소리로 숨 쉬는 구슬' ----------
     function waitSteps(el, steps) {
       el.innerHTML = '<ol class="wsteps">' + steps.map((s, i) => '<li data-i="' + i + '"><i></i>' + esc(s) + "</li>").join("") + "</ol>";
       let i = 0;
@@ -3231,37 +3402,71 @@
       return () => clearInterval(t);
     }
     function waitText(d) {
-      const stop = waitSteps($("viewWait"), ["글을 읽고 있어요", "어려운 말을 쉬운 말로 바꾸고 있어요", "어울리는 소리·빛·떨림을 고르고 있어요"]);
-      const words = String(d.text || "").split(/\s+/).filter(Boolean).slice(0, 60);
-      const el = $("kinText");
-      if (el) {
-        el.style.fontSize = "clamp(16px, 4.2vw, 22px)";
-        el.innerHTML = words.map((w) => '<span class="w">' + esc(w) + "</span>").join("");
-      }
-      const n = $("kinNo"); if (n) n.textContent = "TEXT · 원래 글";
-      let i = 0;
-      const ws = el ? el.querySelectorAll(".w") : [];
-      const t = setInterval(() => {                                    // 읽는 자리가 앞에서 뒤로 지나감 (반복)
-        if (!ws.length) return;
-        ws.forEach((w, j) => w.classList.toggle("on", j >= i - 4 && j <= i));
-        i = (i + 1) % (ws.length + 6);
-      }, 140);
-      return () => { stop(); clearInterval(t); };
+      const stop = waitSteps($("viewWait"), ["글을 읽고 있어요", "쉬운 말로 바꾸고 있어요", "어울리는 소리·빛·떨림을 고르고 있어요"]);
+      const el = $("kinText"); if (el) el.hidden = true;
+      const cv = $("kinCanvas"); if (!cv) return stop;
+      sizeKin();
+      const W = cv.width, H = cv.height, g = cv.getContext("2d");
+      // 원래 글을 글자 그림으로 그린 뒤, 글자 획 위의 점들을 입자로
+      const tc = document.createElement("canvas"); tc.width = W; tc.height = H;
+      const tg = tc.getContext("2d"), fs = Math.round(W * 0.052);
+      tg.fillStyle = "#000"; tg.font = "700 " + fs + "px 'Noto Serif KR', serif"; tg.textBaseline = "top";
+      let line = "", y = H * 0.14; const lines = [];
+      for (const ch of String(d.text || "").replace(/\s+/g, " ").slice(0, 140)) { if (tg.measureText(line + ch).width > W * 0.84) { lines.push(line); line = ""; } line += ch; }
+      if (line) lines.push(line);
+      lines.slice(0, 9).forEach((l) => { tg.fillText(l, W * 0.08, y); y += fs * 1.55; });
+      const px = tg.getImageData(0, 0, W, H).data, pts = [], step = Math.max(2, Math.round(W / 220));
+      for (let yy = 0; yy < H; yy += step) for (let xx = 0; xx < W; xx += step) if (px[(yy * W + xx) * 4 + 3] > 128) pts.push([xx, yy]);
+      const rnd = seeded(11), n = Math.min(2200, pts.length);
+      const gauss = () => { let u = 0; for (let i = 0; i < 4; i++) u += rnd(); return (u - 2) / 2; };
+      const parts = [];
+      for (let i = 0; i < n; i++) { const p0 = pts[Math.floor(i * pts.length / n)]; parts.push({ hx: p0[0], hy: p0[1], x: p0[0], y: p0[1], k: i % 3, gx: gauss(), gy: gauss(), z: rnd() }); }
+      let raf = 0, alive = true; const t0 = performance.now(), dot = Math.max(1, Math.round(W / 260));
+      const frame = () => {
+        if (!alive) return;
+        const t = (performance.now() - t0) / 1000, ph = (t % 7) / 7;   // 7초 주기: 글자 → 흩어짐 → 구슬 → 다시 글자
+        const m = ph < 0.18 ? 0 : ph < 0.45 ? (ph - 0.18) / 0.27 : ph < 0.78 ? 1 : 1 - (ph - 0.78) / 0.22;
+        const e = m * m * (3 - 2 * m);
+        g.fillStyle = SART_BG; g.fillRect(0, 0, W, H);
+        const S = Math.min(W, H), cx = W / 2, cy = H / 2;
+        if (e > 0.01) {                                                 // 입자가 모이면 그 뒤로 세 감각 색이 흐릿하게 번짐
+          const lo = sartSt.lo, q = lo.getContext("2d"), N = lo.width; q.clearRect(0, 0, N, N);
+          for (let k = 0; k < 3; k++) {
+            const a = t * 0.35 + k * 2.094, x = (cx + Math.cos(a) * S * 0.12) / W * N, y = (cy + Math.sin(a) * S * 0.1) / H * N, rr = N * 0.3;
+            const bg = q.createRadialGradient(x, y, 0, x, y, rr); bg.addColorStop(0, sartRGBA(SART_COL[k], 0.5 * e)); bg.addColorStop(1, sartRGBA(SART_COL[k], 0));
+            q.fillStyle = bg; q.fillRect(0, 0, N, N);
+          }
+          g.drawImage(lo, 0, 0, W, H);
+        }
+        parts.forEach((p) => {
+          const a = t * 0.35 + p.k * 2.094, ccx = cx + Math.cos(a) * S * 0.12, ccy = cy + Math.sin(a) * S * 0.1;
+          const tx = ccx + p.gx * S * 0.2 * (1 + 0.08 * Math.sin(t * 2 + p.z * 6)), ty = ccy + p.gy * S * 0.2;
+          const X = p.hx + (tx - p.hx) * e, Y = p.hy + (ty - p.hy) * e;
+          p.x += (X - p.x) * 0.2; p.y += (Y - p.y) * 0.2;
+          const c = SART_COL[p.k];
+          g.fillStyle = e < 0.02 ? "rgba(30,28,26,0.85)" : "rgba(" + Math.round(30 + (c[0] - 30) * e) + "," + Math.round(28 + (c[1] - 28) * e) + "," + Math.round(26 + (c[2] - 26) * e) + "," + (0.85 - 0.3 * e * p.z).toFixed(2) + ")";
+          g.fillRect(p.x, p.y, dot, dot);
+        });
+        const gt = sartGrain(); g.save(); g.globalAlpha = 0.4; g.globalCompositeOperation = "multiply"; g.fillStyle = g.createPattern(gt, "repeat"); g.fillRect(0, 0, W, H); g.restore();
+        if (!reduceMotion()) raf = requestAnimationFrame(frame);
+      };
+      raf = requestAnimationFrame(frame);
+      return () => { alive = false; cancelAnimationFrame(raf); stop(); if (el) el.hidden = false; };
     }
     function waitSound(d) {
       const stop = waitSteps($("viewWait"), ["AI가 소리를 듣고 있어요", "들린 것을 쉬운 말로 쓰고 있어요", "어울리는 빛·떨림을 고르고 있어요"]);
-      const F = d.snd && d.snd.F, cv = $("kinCanvas");
-      let k = 0, raf = 0, alive = true;
-      const step = () => {                                             // 소리 그림이 시계 방향으로 그려짐 (반복)
-        if (!alive || !cv || !F) return;
-        sizeKin();
-        const g = cv.getContext("2d");
-        k = (k + 0.008) % 1.15;
-        drawSoundRing(g, F, cv.width, Math.min(1, k), 1);
+      const F = d.snd && d.snd.F;
+      let raf = 0, alive = true; const t0 = performance.now();
+      const L = $("kinCapL"); if (L) L.textContent = "LISTENING";
+      const step = () => {                                             // 들은 소리의 시간표를 소리 없이 되풀이 → 구슬이 그 소리대로 숨 쉼
+        if (!alive || !F || !sartSt) return;
+        const f = Math.floor(((performance.now() - t0) / 1000 % F.sec) / F.hop);
+        drawSoundFrame(f, F.on[f] || 0);
+        const R = $("kinCapR"); if (R) R.textContent = fmtSec(f * F.hop) + " / " + fmtSec(F.sec);
         raf = requestAnimationFrame(step);
       };
       if (!reduceMotion()) raf = requestAnimationFrame(step);
-      return () => { alive = false; cancelAnimationFrame(raf); stop(); drawSoundFrame(-1); };
+      return () => { alive = false; cancelAnimationFrame(raf); stop(); const l = $("kinCapL"), r = $("kinCapR"); if (l) l.textContent = ""; if (r) r.textContent = ""; drawSoundFrame(-1); };
     }
 
     // ==========================================================
@@ -3487,7 +3692,7 @@
         }
         renderTexts(r);
         if (d.type === "text") kinIdle();           // [MuSE 7-3] 원래 글 → 쉬운 해설 첫 문장으로 바뀜
-        if (d.type === "sound") drawSoundFrame(-1);
+        if (d.type === "sound") { setMoodOf(r); drawSoundFrame(-1); }
         endWaitArt();                   // [수정 6-12] 기다리는 동안 보이던 빛 그림이 사라지며 원래 작품이 드러남
         prepareParts();                 // [수정 6-12] 눈길 안내·만져보기용 덩어리와 이름을 미리 준비
         if (d.type === "photo" || d.type === "text" || d.type === "sound") addToGallery(d, r);   // [수정 6-14] 📚 내 갤러리에 걸기 (7-3: 소리도)
@@ -3602,7 +3807,7 @@
         '<p class="kicker" style="margin-top:18px">' + esc(partsTitle) + "</p>" +
         '<ol class="read-parts">' + (r.scenes || []).map((s, i) => "<li><span class='no'>" + String(i + 1).padStart(2, "0") + "</span><span><b>" + esc(s.name) +
           (times && times[i] ? '<span class="t">' + fmtSec(times[i].from) + "–" + fmtSec(times[i].to) + "</span>" : "") + "</b>" + esc(s.text) + "</span></li>").join("") + "</ol>" +
-        (r.mood_line ? '<div class="ai-feel"><small>AI의 느낌 · 정답이 아니에요. 사람마다 달라요</small>' + esc(r.mood_line) +
+        (r.mood_line ? '<div class="ai-feel"><small>AI의 느낌</small>' + esc(r.mood_line) +
           ((r.whole && r.whole.mood_tags && r.whole.mood_tags.length) ? "<br>" + r.whole.mood_tags.map((x) => '<span class="chip">' + esc(x) + "</span>").join("") : "") + "</div>" : "") +
         (t === "text" && lastData.text ? '<details class="card" style="margin-top:14px"><summary>원래 글</summary><p class="read-p" style="white-space:pre-wrap">' + esc(lastData.text) + "</p></details>" : "") +
         '<button class="big ghost" data-v="voice" id="btnReadAloud"' + (canVoice ? "" : " hidden") + ">소리 내어 읽기</button><div class=\"result\" id=\"voiceInfo\"></div>";
@@ -3616,32 +3821,24 @@
       const arr = (Array.isArray(pat) ? pat : [pat]).slice(0, 12), mx = Math.max(...arr, 1);
       return '<span class="vbars">' + arr.map((v, i) => '<i class="' + (i % 2 ? "off" : "") + '" style="height:' + Math.max(3, Math.round(22 * (i % 2 ? 0.2 : v / mx))) + "px;width:" + Math.max(3, Math.round(v / 12)) + 'px"></i>').join("") + "</span>";
     }
-    function whyHTML(r) {
+    function whyHTML(r) {                    // [MuSE 7-4] 감각마다 한 줄 + 내 세기 숫자만 (동그라미·막대는 뺌)
       if (!r || !r.whole) return "";
-      const t = lastData ? lastData.type : "photo", W = r.whole, P = planOf(W), out = senseOutputs(clamp01(Number(W.intensity) || 0.5));
-      const lv = (k) => profile[k].on ? profile[k].level : 0;
-      const speed = P.bpm < 76 ? "느리게" : P.bpm < 108 ? "보통 빠르기로" : "빠르게";
+      const t = lastData ? lastData.type : "photo", W = r.whole, P = planOf(W);
+      const lv = (k) => profile[k].on ? "세기 " + profile[k].level : "꺼짐";
+      const speed = P.bpm < 76 ? "느리게" : P.bpm < 108 ? "보통 빠르기" : "빠르게";
       const tags = (W.mood_tags || []).slice(0, 3);
-      const cols = (W.colors || []).slice(0, 3);
-      const rows = [];
-      rows.push(["MOOD", '<span class="sw" style="background:' + esc(emotionColor(W)) + '"></span><b>' + esc(tags.length ? tags.join(" · ") : (W.emotion || "-")) + "</b>" +
-        "<br>AI가 해설을 읽고 기분(밝음↔어두움)과 활기(고요↔신남)를 숫자로 매겼어요. 이 색이 그 자리예요."]);
+      const row = (k, txt, right) => '<div class="why-row"><span>' + k + "</span><div>" + txt + "</div><em>" + (right || "") + "</em></div>";
+      let h = row("분위기", '<i class="sw" style="background:' + esc(emotionColor(W)) + '"></i>' + esc(tags.length ? tags.join(" · ") : (W.emotion || "-")));
       if (t === "sound") {
-        const a = lastData.audio || {};
-        rows.push(["LISTEN", "소리에서 직접 잰 것: " + esc(fmtSec(a.sec || 0)) + " 동안 · 크기 " + esc(a.loud || "-") + "(" + esc(a.change || "-") + ") · " + esc(a.pitch || "-") +
-          (a.bpm ? " · 박자 약 " + a.bpm + "BPM" : "") + " · 강세 " + (a.accents || 0) + "번" + (r.heard ? "<br>AI가 소리를 직접 들었어요." : "<br>AI가 소리를 직접 듣지 못해서, 잰 숫자로만 짐작했어요.")]);
-        rows.push(["SEE", "소리가 커지면 구슬이 커지고, 낮은 소리는 남색, 높은 소리는 노랑으로 빛나요." + meterHTML(lv("visual"))]);
-        rows.push(["FEEL", "소리가 갑자기 커지는 순간(박)마다 짧게 떨려요. 크기만큼 떨림 길이가 달라요." + meterHTML(lv("touch")) + vibeBars(vibeForNote(P.c, out.vibe, 60000 / P.bpm, true))]);
+        h += row("보기", "소리가 크면 구슬이 커지고, 낮은 소리는 파랑 · 높은 소리는 주황", lv("visual"));
+        h += row("떨림", "박마다 톡, 큰 소리는 진하게", lv("touch"));
+        h += row("들은 것", r.heard ? "AI가 소리를 직접 들었어요" : "AI가 소리를 듣지 못해, 크기와 빠르기로만 짐작했어요");
       } else {
-        rows.push(["HEAR", "<b>" + esc(P.genreName) + "</b> 느낌의 음악을 " + speed + " (" + Math.round(P.bpm) + "BPM) · " + esc(P.instName) +
-          "<br>" + (t === "video" ? "영상은 원래 소리를 그대로 들려줘요." : "분위기 낱말에 맞는 장르를 우리 규칙표로 골랐어요.") + meterHTML(lv("sound"))]);
-        rows.push(["SEE", (cols.length ? cols.map((c) => '<span class="sw" style="background:' + esc(c) + '"></span>').join("") + " " : "") +
-          (t === "text" ? "해설 글이 박자에 맞춰 한 낱말씩 나타나고, 중요한 낱말은 분위기 색으로 빛나요." : "작품의 색으로 빛이 숨 쉬듯 밝아졌다 어두워져요.") + meterHTML(lv("visual"))]);
-        rows.push(["FEEL", "음표마다 떨려요. 활기가 크면 자주, 무거우면 길게, 거칠면 잘게 끊어져요." + meterHTML(lv("touch")) + vibeBars(vibeForNote(P.c, out.vibe, noteAt(P, 0) * 60000 / P.bpm, true))]);
+        h += row("듣기", t === "video" ? "영상의 원래 소리" : esc(P.genreName) + " · " + speed, lv("sound"));
+        h += row("보기", t === "text" ? "낱말이 박자에 맞춰 나타나요" : "작품 색의 빛이 박자에 맞춰 숨 쉬어요", lv("visual"));
+        h += row("떨림", "음마다 톡, 활기가 크면 자주", lv("touch"));
       }
-      return rows.map((x) => '<div class="why-row"><span>' + x[0] + "</span><div>" + x[1] + "</div></div>").join("") +
-        (t === "photo" ? measuredHTML(r) : "") +
-        '<p class="why-foot">세기는 \'스티븐스 법칙\'으로 정해요. 같은 \'보통\'이라도 빛·소리·떨림마다 사람이 느끼는 정도가 달라서, 감각마다 다른 곡선으로 바꿔요. 세 감각이 한꺼번에 세지지 않게 합계에도 한계를 둬요.</p>';
+      return h;
     }
     // [수정 6-7] 기분 고르기 시험(A·B·C)은 팀 결정으로 뺌 → 'B: 보이는 것만 해설 + 기분은 AI 수치'로 정함
     // ==========================================================
@@ -3943,6 +4140,7 @@
       setArtKind(lastData);
       renderTexts(lastResult);
       if (lastData.type === "text") kinIdle();
+      if (lastData.type === "sound") { setMoodOf(lastResult); drawSoundFrame(-1); }
       if (lastResult.whole) preloadFor(lastResult.whole);
       prepareParts();
       showReady();
@@ -4176,10 +4374,10 @@
       const n = bs[(i + (e.key === "ArrowRight" ? 1 : bs.length - 1)) % bs.length]; if (n) { setTab(n.dataset.tab); n.focus(); }
     };
     const FEEL_HINT = {
-      photo: "음악과 빛, 떨림이 함께 나와요 (약 30초). 그동안 볼 곳을 하나씩 짚어 줘요.",
-      video: "영상을 처음부터 틀어요. 소리에 맞춰 빛과 떨림이 나와요.",
-      sound: "들은 소리를 다시 틀어요. 소리에 맞춰 화면의 빛과 떨림이 나와요. 소리가 꺼져 있어도 빛과 떨림은 나와요.",
-      text: "쉬운 해설이 한 줄씩 나타나요. 중요한 낱말이 나올 때 음악에 맞춰 떨려요."
+      photo: "음악·빛·떨림이 함께 나와요.",
+      video: "영상에 맞춰 빛과 떨림이 더해져요.",
+      sound: "들은 소리에 맞춰 빛과 떨림이 나와요. 그림을 누르고 있으면 더 진하게 떨려요.",
+      text: "글이 박자에 맞춰 한 낱말씩 나와요."
     };
     function renderButtons() {
       if (!lastData) return;
@@ -4197,16 +4395,11 @@
         $("viewBtns").innerHTML = (playing
           ? '<button class="big stop" data-v="stop">■ 멈추기</button>'
           : '<button class="big primary" data-v="again">' + (playedOnce ? "다시 느껴보기" : "▶ 느껴보기") + "</button>") +
-          '<p class="note">' + esc(FEEL_HINT[t] || FEEL_HINT.photo) + "</p>" +
-          '<p class="note">세기는 카메라 화면 오른쪽 아래 \'내 감각\'에서 바꿀 수 있어요.</p>';
+          '<p class="note">' + esc(FEEL_HINT[t] || FEEL_HINT.photo) + "</p>";
       }
       if (viewTab === "touch") {
         const mouse = matchMedia("(hover: hover) and (pointer: fine)").matches;
-        $("paneTouch").innerHTML = '<p class="note" style="margin-top:4px">' + (mouse
-          ? "마우스 버튼을 <b>누른 채로</b> 작품 위를 천천히 움직여 보세요. 누르지 않고 올리기만 하면 어디인지 이름만 보여요."
-          : "작품 위를 손가락으로 천천히 문질러 보세요.") +
-          " 재질마다 다른 소리가 나고, 거친 곳은 오돌토돌 떨려요.</p>" +
-          (canVoice ? "" : '<p class="note">소리가 꺼져 있어서 떨림과 빛으로만 알려 줘요.</p>');
+        $("paneTouch").innerHTML = '<p class="note" style="margin-top:4px">' + (mouse ? "마우스를 누른 채로 작품 위를 움직여 보세요." : "손가락으로 작품을 천천히 문질러 보세요.") + "</p>";
       }
       if (viewTab === "read") {
         const btn = $("btnReadAloud");
@@ -4878,10 +5071,15 @@
       lastData.touchMap = touchMap;
       if (touchMap && touchMap.matState !== "done" && touchMap.matState !== "asking") requestMaterials();
       $("sceneBar").textContent = touchMap
-        ? "만질 준비가 됐어요. 천천히 문질러 보세요"
+        ? ""
         : "이 사진은 픽셀을 읽을 수 없어요";
     }
     const LV = (x, a, b, c) => x < 0.34 ? a : x < 0.67 ? b : c;
+    // [MuSE 7-4] 만지는 곳 이름: '의자 · 나무'처럼 짧게 (숫자·설명은 빼고)
+    function partLabel(st) {
+      const mat = st.material && st.material !== "모름" ? st.material : LV(st.rough, "매끈함", "오돌토돌함", "거칢");
+      return (st.thing ? st.thing + " · " : "") + mat;
+    }
 
     function onTouchMove(e) {
       if (viewState !== "touch" || !touchMap) return;
@@ -4896,7 +5094,7 @@
         if (mh.seg !== curSeg) {
           curSeg = mh.seg; drawSeg(mh.seg);
           const st = touchMap.seg.st[mh.seg];
-          $("sceneBar").textContent = (st.thing ? st.thing + " · " : "") + (st.material && st.material !== "모름" ? st.material : LV(st.rough, "매끈해 보여요", "조금 오돌토돌해 보여요", "거칠어 보여요")) + " — 누른 채로 움직여 보세요";
+          $("sceneBar").textContent = partLabel(st);
         }
         return;
       }
@@ -4923,9 +5121,7 @@
         touchSegSound(m.seg, out.gain);
         if (tPrev && canBuzz) { buzz(Math.round(30 + 25 * out.vibe)); vibeAt = now; }
         const st = touchMap.seg.st[m.seg];
-        $("sceneBar").textContent = "" + (st.material && st.material !== "모름"
-          ? "AI가 본 재질: " + (st.sure === false ? "아마 " : "") + st.material + (st.heavy !== undefined && MAT_MODES[st.material] && st.material !== "물" ? (st.heavy ? " · 묵직한" : " · 가벼운") : "") + (st.thing ? " (" + st.thing + ")" : "")
-          : (touchMap.matState === "asking" ? "재질을 알아보는 중… · " : "") + LV(st.rough, "매끈해 보여요", "조금 오돌토돌해 보여요", "거칠어 보여요"));
+        $("sceneBar").textContent = partLabel(st);
       }
       // 2) 👁 손가락 둘레 빛
       if (profile.visual.on) {
@@ -4983,7 +5179,7 @@
       stopTouchSound();
       if (canVibrate) navigator.vibrate(0);
       $("touchRing").hidden = true; $("touchMask").hidden = true;
-      if (touchMap) $("sceneBar").textContent = "천천히 문질러 보세요";
+      if (touchMap) $("sceneBar").textContent = "";
     };
     $("art").addEventListener("pointerup", endTouch);
     $("art").addEventListener("pointerleave", endTouch);
@@ -5132,6 +5328,8 @@
       tags.forEach((t, i) => Object.entries(TAG_GENRE[t]).forEach(([g, pt]) => { score[g] = (score[g] || 0) + pt * [1.5, 1, 0.7][i]; }));
       score[numG] = (score[numG] || 0) + (tags.length ? 0.8 : 1);      // [MuSE 7-3] 1.2 → 0.8: 분위기 낱말이 있으면 낱말이 더 크게 정함
       if (everyday && aEff < 0.55) score.lofi = (score.lofi || 0) + 0.6;
+      const aiG = s.music && GENRES[s.music] ? s.music : null;        // [MuSE 7-4] AI가 작품(글)을 읽고 직접 고른 장르 → 가장 크게 반영
+      if (aiG) score[aiG] = (score[aiG] || 0) + 3;
       Object.keys(score).forEach((g) => {
         if (aEff < 0.3 && HIGH_ENERGY.includes(g)) score[g] -= 1.5;
         if (aEff > 0.7 && LOW_ENERGY.includes(g)) score[g] -= 1.5;
@@ -5140,9 +5338,9 @@
       Object.keys(score).forEach((g) => { if (score[g] > score[genre]) genre = g; });
       // [MuSE 7-3] 1등과 2등 점수 차이가 아주 작으면(0.35 이하) 작품마다 정해진 씨앗으로 둘 중 하나 → 비슷한 작품이 늘 같은 장르로만 나오지 않게
       const rank = Object.entries(score).sort((x, y) => y[1] - x[1]);
-      if (rank.length > 1 && rank[0][1] - rank[1][1] <= 0.35 && (seedOf(s) & 1)) genre = rank[1][0];
+      if (!aiG && rank.length > 1 && rank[0][1] - rank[1][1] <= 0.35 && (seedOf(s) & 1)) genre = rank[1][0];
       const G = GENRES[genre];
-      const gWhy = (tags.length ? "분위기 낱말 '" + tags.join("·") + "'" : "수치") + " → 점수 " +
+      const gWhy = (aiG ? "AI가 고른 장르 '" + GENRES[aiG].ko + "' + " : "") + (tags.length ? "분위기 낱말 '" + tags.join("·") + "'" : "수치") + " → 점수 " +
         Object.entries(score).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([g, p]) => GENRES[g].ko + " " + p.toFixed(1)).join(", ");
       // 음계: 기분이 높을수록 밝은 선법 (장르에 따라 범위를 좁힘: 팝은 밝게, 메탈은 어둡게…)
       let mi = Math.max(0, Math.min(5, Math.round(Math.pow(1 - v, 1.3) * 5.2)));
@@ -6796,7 +6994,7 @@
     // 시작! — 처음 온 사람은 처음 화면, 다시 온 사람은 바로 카메라
     renderBanner();
     $("footVer").textContent = APP_VER;
-    if (!new URLSearchParams(location.search).get("work")) goHome(); else renderHome();
+    if (!new URLSearchParams(location.search).get("work")) { if (profile && check) showSplash(); goHome(); } else renderHome();
     try {                                // [수정 6-10] 미니 벽화 QR로 들어오면(주소에 ?work=번호) 그 작품을 바로 엽니다
       const wq = new URLSearchParams(location.search).get("work");
       if (wq) openWork(wq);

@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "7-3";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "7-4";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -220,6 +220,9 @@ const ANCHORS = [
   "roughness 거칠기  0.1 = 유리, 비단, 매끈한 대리석 / 0.5 = 나무 책상 / 0.9 = 나무껍질, 두꺼운 붓질, 깨진 돌",
   "flow 흐름         0.1 = 점 찍기, 톡톡 튀는 빗방울, 각진 모양 / 0.5 = 반듯한 직선 / 0.9 = 물결, 소용돌이, 흐르는 천"
 ];
+// [수정 7-4] 음악 장르를 AI가 직접 고름 (예전: 분위기 낱말 → 우리 규칙표로만 골라서, 글의 분위기와 어긋난 '팝'이 나오기도 했음)
+const MUSIC = { classic: "클래식·앰비언트", ballad: "발라드", calm: "명상", cinema: "시네마틱", musicbox: "오르골 왈츠", festival: "축제 행진",
+  lofi: "로파이", jazz: "재즈", electro: "일렉트로닉", pop: "팝", rock: "록", metal: "메탈", hiphop: "힙합", rnb: "R&B·소울", folk: "포크·컨트리" };
 function sensePrompt() {
   return [
     "너는 문화 콘텐츠의 느낌을 숫자로 재는 측정자다.",
@@ -238,6 +241,9 @@ function sensePrompt() {
     "  목록: " + MOOD_TAGS.join(", "),
     "  ('까리한' = 멋스럽고 당당한, '세련된' = 깔끔하고 도시적인, '관능적인' = 부드러운 곡선과 은은한 매혹. 아이·학생 사진에는 '관능적인'을 쓰지 않는다)",
     "  입력에 'AI가 느낀 분위기' 문장이 있으면 그 문장과 어긋나지 않게 고른다.",
+    "- (whole에만) music: 이 작품에 배경음악을 깐다면 가장 어울리는 장르 하나. 다음 영어 이름 중에서 고른다:",
+    "  " + Object.entries(MUSIC).map(([k, v]) => k + "(" + v + ")").join(", "),
+    "  작품 속 시대·장소·이야기의 분위기를 따른다 (예: 슬픈 이별 이야기 → ballad, 왕실·궁전·비극 → cinema 또는 classic, 아이들 놀이 → musicbox 또는 pop).",
     "",
     "[규칙]",
     "- 눈금 예시와 비교해서 가장 가까운 위치를 고른다. 근거 없이 0.5를 고르지 않는다.",
@@ -249,7 +255,7 @@ function sensePrompt() {
     "- whole은 사진 전체를 처음 봤을 때의 종합적인 느낌이다.",
     "",
     "[출력] JSON만. 아래 모양 그대로, 모든 칸을 빠짐없이 채운다 (scenes는 입력 장면 수만큼):",
-    '{"whole":{"mood_tags":["강렬한"],"emotion":"강렬함","valence":0.45,"arousal":0.8,"brightness":0.3,"weight":0.6,"roughness":0.5,"flow":0.4,"colors":["#AA0000"],"why":"…"},' +
+    '{"whole":{"mood_tags":["강렬한"],"music":"cinema","emotion":"강렬함","valence":0.45,"arousal":0.8,"brightness":0.3,"weight":0.6,"roughness":0.5,"flow":0.4,"colors":["#AA0000"],"why":"…"},' +
     ' "scenes":[{"emotion":"…","valence":0.5,"arousal":0.5,"brightness":0.5,"weight":0.5,"roughness":0.5,"flow":0.5,"colors":["#000000"],"why":"…"}]}',
     "(숫자는 예시일 뿐 — 사진을 보고 새로 매긴다. 장면의 emotion도 그 장면의 느낌으로 꼭 쓴다)"
   ].join("\n");
@@ -430,6 +436,7 @@ function cleanSense(s) {
   DIMS.forEach((k) => { o[k] = n01(s[k], 0.5); });
   if (s.spread) o.spread = s.spread;
   if (Array.isArray(s.mood_tags)) o.mood_tags = s.mood_tags.filter((t) => MOOD_TAGS.includes(t)).slice(0, 3);
+  if (typeof s.music === "string" && MUSIC[s.music]) o.music = s.music;
   labelsOf(o);
   // [수정 6-10] AI가 감정 낱말을 빠뜨리면 예전에는 '평온'으로 채워서, 강렬한 작품의 장면이 '평온'으로 보였음 → 숫자로 계산한 분위기 이름으로
   if (!o.emotion) o.emotion = { "긴장": "긴장감", "슬픔": "쓸쓸함", "신비": "신비로움", "신남": "신남", "밝음": "밝음", "차분함": "차분함" }[o.mode] || "차분함";
@@ -480,6 +487,11 @@ function averageSense(list, n) {
     if (MOOD_TAGS.includes(t)) votes.set(t, (votes.get(t) || 0) + 1 + (2 - Math.min(2, i)) * 0.1);
   }));
   whole.mood_tags = [...votes.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map((x) => x[0]);
+  // [수정 7-4] 장르: 3번 중 가장 많이 나온 것 (같으면 첫 번째)
+  const mv = new Map();
+  list.forEach((d) => { const m = d.whole && d.whole.music; if (MUSIC[m]) mv.set(m, (mv.get(m) || 0) + 1); });
+  const mBest = [...mv.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (mBest) { whole.music = mBest[0]; whole.music_votes = mBest[1]; } else delete whole.music;
   return { whole: whole, scenes: scenes };
 }
 
@@ -671,7 +683,7 @@ module.exports = async (req, res) => {
       tagFrom = W0.mood_tags.length ? "분위기 문장에서 찾음" : "없음";
     }
     const tagAlign = alignToTags(W0, W0.mood_tags, 0.5);
-    const wholeOut = Object.assign(cleanSense(W0), { tag_from: tagFrom, tag_align: tagAlign });
+    const wholeOut = Object.assign(cleanSense(W0), { tag_from: tagFrom, tag_align: tagAlign, music_votes: W0.music_votes || 0 });
     const sScenes = scenes.map((_, i) => Object.assign(cleanSense((sense.data.scenes || [])[i]), { mood_tags: wholeOut.mood_tags || [] }));
     // [수정 5-1] 대비 강조는 끔: AI가 '비슷하다'고 본 장면을 일부러 다르게 만들면 없는 차이를 지어내는 것이 됨
     //            (장면끼리 구분되는지는 베버의 '알아챌 수 있는 최소 차이' 기준으로 소리·빛 쪽에서 설계)
