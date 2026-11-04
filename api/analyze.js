@@ -11,13 +11,15 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "6-12";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "7-3";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
 // [수정 6-11] '어느 영역이 무엇인지' 짚는 일(재질·이름 붙이기)은 gpt-4o-mini가 자주 틀림(머리카락을 '팔'로, 의자를 '남성'으로)
 //   → 이 일만 그림 위치를 더 잘 보는 큰 모델을 먼저 씀 (없으면 차례로 다음 모델). 1번에 약 10원 안팎 더 듦
 const VISION_MODELS = [process.env.OPENAI_VISION_MODEL, "gpt-4.1", "gpt-4o", "gpt-4o-mini"].filter(Boolean);
+// [수정 7-3] 소리를 '직접 듣는' 모델 (앞에서부터 시도). 계정에서 못 쓰는 모델이면 다음으로, 모두 안 되면 예전처럼 숫자로만 짐작
+const AUDIO_MODELS = [process.env.OPENAI_AUDIO_MODEL, "gpt-audio-mini", "gpt-audio-1.5", "gpt-audio", "gpt-4o-mini-audio-preview", "gpt-4o-audio-preview"].filter(Boolean);
 
 // 쉬운 말 규칙 (CEFR A1/A2의 능력 기준을 한국어 쉬운 글 규칙으로 응용)
 const RULES = { maxWords: 12, maxSummaryWords: 15, minScenes: 2, maxScenes: 5 };
@@ -118,12 +120,14 @@ function tooMany(ip) {
 // ---------------------------------------------------------------------
 // 1) Original to Text 지시문
 // ---------------------------------------------------------------------
-function textPrompt(type, explain, target, cropped, pixel) {
+function textPrompt(type, explain, target, cropped, pixel, heard) {
   const perScene = explain === "short" ? 1 : 2;
   const what = {
     photo: "사용자가 휴대폰 카메라로 찍은 사진 1장",
     video: "사용자가 휴대폰으로 담은 영상에서 시간 순서대로 뽑은 장면 사진 여러 장과 소리 정보",
-    sound: "소리를 기기에서 분석한 숫자 정보(크기·변화·높낮이·강세). 실제 소리는 듣지 못했으니 추측임을 밝힌다",
+    sound: heard
+      ? "사용자가 들려준 소리(최대 30초). 'AI가 직접 들은 내용'과 앱이 잰 숫자(크기·높낮이·강세·빠르기)가 함께 주어진다. 들은 내용을 바탕으로 쓴다"
+      : "소리를 기기에서 분석한 숫자 정보(크기·변화·높낮이·강세). 실제 소리는 듣지 못했으니 '소리 크기와 빠르기로 짐작하면'처럼 추측임을 밝힌다",
     text: "사용자가 입력하거나 붙여 넣은 글 (작품 설명, 공연 안내, 시, 기사 등). 사진은 없다"
   }[type];
 
@@ -138,7 +142,7 @@ function textPrompt(type, explain, target, cropped, pixel) {
         : ""),
     "",
     "[생각 순서 — CoT(생각의 사슬)] 답을 쓰기 전에 think 칸에 짧게 적는다 (사용자에게는 보이지 않고, 개발용 정보에만 보임)",
-    "- think.see: " + (type === "text" ? "글에 나온 중요한 사실 3~5개 (짧은 낱말)" : "사진에 실제로 보이는 것 3~5개 (짧은 낱말)"),
+    "- think.see: " + (type === "text" ? "글에 나온 중요한 사실 3~5개 (짧은 낱말)" : type === "sound" ? "실제로 들리는 것 3~5개 (짧은 낱말)" : "사진에 실제로 보이는 것 3~5개 (짧은 낱말)"),
     "- think.main: 그중 가장 중요한 것 하나와 이유 (한 줄)",
     "- think.easy: 어려운 낱말이 있으면 무엇으로 쉽게 바꿀지 (예: '구도 → 놓인 자리')",
     "",
@@ -160,6 +164,10 @@ function textPrompt(type, explain, target, cropped, pixel) {
     type === "video" ? "- 영상은 '무엇이 일어나는지'를 말한다. '보여요', '보여줘요'를 반복하지 않는다.\n" +
       "- 영상이면 scenes는 '시간 순서대로 나눈 장면'이다(앞 장면이 먼저). 각 장면에 frames: 그 장면에 해당하는 장면 사진 번호들(1부터, 겹치지 않게, 장면 순서대로 이어지게)을 쓴다. 모든 장면 사진이 어느 한 장면에 들어가야 한다." : "",
     type === "text" ? "- 글이면: summary는 '무엇에 대한 글인지', interpretation과 scenes는 글의 중요한 내용을 쉬운 말로. 글에 없는 내용은 지어내지 않는다. 장면 대신 '중요한 부분'으로 나눈다. material은 글에 나온 중심 대상의 재질(모르면 '모름')." : "",
+    type === "sound" ? "- 소리면: kind는 음악·노래·말소리·자연 소리·생활 소리·섞인 소리 중 하나. summary는 '무슨 소리인지' 1문장. interpretation은 소리의 크기·빠르기·높낮이가 어떻게 들리는지.\n" +
+      "  scenes는 '시간 순서대로 나눈 소리의 부분' 2~4개. 각 부분에 from, to (초, 숫자)를 쓴다. 겹치지 않게, 처음은 0초, 끝은 전체 길이.\n" +
+      "  사람 말이 들리면 그 내용을 쉬운 말로 짧게 옮긴다 (말한 사람이 누구인지는 추측하지 않는다). 노래 가사는 그대로 옮겨 적지 않고 '무엇에 대한 노래인지'만.\n" +
+      "  '들려요'를 문장마다 반복하지 않는다. 소리에 없는 모습·색은 지어내지 않는다. material은 '모름'." : "",
     "",
     "[쉬운 말 규칙 — 반드시 지킬 것]",
     "1. 한 문장은 " + RULES.maxWords + "어절 이하. 한 문장에 정보 하나만.",
@@ -170,7 +178,7 @@ function textPrompt(type, explain, target, cropped, pixel) {
     "6. '멋진, 아름다운, 훌륭한, 대단한, 예쁜' 같은 평가하는 말을 쓰지 않는다.",
     "7. 느낌·마음·이야기는 쓰지 않는다. 그것은 감상하는 사람이 정한다. '~같아요', '~느껴져요', '행복해요', '즐거운 분위기', '세상을 지켜요'처럼 사진에서 확인할 수 없는 말을 쓰지 않는다.",
     "   (나쁜 예: '아이가 행복해 보여요. 즐거운 분위기예요.' / 좋은 예: '아이가 입을 크게 벌리고 웃어요. 눈은 감고 있어요.')",
-    "8. 소리, 냄새, 바람, 온도처럼 사진에 찍히지 않는 것은 쓰지 않는다.",
+    type === "sound" ? "8. 냄새, 모습, 색처럼 소리로 알 수 없는 것은 쓰지 않는다." : "8. 소리, 냄새, 바람, 온도처럼 사진에 찍히지 않는 것은 쓰지 않는다.",
     "",
     "[정직 규칙]",
     "- short_name: 갤러리 액자 아래에 붙일 짧은 이름 (12자 이내, 보이는 것으로. 예: '검은 옷의 남성', '빨간 붓글씨'). 제목을 안다면 제목.",
@@ -255,6 +263,59 @@ function audioText(a) {
 }
 
 // ---------------------------------------------------------------------
+// [수정 7-3] 소리 직접 듣기 — 앱이 보낸 16kHz 녹음(WAV, 최대 30초)을 오디오 모델에게 들려줌
+//   돌려받는 것: 무슨 소리인지, 들리는 것들, 사람 말이면 그 내용 요약, 시간 순서 부분(초)
+//   어떤 모델도 못 쓰면 null → 예전처럼 숫자로만 짐작 (앱 화면에 '직접 듣지 못했어요'라고 밝힘)
+// ---------------------------------------------------------------------
+function parseLooseJSON(t) {
+  const s = String(t || "").replace(/```(json)?/g, "");
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  if (a < 0 || b <= a) return null;
+  try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { return null; }
+}
+async function listenAI(b64, sec) {
+  const sys = [
+    "너는 소리를 듣고 무엇이 들리는지 정확하게 적는 도우미다. 지어내지 않는다. 잘 안 들리면 '잘 들리지 않음'이라고 쓴다.",
+    "전체 길이는 약 " + Math.round(sec) + "초다.",
+    "JSON만 출력한다:",
+    '{"kind":"음악|노래|말소리|자연 소리|생활 소리|섞인 소리","heard":["들리는 것 3~5개, 짧게 (예: 피아노, 빗소리, 여자 목소리)"],',
+    ' "speech":"사람 말이 또렷하면 무슨 내용인지 1~2문장으로 요약 (가사는 그대로 적지 않고 무엇에 대한 노래인지만). 없으면 빈 문자열",',
+    ' "tempo":"느림|보통|빠름","loud":"작음|보통|큼|점점 커짐|점점 작아짐|크고 작음이 바뀜",',
+    ' "parts":[{"from":0,"to":10,"what":"그동안 들리는 것 (15자 안팎)"}]}  (parts는 2~4개, 시간 순서, 겹치지 않게)'
+  ].join("\n");
+  let lastErr = null;
+  for (const model of AUDIO_MODELS) {
+    const r = await fetch(OPENAI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + process.env.OPENAI_API_KEY },
+      body: JSON.stringify({ model: model, modalities: ["text"], max_completion_tokens: 700,   // (창의성 값은 보내지 않음: 모델마다 받는 값이 달라 거절될 수 있음)
+        messages: [{ role: "system", content: sys },
+                   { role: "user", content: [{ type: "text", text: "이 소리에서 무엇이 들리나요?" }, { type: "input_audio", input_audio: { data: b64, format: "wav" } }] }] })
+    }).catch((e) => ({ ok: false, status: 0, json: async () => ({ error: { message: String(e) } }) }));
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      const c = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+      const d = parseLooseJSON(typeof c === "string" ? c : Array.isArray(c) ? c.map((x) => x.text || "").join("") : "");
+      if (d) return { data: d, model: model };
+      lastErr = { status: 500, message: "듣기 결과가 JSON이 아님 (" + model + ")" };
+      continue;
+    }
+    lastErr = { status: r.status, message: (j.error && j.error.message) || "" , model: model };
+    if (r.status === 401) break;                                  // 키 문제면 더 해 봐야 소용없음
+  }
+  return { data: null, error: lastErr };
+}
+function heardText(h, sec) {
+  if (!h) return "";
+  const parts = (Array.isArray(h.parts) ? h.parts : []).slice(0, 4).map((p) => Number(p.from).toFixed(0) + "~" + Number(p.to).toFixed(0) + "초: " + String(p.what || "").slice(0, 40)).join(" / ");
+  return "[AI가 직접 들은 내용 — 사실로 써도 됨]\n종류: " + String(h.kind || "").slice(0, 12) +
+    "\n들리는 것: " + (Array.isArray(h.heard) ? h.heard.slice(0, 6).map((x) => String(x).slice(0, 20)).join(", ") : "") +
+    (h.speech ? "\n말 내용(요약): " + String(h.speech).slice(0, 200) : "") +
+    "\n빠르기: " + String(h.tempo || "-").slice(0, 8) + " · 크기: " + String(h.loud || "-").slice(0, 16) +
+    (parts ? "\n시간 순서: " + parts : "") + "\n전체 길이: 약 " + Math.round(sec) + "초\n";
+}
+
+// ---------------------------------------------------------------------
 // OpenAI 부르기 (모델을 앞에서부터 시도)
 // ---------------------------------------------------------------------
 async function callAI(messages, temperature, models) {
@@ -324,6 +385,7 @@ function checkRules(d, explain, type, pixel) {
   if (type !== "text") FEEL_WORDS.forEach((w) => { if (all.includes(w)) v.push("해석하는 말 '" + w + "'을 썼어요. 느낌은 빼고 보이는 것만 써 주세요"); });
   if (pixel && pixel.gray) COLOR_WORDS.forEach((w) => { if (all.includes(w)) v.push("흑백 사진인데 색 낱말 '" + w + "'을 썼어요. 흰색·검은색·회색, 밝고 어두움으로만 써 주세요"); });
   if (type === "video" && (all.match(/보여/g) || []).length > 2) v.push("'보여요/보여줘요'를 너무 많이 썼어요. 무엇이 일어나는지를 말해 주세요");
+  if (type === "sound" && (all.match(/들려/g) || []).length > 3) v.push("'들려요'를 너무 많이 썼어요. 무슨 소리가 어떻게 나는지를 말해 주세요");
   if (/^사진$/.test(String(d.kind || ""))) v.push("kind를 '사진'이라고 했어요. 찍힌 대상의 종류를 써 주세요");
   return v;
 }
@@ -533,14 +595,22 @@ module.exports = async (req, res) => {
     const workInfo = w && w.title ? "[작품 안내판 정보 — 사실로 써도 됨] 제목: " + String(w.title).slice(0, 60) +
       (w.artist ? " / 작가: " + String(w.artist).slice(0, 40) : "") + (w.year ? " / 연도: " + String(w.year).slice(0, 20) : "") +
       (w.note ? " / 설명: " + String(w.note).slice(0, 200) : "") + "\n" : "";
-    const userParts = [{ type: "text", text: workInfo + (type === "text" ? "[사용자가 넣은 글]\n" + inText : (type === "video" ? "장면 사진은 시간 순서예요. " : "") + audioText(body.audio)) }];
+    // [수정 7-3] 소리: 먼저 직접 듣기
+    let heard = null, listenInfo = null;
+    const soundSec = body.audio && isFinite(Number(body.audio.sec)) ? Number(body.audio.sec) : 30;
+    if (type === "sound" && typeof body.audioWav === "string" && body.audioWav.length > 1000 && body.audioWav.length < 3500000) {
+      const tL = Date.now();
+      const L = await listenAI(body.audioWav.replace(/^data:audio\/\w+;base64,/, ""), soundSec);
+      heard = L.data; listenInfo = { model: L.model || null, ms: Date.now() - tL, error: L.error ? String(L.error.message || L.error.status).slice(0, 160) : null };
+    }
+    const userParts = [{ type: "text", text: workInfo + (type === "text" ? "[사용자가 넣은 글]\n" + inText : (type === "video" ? "장면 사진은 시간 순서예요. " : "") + heardText(heard, soundSec) + audioText(body.audio)) }];
     const times = Array.isArray(body.times) ? body.times.map(Number) : [];
     images.forEach((url, i) => {
       if (type === "video") userParts.push({ type: "text", text: "[장면 사진 " + (i + 1) + (isFinite(times[i]) ? " · 약 " + times[i].toFixed(1) + "초" : "") + "]" });   // [수정 6-12] 번호·시각을 사진 바로 앞에
       userParts.push({ type: "image_url", image_url: { url: url, detail: type === "photo" ? "high" : "low" } });   // 영상 장면은 저해상도로 (빠르고 저렴)
     });
     const msgs = [
-      { role: "system", content: textPrompt(type, explain, target, cropped, pixel) },
+      { role: "system", content: textPrompt(type, explain, target, cropped, pixel, !!heard) },
       { role: "user", content: userParts }
     ];
     const tText = Date.now();
@@ -577,7 +647,7 @@ module.exports = async (req, res) => {
       (type === "text" ? "(사진 없음 — 아래 글과 원래 글만 보고 매긴다. 밝기·무게·거칠기·흐름은 글이 그리는 장면을 떠올려서)\n원래 글: " + inText.slice(0, 800) + "\n" : "") +
       "종류: " + text.kind + "\n요약: " + text.summary + "\n자세한 해설: " + text.interpretation + "\n" +
       (text.mood_line ? "AI가 느낀 분위기: " + text.mood_line + "\n" : "") +
-      scenes.map((s, i) => "장면 " + (i + 1) + " (" + s.name + "): " + s.text + " / 보이는 모습: " + (s.look || "-")).join("\n") + "\n" + audioText(body.audio);
+      scenes.map((s, i) => "장면 " + (i + 1) + " (" + s.name + "): " + s.text + " / 보이는 모습: " + (s.look || "-")).join("\n") + "\n" + heardText(heard, soundSec) + audioText(body.audio);
     // 감각 단계에는 번호 칸이 없는 원래 사진을 보냄 (칸 선이 색 판단을 방해하지 않게)
     const raw = type === "text" ? [] : (typeof body.rawImage === "string" && body.rawImage.startsWith("data:image/") && body.rawImage.length < 2000000) ? [body.rawImage] : images;
     const senseUser = [{ type: "text", text: senseIn }].concat(
@@ -629,7 +699,12 @@ module.exports = async (req, res) => {
       whole: wholeOut,
       senseMethod: "사진 직접 보기 + 눈금 예시 + " + senseTries + "번 평균",
       scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), look: s.look || "", sense: sScenes[i],
-        frames: type === "video" && Array.isArray(s.frames) ? s.frames.map((f) => Math.round(Number(f))).filter((f) => f >= 1 && f <= images.length).slice(0, 12) : undefined })),
+        frames: type === "video" && Array.isArray(s.frames) ? s.frames.map((f) => Math.round(Number(f))).filter((f) => f >= 1 && f <= images.length).slice(0, 12) : undefined,
+        from: type === "sound" && isFinite(Number(s.from)) ? Math.max(0, Number(s.from)) : undefined,
+        to: type === "sound" && isFinite(Number(s.to)) ? Math.max(0, Number(s.to)) : undefined })),
+      heard: heard ? { kind: String(heard.kind || "").slice(0, 12), heard: (Array.isArray(heard.heard) ? heard.heard : []).slice(0, 6).map((x) => String(x).slice(0, 20)),
+                       speech: String(heard.speech || "").slice(0, 200), tempo: String(heard.tempo || "").slice(0, 8), loud: String(heard.loud || "").slice(0, 16) } : null,
+      listen: listenInfo,
       contrast: contrast,
       check: { passed: violations.length === 0, violations: violations, tries: tries, stats: stats(text),
                sensePassed: sProblems.length === 0, senseProblems: sProblems, senseTries: senseTries },
