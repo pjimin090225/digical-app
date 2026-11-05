@@ -645,7 +645,7 @@
     /* 글·소리의 움직이는 그림 (작품 자리) */
     .kin { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
     /* [MuSE 7-4] 글·소리 그림은 종이 바탕 + 흐릿한 빛 + 고운 입자 (감각 구슬과 같은 그림 말) */
-    #view .art.kinetic { width: 100%; aspect-ratio: 4 / 5; max-height: 58vh; background: #F3F1ED; box-shadow: 0 0 0 1px rgba(0,0,0,0.06) !important; }
+    #view .art.kinetic { width: 100%; aspect-ratio: 4 / 5; max-height: 58vh; background: #121212; box-shadow: 0 0 0 1px rgba(0,0,0,0.06) !important; }
     #view .art.kinetic .art-wrap { visibility: hidden; position: absolute; }
     #view .art.kinetic.sound-art { aspect-ratio: 1 / 1; }
     .kin canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -660,6 +660,10 @@
     .kin .kin-cap { position: absolute; left: 8%; right: 8%; bottom: 7%; font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: #3D3A35; display: flex; justify-content: space-between; gap: 10px; }
     .kin .kin-bar { position: absolute; left: 8%; right: 8%; bottom: 5%; height: 1px; background: rgba(0,0,0,0.12); }
     .kin .kin-bar i { position: absolute; left: 0; top: -0.5px; height: 2px; width: 0; background: #1A1917; }
+    /* [MuSE 7-7] 분위기 구슬은 검은 바탕 → 글자·눈금을 밝게 */
+    .kin .kin-text { color: #F4F1EC; text-shadow: 0 1px 12px rgba(0,0,0,0.55); }
+    .kin .kin-no, .kin .kin-tr, .kin .kin-cap { color: rgba(244,241,236,0.72); }
+    .kin .kin-bar { background: rgba(255,255,255,0.16); } .kin .kin-bar i { background: #F4F1EC; }
     @media (prefers-reduced-motion: reduce) { .kin .kin-text .w { transition: none; } .kin .kin-text .w.hit { animation: none; } }
     .wsteps { list-style: none; padding: 0; margin: 18px 0 0; border-top: 1px solid var(--rule); }
     .wsteps li { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 17px; color: #9A958C; transition: color .4s; }
@@ -1026,7 +1030,7 @@
     // 0) 기본 도구
     // ==========================================================
     const $ = (id) => document.getElementById(id);
-    const APP_VER = "MuSE · 앱 7-6 — 소리로 그리는 장면 · 검은 화면 빛 물결 · 소리 결 띠";
+    const APP_VER = "MuSE · 앱 7-7 — 분위기 구슬 (검은 바탕) · 글 모드 진짜 음악(Lyria) 시험";
     const copy = (obj) => JSON.parse(JSON.stringify(obj));   // 사본 만들기
     let currentScreen = "home";
 
@@ -3232,10 +3236,11 @@
       const F = soundFeatures(p, SND_SR);
       if (F.n < 30) { $("camMsg").textContent = "소리가 너무 짧아요. 2초 넘게 들려주세요."; return; }
       const p16 = await resamplePCM(p, SND_SR, 16000);
-      const still = sartStill(F, null, 720, ["SOUND", fmtSec(F.sec), ""]);
+      const p0 = orbParamsOfSound(F);
+      const stillUrl = orbStill(p0.V, p0.pal, orbHashStr(p.length + ":" + F.sec), 720) || sartStill(F, null, 720, ["SOUND", fmtSec(F.sec), ""]).toDataURL("image/jpeg", 0.9);
       $("camMsg").textContent = "";
       showConfirm({
-        type: "sound", images: [still.toDataURL("image/jpeg", 0.9)], source: source, audio: F.summary,
+        type: "sound", images: [stillUrl], source: source, audio: F.summary,
         snd: { pcm: p, sr: SND_SR, from: from, dur: F.sec, F: F, S: spectro(p, SND_SR), full: fullDur || F.sec },
         wav: wavBase64(p16, 16000)
       });
@@ -3253,12 +3258,173 @@
       }
     }
 
+    // ==========================================================
+    // [MuSE 7-7] 🫧 분위기 구슬 — 소리·글 작품의 그림 (감각 구슬과 같은 그림 말: 흐릿한 색 덩어리 + 고운 입자, 검은 바탕)
+    //   AI가 읽은 값(에너지·긴장·밝기·겹침 + 분위기 색 4개) → 그때그때 새 모양 (같은 작품 = 같은 모양)
+    //   모양은 작품 분위기대로 계속 움직임 (신나면 빠르게, 차분하면 느리게)
+    //   소리: 크면 안의 색이 빨리 흐르고 테두리가 또렷 · 박마다 덩어리가 '통' 튀었다 돌아오고 빛 그림자가 퍼짐 · 높은 소리는 별빛처럼 반짝임
+    // ==========================================================
+    const ORB_VS = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+    const ORB_FS = [
+      "precision highp float;",
+      "uniform vec2 R;uniform float T,F,FD,SOFT,HI,BR,SPD,CY,SC;uniform vec3 P0,P1,P2,P3;uniform vec4 A0[4],A1[4],A2[4];uniform vec4 E[6];",
+      "float smin(float a,float b,float k){float h=clamp(0.5+0.5*(b-a)/k,0.0,1.0);return mix(b,a,h)-k*h*(1.0-h);}",
+      "float smax(float a,float b,float k){return -smin(-a,-b,k);}",
+      "float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}",
+      "vec2 rot(vec2 p,float a){float c=cos(a),s=sin(a);return vec2(c*p.x-s*p.y,s*p.x+c*p.y);}",
+      "vec3 ramp(float x){x=fract(x)*4.0;float w0=max(0.0,1.0-min(abs(x),abs(x-4.0)));float w1=max(0.0,1.0-abs(x-1.0));float w2=max(0.0,1.0-abs(x-2.0));float w3=max(0.0,1.0-abs(x-3.0));return (P0*w0+P1*w1+P2*w2+P3*w3)/(w0+w1+w2+w3+1e-4);}",
+      "float sd(vec2 p,vec4 a0,vec4 a1,vec4 a2,float sc,out vec2 q){float tt=T*SPD;q=rot(p-a0.xy,-(a0.w+tt*0.12))/sc;q.x/=a1.w;float a=atan(q.y,q.x);",
+      " float r=a0.z*(1.0+(a1.x+0.04)*cos(2.0*a+a2.z+tt*0.55)+(a1.y+0.03)*cos(3.0*a+a2.z*1.7-tt*0.42)+a1.z*cos(5.0*a+a2.z*2.3+tt*0.5));",
+      " float d=length(q)-r;",
+      " if(a2.x>0.5&&a2.x<1.5)d=smax(d,-(length(q-vec2(r*0.5,r*0.32))-r*(1.0-0.35*a2.y)),0.05);",
+      " if(a2.x>1.5)d=smax(d,-(length(q-vec2(r*0.12,-r*0.08))-r*0.42*a2.y),0.05);",
+      " return d*sc*min(1.0,a1.w);}",
+      "vec3 fill(vec2 q,vec4 a2){vec2 dir=vec2(cos(FD),sin(FD));float g=dot(q,dir)*0.42+F*0.05+a2.w+0.1*sin(q.x*2.3+F*0.3)*cos(q.y*2.0-F*0.22);return mix(ramp(g),vec3(1.0),BR*0.2);}",
+      "void main(){vec2 uv=(gl_FragCoord.xy*2.0-R)/min(R.x,R.y);uv.y-=CY;uv/=SC;",
+      " vec3 bg=vec3(0.07,0.07,0.075)-0.02*dot(uv,uv);vec3 col=bg;vec2 q;",
+      " for(int j=0;j<6;j++){vec4 e=E[j];if(e.z<=0.001)continue;",
+      "  for(int k=0;k<4;k++){if(abs(float(k)-e.x)>0.1)continue;vec2 off=vec2(cos(e.w),sin(e.w))*(e.y-1.0)*0.35;",
+      "   float d=sd(uv-off,A0[k],A1[k],A2[k],e.y,q);float s=SOFT*2.5+0.04*e.y;float al=(1.0-smoothstep(-s,s,d))*e.z;col=mix(col,fill(q,A2[k]),al);}}",
+      " float inside=0.0;",
+      " for(int k=0;k<4;k++){if(A0[k].z<=0.0)continue;float d=sd(uv,A0[k],A1[k],A2[k],1.0,q);float al=1.0-smoothstep(-SOFT,SOFT,d);",
+      "  vec3 c=fill(q,A2[k]);c=mix(c,vec3(1.0),exp(-dot(q+vec2(0.12,-0.15),q+vec2(0.12,-0.15))/0.03)*0.22);col=mix(col,c,al*0.93);inside=max(inside,al);}",
+      " vec2 cl=floor(gl_FragCoord.xy/2.0);float h1=hash(cl),h2=hash(cl+vec2(7.3,1.9));float tw=0.5+0.5*sin(T*(1.2+h1*1.8)+h1*62.8);",
+      " col+=step(0.994,h2)*pow(tw,3.0)*inside*min(1.0,HI*1.4)*0.55;",
+      " col+=(hash(gl_FragCoord.xy+fract(T*3.7)*vec2(17.0,31.0))-0.5)*mix(0.04,0.09,inside);",
+      " gl_FragColor=vec4(col,1.0);}"].join("\n");
+    const ORB_PAL0 = ["#4B5BFF", "#E04FD0", "#FF8A3D", "#9AD8FF"];
+    let orbSt = null;
+    function orbRng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+    function orbHashStr(t) { let h = 2166136261; t = String(t || ""); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+    function orbMake(cv, opt) {
+      opt = opt || {};
+      let gl = null;
+      try { gl = cv.getContext("webgl", { antialias: false, preserveDrawingBuffer: true }) || cv.getContext("experimental-webgl", { preserveDrawingBuffer: true }); } catch (e) {}
+      if (!gl) return null;
+      const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+      let pr;
+      try { pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, ORB_VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, ORB_FS)); gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr)); }
+      catch (e) { console.warn("orb", e); return null; }
+      gl.useProgram(pr);
+      const bf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      const U = {};
+      ["R", "T", "F", "FD", "SOFT", "HI", "BR", "SPD", "CY", "SC", "P0", "P1", "P2", "P3", "A0", "A1", "A2", "E"].forEach((k) => { U[k] = gl.getUniformLocation(pr, /^(A0|A1|A2|E)$/.test(k) ? k + "[0]" : k); });
+      const st = { cv: cv, gl: gl, U: U, V: { energy: 0.4, tension: 0.3, bright: 0.5, layers: 0.4 }, PAL: ORB_PAL0.slice(), seed: opt.seed || 1, SH: [], echoes: [], ei: 0,
+                   T: 2 + ((opt.seed || 1) % 97) / 10, F: 0, FD: 0.6, sm: { A: 0.2, H: 0.4, HI: 0.1 }, feed: null, cy: opt.cy || 0, sc: opt.sc || 1, raf: 0, last: 0, alive: true };
+      orbBuild(st);
+      return st;
+    }
+    function orbBuild(st) {
+      const r = orbRng(st.seed * 7919 + 13), V = st.V, e = V.energy, t = V.tension, b = V.bright, n = 1 + Math.round(V.layers * 3);
+      st.SH = [];
+      for (let k = 0; k < n; k++) {
+        const main = k === 0, rad = (0.44 - 0.06 * (n - 1)) * (main ? 1 : 0.5 + 0.4 * r());
+        const ang = r() * Math.PI * 2, dist = main ? 0.08 * r() : 0.28 + 0.22 * r();
+        const cut = r() < 0.15 + 0.55 * (1 - b) * (0.4 + t) ? (r() < 0.5 + 0.3 * t ? 1 : 2) : 0;
+        st.SH.push({ cx: Math.cos(ang) * dist, cy: Math.sin(ang) * dist, r: rad, rot: r() * 6.283, a2: 0.02 + 0.2 * t * r(), a3: 0.02 + 0.13 * e * r(), a5: 0.07 * e * t * r(),
+                     el: 1 + 0.9 * t * r(), cut: cut, ca: 0.4 + 0.6 * r(), ph: r() * 6.283, po: r(), ox: 0, oy: 0, or: 0, vx: 0, vy: 0, vr: 0 });
+      }
+      const s = Math.max(...st.SH.map((q) => Math.hypot(q.cx, q.cy) + q.r * q.el * 1.25));
+      if (s > 0.9) { const f = 0.9 / s; st.SH.forEach((q) => { q.cx *= f; q.cy *= f; q.r *= f; }); }
+      st.echoes = [];
+    }
+    function orbSet(st, V, pal, seed) {
+      if (!st) return;
+      if (V) st.V = V;
+      if (pal && pal.length) { const p = pal.slice(0, 4); while (p.length < 4) p.push(ORB_PAL0[p.length]); st.PAL = p; }
+      if (seed) st.seed = seed;
+      orbBuild(st);
+    }
+    function orbFeed(st, A, H, HI) { if (st) st.feed = { A: A, H: H, HI: HI, t: performance.now() }; }
+    function orbBeat(st, L) {
+      if (!st || !st.SH.length || (typeof profile !== "undefined" && !profile.visual.on)) return;
+      const ee = st.V.energy;
+      st.SH.forEach((q) => { const a = Math.random() * 6.283, f = (0.12 + 0.9 * ee * ee) * (0.4 + L); q.vx += Math.cos(a) * f; q.vy += Math.sin(a) * f; q.vr += (Math.random() - 0.5) * f * 3; });
+      const k = st.ei++ % st.SH.length, q = st.SH[k];
+      st.echoes.push({ k: k, s: 1, a: 0.28 + 0.3 * L, ang: Math.atan2(q.cy, q.cx) + (Math.random() - 0.5) * 1.2 + (k === 0 ? Math.random() * 6.28 : 0), life: 0 });
+      if (st.echoes.length > 6) st.echoes.shift();
+    }
+    function orbHex(h) { return [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255]; }
+    function orbStep(st, dt) {
+      const live = st.feed && performance.now() - st.feed.t < 400;
+      const tg = live ? st.feed : { A: 0.18 + 0.05 * Math.sin(st.T * 0.9), H: 0.4, HI: 0.1 };
+      const sm = st.sm, V = st.V;
+      sm.A += (tg.A - sm.A) * Math.min(1, dt * 5); sm.H += (tg.H - sm.H) * Math.min(1, dt * 0.8); sm.HI += (tg.HI - sm.HI) * Math.min(1, dt * 1.2);
+      st.T += dt; st.F += dt * (0.12 + 1.5 * sm.A * sm.A + 0.5 * sm.A) * (0.6 + 0.8 * V.energy); st.FD = 0.6 + sm.H * 2.4;
+      st.echoes.forEach((x) => { x.life += dt; x.s = 1 + x.life * 0.42; x.a *= Math.pow(0.18, dt); }); st.echoes = st.echoes.filter((x) => x.a > 0.01);
+      const kk = 38, cc = 6 + 4 * (1 - V.energy);
+      st.SH.forEach((q) => { q.vx += (-kk * q.ox - cc * q.vx) * dt; q.vy += (-kk * q.oy - cc * q.vy) * dt; q.vr += (-kk * q.or - cc * q.vr) * dt; q.ox += q.vx * dt; q.oy += q.vy * dt; q.or += q.vr * dt; });
+    }
+    function orbDraw(st) {
+      const gl = st.gl, U = st.U, cv = st.cv, V = st.V, sm = st.sm;
+      gl.viewport(0, 0, cv.width, cv.height); gl.uniform2f(U.R, cv.width, cv.height);
+      const spd = 0.15 + 2.0 * Math.pow(V.energy, 1.5);
+      gl.uniform1f(U.T, st.T); gl.uniform1f(U.F, st.F); gl.uniform1f(U.FD, st.FD); gl.uniform1f(U.HI, sm.HI); gl.uniform1f(U.BR, V.bright); gl.uniform1f(U.SPD, spd);
+      gl.uniform1f(U.CY, st.cy); gl.uniform1f(U.SC, st.sc);
+      gl.uniform1f(U.SOFT, (0.03 + 0.075 * (1 - V.energy)) * (1.35 - 0.75 * sm.A));
+      const dk = 0.2 * (1 - V.bright);
+      [U.P0, U.P1, U.P2, U.P3].forEach((u, i) => gl.uniform3fv(u, orbHex(st.PAL[i]).map((c) => c * (1 - dk))));
+      const a0 = new Float32Array(16), a1 = new Float32Array(16), a2 = new Float32Array(16), w = st.T * spd, m = 0.03 + 0.07 * V.tension + 0.05 * V.energy;
+      st.SH.forEach((q, k) => {
+        a0.set([q.cx + q.ox + m * Math.sin(w * 0.5 + q.ph), q.cy + q.oy + m * Math.cos(w * 0.43 + q.ph * 1.3), q.r * (1 + 0.035 * Math.sin(w * 0.7 + q.ph) + 0.025 * sm.A), q.rot + q.or], k * 4);
+        a1.set([q.a2, q.a3, q.a5, q.el], k * 4); a2.set([q.cut, q.ca, q.ph, q.po], k * 4);
+      });
+      gl.uniform4fv(U.A0, a0); gl.uniform4fv(U.A1, a1); gl.uniform4fv(U.A2, a2);
+      const e = new Float32Array(24); st.echoes.forEach((x, j) => { if (j < 6) e.set([x.k, x.s, x.a, x.ang], j * 4); }); gl.uniform4fv(U.E, e);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    function orbSize(st) {
+      const r = st.cv.getBoundingClientRect(), s = Math.min(1.5, window.devicePixelRatio || 1);
+      const w = Math.max(64, Math.round((r.width || 360) * s)), h = Math.max(64, Math.round((r.height || 360) * s));
+      if (st.cv.width !== w || st.cv.height !== h) { st.cv.width = w; st.cv.height = h; }
+    }
+    function orbRun(st) {
+      st.last = performance.now();
+      const tick = (now) => {
+        if (!st.alive || !st.cv.isConnected) { st.alive = false; return; }
+        const dt = Math.min(0.05, (now - st.last) / 1000); st.last = now;
+        const still = typeof profile !== "undefined" && !profile.visual.on;     // 화면(보기)을 끈 사람에게는 움직이지 않는 그림
+        orbStep(st, still ? 0 : dt * (reduceMotion() ? 0.4 : 1));
+        if (currentScreen === "view" || st.always) orbDraw(st);
+        st.raf = requestAnimationFrame(tick);
+      };
+      st.raf = requestAnimationFrame(tick);
+    }
+    function orbStop(st) { if (st) { st.alive = false; cancelAnimationFrame(st.raf); } }
+    // AI가 읽은 값 → 그림 값 (palette가 없으면 colors + 감정 색으로)
+    function orbParamsOf(W) {
+      W = W || {};
+      const n = (v, d) => (isFinite(Number(v)) ? Math.max(0, Math.min(1, Number(v))) : d);
+      const ar = n(W.arousal, 0.5), va = n(W.valence, 0.5), br = n(W.brightness, 0.5), ro = n(W.roughness, 0.4), fl = n(W.flow, 0.5);
+      const V = { energy: ar, tension: Math.min(1, 0.55 * ro + 0.45 * (1 - va) * Math.min(1, ar * 1.4)), bright: br, layers: Math.min(1, 0.2 + 0.4 * ar + 0.3 * (1 - fl)) };
+      let pal = (Array.isArray(W.palette) ? W.palette : []).filter((c) => /^#[0-9a-fA-F]{6}$/.test(c));
+      if (pal.length < 4) { const more = (W.colors || []).concat([emotionColor(W)]).filter((c) => /^#[0-9a-fA-F]{6}$/.test(c || "")); more.forEach((c) => { if (pal.length < 4 && !pal.includes(c)) pal.push(c); }); }
+      return { V: V, pal: pal };
+    }
+    // 소리만 들었을 때(분석 전)의 첫 모양: 소리 크기·박의 많고 적음으로
+    function orbParamsOfSound(F) {
+      if (!F || !F.n) return { V: { energy: 0.4, tension: 0.3, bright: 0.5, layers: 0.4 }, pal: ORB_PAL0 };
+      let s = 0, on = 0; for (let i = 0; i < F.n; i++) { s += F.L[i]; if (F.on[i]) on++; }
+      const rate = on / Math.max(1, F.sec), mL = s / F.n;
+      return { V: { energy: Math.min(1, 0.15 + mL * 0.5 + rate * 0.12), tension: Math.min(1, 0.2 + rate * 0.06), bright: 0.55, layers: Math.min(1, 0.25 + rate * 0.08) }, pal: ORB_PAL0 };
+    }
+    // 정지 그림 한 장 (확인 화면·갤러리 표지)
+    function orbStill(V, pal, seed, W, H) {
+      const cv = document.createElement("canvas"); cv.width = W || 720; cv.height = H || W || 720;
+      const st = orbMake(cv, { seed: seed }); if (!st) return null;
+      orbSet(st, V, pal, seed); orbDraw(st);
+      const url = cv.toDataURL("image/jpeg", 0.88);
+      try { const ext = st.gl.getExtension("WEBGL_lose_context"); if (ext) ext.loseContext(); } catch (e) {}
+      return url;
+    }
+
     // ---------- 감상 화면: 작품 자리에 '움직이는 그림' (소리 = 빛 구슬, 글 = 움직이는 글자) ----------
     let sartSt = null;
     function setArtKind(d) {
       const art = $("art"), kin = $("kin");
-      const k = d && ((d.type === "sound" && d.snd && !d.sceneImg) || d.type === "text");
-      const sc = !!(d && d.type === "sound" && d.sceneImg);             // [MuSE 7-6] 장면이 있으면: 장면(그림) + 아래 소리 결 띠
+      const k = d && ((d.type === "sound" && d.snd) || d.type === "text");
+      const sc = false;   // [MuSE 7-7] AI 장면 그림은 뺌 → 분위기 구슬             // [MuSE 7-6] 장면이 있으면: 장면(그림) + 아래 소리 결 띠
       $("sndStrip").hidden = !sc; $("sceneTag").hidden = !sc; $("sceneGlow").hidden = !sc;
       if (sc) { buildStrip(d); requestAnimationFrame(() => drawStrip(-1)); $("sceneGlow").style.setProperty("--sg", lastResult && lastResult.whole ? emotionColor(lastResult.whole) : "#FFD9A8"); }
       art.classList.toggle("kinetic", !!k);
@@ -3273,6 +3439,17 @@
       kin.innerHTML = '<canvas id="kinCanvas"></canvas><div class="kin-no" id="kinNo">' + head + '</div><div class="kin-tr" id="kinTR">' + esc(right) + "</div>" +
         (d.type === "text" ? '<div class="kin-text" id="kinText"></div>' : "") +
         '<div class="kin-cap"><span id="kinCapL"></span><span id="kinCapR"></span></div>' + (d.type === "sound" ? '<div class="kin-bar"><i id="kinBar"></i></div>' : "");
+      // [MuSE 7-7] 그림 = 분위기 구슬 (WebGL). 이 기기에서 못 그리면 예전 그림으로
+      orbStop(orbSt); orbSt = null;
+      const isT = d.type === "text";
+      const ost = orbMake($("kinCanvas"), { seed: orbHashStr(isT ? d.text : d.snd.pcm.length + ":" + d.snd.dur), cy: isT ? 0.3 : 0, sc: isT ? 0.7 : 1 });
+      if (ost) {
+        orbSt = ost;
+        const p = lastResult && lastResult.whole && lastData === d ? orbParamsOf(lastResult.whole) : isT ? { V: { energy: 0.35, tension: 0.25, bright: 0.55, layers: 0.35 }, pal: ORB_PAL0 } : orbParamsOfSound(d.snd.F);
+        orbSet(orbSt, p.V, p.pal); orbSize(orbSt); orbRun(orbSt);
+        if (isT) kinShowText(d.text || "", false);
+        return;
+      }
       sizeKin();
       sartSt = d.type === "sound" ? sartMake($("kinCanvas"), d.snd.F, { style: sartStyle() })
                                   : sartMake($("kinCanvas"), null, { style: "shape", shape: textShape(d.text) });
@@ -3287,8 +3464,19 @@
       if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; if (sartSt) sartSt.parts = null; }
     }
     window.addEventListener("resize", () => { if (currentScreen === "view" && sartSt) { sizeKin(); if (lastData.type === "sound") drawSoundFrame(sndF ? sndF.f : -1); else textField(0); } });
-    function setMoodOf(r) { if (sartSt && r && r.whole) sartSt.mood = hexRGB(emotionColor(r.whole)) || sartSt.mood; }
-    function drawSoundFrame(f, onset) { if (sartSt && sartSt.style !== "field") sartDraw(sartSt, f, onset || 0, f >= 0); }
+    window.addEventListener("resize", () => { if (orbSt) orbSize(orbSt); });
+    function setMoodOf(r) {
+      if (orbSt && r && r.whole) { const p = orbParamsOf(r.whole); orbSet(orbSt, p.V, p.pal); orbDraw(orbSt); }
+      if (sartSt && r && r.whole) sartSt.mood = hexRGB(emotionColor(r.whole)) || sartSt.mood;
+    }
+    function drawSoundFrame(f, onset) {
+      if (orbSt) {                                                       // [MuSE 7-7] 소리 → 구슬: 크기·높낮이·높은 소리 + 박
+        const S = lastData && (lastData.snd || lastData.music), F = S && S.F;
+        if (F && f >= 0) orbFeed(orbSt, F.L[f], F.P[f], F.B[2][f]);
+        if (onset) orbBeat(orbSt, F && f >= 0 ? F.L[f] : 0.5);
+        return;
+      }
+      if (sartSt && sartSt.style !== "field") sartDraw(sartSt, f, onset || 0, f >= 0); }
     // 소리의 부분마다 시작·끝 시각 (AI가 준 from/to → 없으면 고르게 나눔)
     function soundPartTimes(r) {
       const sc = (r && r.scenes) || [], dur = (lastData && lastData.snd && lastData.snd.dur) || (lastData && lastData.audio && lastData.audio.sec) || 30;
@@ -3305,7 +3493,7 @@
     let sndF = null;
     function playSoundFollow() {
       stopSense(); stopVoice(); stopSoundFollow();
-      const d = lastData, S = d && d.snd;
+      const d = lastData, S = d && (d.type === "text" ? d.music : d.snd);       // [MuSE 7-7] 글: AI가 만든 진짜 음악도 같은 길로
       if (!S) { $("sceneBar").textContent = "다시 틀 소리가 없어요"; return; }
       setViewParts("whole");
       const ctx = getAudio();
@@ -3348,7 +3536,8 @@
           if (v > 0.12) { const on = Math.round(8 + 62 * v); navigator.vibrate([on, 100 - on]); } else navigator.vibrate(0);
         }
         run.lastF = f; run.f = f;
-        if (d.sceneImg) { drawStrip(f); if (onset && profile.visual.on) sceneGlow(Math.min(1, 0.4 + S.F.L[f]) * (0.5 + 0.1 * profile.visual.level), onset === 2 ? 700 : 450); }
+        if (d.type === "text" && (onset || t - (run.lastWord || 0) > 0.55)) { kinBeat(onset === 2); run.lastWord = t; }   // 박이 드문 음악에서도 낱말이 이어서 나오게
+        if (d.sceneImg && !orbSt) { drawStrip(f); if (onset && profile.visual.on) sceneGlow(Math.min(1, 0.4 + S.F.L[f]) * (0.5 + 0.1 * profile.visual.level), onset === 2 ? 700 : 450); }
         else drawSoundFrame(f, onset);
         let k = -1; parts.forEach((p, j) => { if (t >= p.from) k = j; });
         if (k !== run.part && k >= 0 && lastResult.scenes[k]) {
@@ -3371,6 +3560,7 @@
       try { if (r.src) r.src.stop(); } catch (e) {}
       try { if (r.gain) { r.gain.gain.setTargetAtTime(0, getAudio().currentTime, 0.03); const g = r.gain; setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 300); } } catch (e) {}
       if (canVibrate) navigator.vibrate(0);
+      if (kinRun && !kinStarting) stopKinetic();
       const B = $("kinBar"); if (B) B.style.width = "0%";
       const R = $("kinCapR"); if (R) R.textContent = "";
       const Lc = $("kinCapL"); if (Lc) Lc.textContent = "";
@@ -3396,6 +3586,7 @@
       return out.map((c) => { const l = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]; return l < 70 ? c.map((v) => Math.round(v + (200 - v) * 0.35)) : c; });   // 너무 어두운 색은 조금 밝게 (글자가 보이게)
     }
     function textField(energy) {             // [MuSE 7-5] 글의 모양 (낱말 길이·문장 끝으로 그린 모양) — 박마다 숨 쉬듯 커짐
+      if (orbSt) { if (energy > 0.01) orbFeed(orbSt, 0.15 + 0.7 * energy, 0.45, 0.1 + 0.3 * energy); return; }
       if (!sartSt || !sartSt.shape) return;
       if (lastResult && lastResult.whole && !sartSt.colored) {         // 분석이 끝나면 AI가 글을 읽고 고른 색으로 칠함
         const cols = textColors(), K = sartSt.shape.K;
@@ -3425,7 +3616,7 @@
       const el = $("kinText"); if (!el) return;
       const words = String(text).split(/\s+/).filter(Boolean);
       const kc = lastResult && lastResult.whole ? textColors()[0] : [17, 17, 17];
-      const dk = kc.map((v) => Math.round(v * 0.55));                    // 중요한 낱말 색 (종이 위에서 잘 보이게 진하게)
+      const dk = kc.map((v) => Math.round(v + (255 - v) * 0.45));   // [MuSE 7-7] 검은 바탕 위에서 잘 보이게 밝게                    // 중요한 낱말 색 (종이 위에서 잘 보이게 진하게)
       $("kin").style.setProperty("--kc", "rgb(" + dk.join(",") + ")");
       el.hidden = !easy && !words.length;
       el.style.fontSize = easy ? "" : "clamp(17px, 4.6vw, 24px)";
@@ -3461,6 +3652,7 @@
       const el = $("kinText"); if (!el) return;
       const ws = el.querySelectorAll(".w");
       fieldE = Math.min(1, fieldE + (profile.visual.on ? (accent ? 0.5 : 0.25) * (profile.visual.level / 5 + 0.4) : 0));
+      if (orbSt && !sndF) orbBeat(orbSt, accent ? 0.8 : 0.45);
       if (k.wi < ws.length - 1) {
         k.wi++;
         const w = ws[k.wi]; w.classList.add("on");
@@ -3474,6 +3666,36 @@
         kinShowText(k.sents[k.si], true, k.keys, -1);
         const R = $("kinCapR"); if (R) R.textContent = String(k.si + 1).padStart(2, "0") + " / " + String(k.sents.length).padStart(2, "0");
       }
+    }
+    // [MuSE 7-7] 글 + 진짜 음악: 음악을 틀고, 음악의 박마다 낱말이 하나씩 나옴 (구슬·떨림은 음악을 따라감)
+    function startKineticMusic() {
+      const r = lastResult, sents = kinSentences(r), keys = kinKeys(r);
+      playSoundFollow();
+      if (!sndF) return;
+      kinRun = { on: true, sents: sents, keys: keys, si: 0, wi: -1, hold: 0 };
+      kinShowText(sents[0] || "", true, keys, -1);
+      renderButtons();
+    }
+    async function fetchMusic(d, r) {
+      d.musicInfo = { state: "만드는 중" };
+      const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 70000), t0 = performance.now();
+      try {
+        const res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, signal: ctl.signal,
+          body: JSON.stringify({ type: "text", task: "music", whole: r.whole || {} }) });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j.ok || !j.audio) { d.musicInfo = { state: "실패 → 원래 음악", error: j.error || ("HTTP " + res.status), message: j.message || "", prompt: j.prompt || "" }; return; }
+        const bin = atob(j.audio), u8 = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+        const m = await decodeToMono({ arrayBuffer: async () => u8.buffer });
+        let p = await resamplePCM(m.pcm, m.sr, SND_SR);
+        p = p.slice(0, SND_MAX * SND_SR);
+        const F = soundFeatures(p, SND_SR);
+        d.music = { pcm: p, sr: SND_SR, from: 0, dur: F.sec, full: F.sec, F: F };
+        d.musicInfo = { state: "준비됨", model: j.model, gen_ms: j.gen_ms, total_ms: Math.round(performance.now() - t0), sec: +F.sec.toFixed(1), prompt: j.prompt };
+        if (lastData === d && !isPlaying()) $("sceneBar").textContent = "AI가 만든 음악이 준비됐어요";
+      } catch (e) {
+        d.musicInfo = { state: "실패 → 원래 음악", error: e.name === "AbortError" ? "시간 초과" : String(e && e.message || e) };
+      } finally { clearTimeout(to); }
     }
     function stopKinetic() { if (!kinRun) return; kinRun = null; cancelAnimationFrame(fieldRaf); kinIdle(); }
 
@@ -3877,20 +4099,13 @@
         }
         renderTexts(r);
         if (d.type === "text") kinIdle();           // [MuSE 7-3] 원래 글 → 쉬운 해설 첫 문장으로 바뀜
-        if (d.type === "sound") {               // [MuSE 7-6] 소리: 해설 다음에 장면 그림 (기다리는 동안 검은 화면의 빛 물결이 이어짐)
-          setMoodOf(r); drawSoundFrame(-1);
-          $("waitMsg").textContent = "장면을 그리고 있어요";
-          let skipped = false;
-          $("waitSkip").hidden = false;
-          $("waitSkip").onclick = () => { skipped = true; soundWaitEnd(); showReady(); $("sceneBar").textContent = "장면은 아직 그리는 중이에요"; };
-          const img = await fetchScene(d, r);
-          if (seq !== analyzeSeq) return;
-          if (img) { applyScene(d, img); renderTexts(r); }
+        if (d.type === "sound") {               // [MuSE 7-7] 소리: AI 장면 그림은 뺌 → 분위기 구슬 (AI가 읽은 분위기로 모양·색)
+          setMoodOf(r);
           addToGallery(d, r);
-          if (!skipped) { soundWaitEnd(); showReady(); }
-          else if (!isPlaying()) { renderButtons(); $("sceneBar").textContent = img ? "장면이 도착했어요" : ""; }
+          soundWaitEnd(); showReady();
           return;
         }
+        if (d.type === "text") { setMoodOf(r); fetchMusic(d, r); }     // [MuSE 7-7] 글: 진짜 음악(Lyria)을 뒤에서 만들기 — 안 되면 원래 음악
         endWaitArt();                   // [수정 6-12] 기다리는 동안 보이던 빛 그림이 사라지며 원래 작품이 드러남
         prepareParts();                 // [수정 6-12] 눈길 안내·만져보기용 덩어리와 이름을 미리 준비
         if (d.type === "photo" || d.type === "text" || d.type === "sound") addToGallery(d, r);   // [수정 6-14] 📚 내 갤러리에 걸기 (7-3: 소리도)
@@ -4224,7 +4439,9 @@
     }
     async function addToGallery(d, r) {
       if (!d || !r || !d.images || !d.images[0]) return;
-      const thumb = await thumbOf(d.images[0]);
+      let src0 = d.images[0];
+      if ((d.type === "sound" || d.type === "text") && orbSt) { try { orbDraw(orbSt); src0 = orbSt.cv.toDataURL("image/jpeg", 0.88); } catch (e) {} }   // [MuSE 7-7] 표지 = 그 작품의 구슬
+      const thumb = await thumbOf(src0);
       if (!thumb) return;
       const P = planOf(r.whole || {});
       // [수정 6-17] 제목 기준: ① QR 작품 안내판의 제목 → ② AI가 확실히 아는 작품 제목 → ③ AI가 지은 짧은 이름(12자) → ④ 해설 첫 문장
@@ -4355,6 +4572,7 @@
       onSenseEnd = () => { stopKinetic(); $("sceneBar").textContent = "끝났어요"; renderButtons(); };
       if (lastData && lastData.type === "video" && lastData.videoUrl && vf.el) { playVideoFollow(); return; }   // [수정 6-18]
       if (lastData && lastData.type === "sound" && lastData.snd) { playSoundFollow(); return; }                 // [MuSE 7-3] 소리 따라가기
+      if (lastData && lastData.type === "text" && lastData.music) { startKineticMusic(); return; }             // [MuSE 7-7] 글: 진짜 음악 + 움직이는 글자
       setViewParts("whole");
       setHighlight(null);
       $("touchLabel").hidden = true;
@@ -6712,6 +6930,7 @@
       }
     });
     $("devBox").addEventListener("toggle", () => {
+      if (lastData && lastData.musicInfo) { let x = $("musicNow"); if (!x) { x = document.createElement("p"); x.id = "musicNow"; $("devBody").prepend(x); } x.textContent = "진짜 음악(Lyria): " + JSON.stringify(lastData.musicInfo).slice(0, 600); }
       const s = $("syncNow"); if (s) s.innerHTML = syncText();
       const l = $("levelNow"); if (l) l.innerHTML = levelText();
       const t = $("touchNow"); if (t) t.innerHTML = touchText();

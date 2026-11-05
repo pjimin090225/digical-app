@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "7-6";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "7-7";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -237,6 +237,7 @@ function sensePrompt() {
     "- emotion: 감정 한 낱말",
     "- colors: 사진에서 실제로 보이는 대표 색 1~3개 (#RRGGBB)",
     "- why: 가장 중요한 근거 15자 안팎 (사진에서 본 것)",
+    "- (whole에만) palette: 이 작품의 분위기를 색으로 나타낸 색 4개 (#RRGGBB). 실제로 보이는 색에 얽매이지 말고 느낌을 담는다. 서로 뚜렷이 다르게, 너무 어둡거나 회색만은 피한다.",
     "- (whole에만) mood_tags: 아래 목록에서 이 작품의 분위기에 가장 맞는 낱말 1~3개. 가장 강한 것을 맨 앞에.",
     "  목록: " + MOOD_TAGS.join(", "),
     "  ('까리한' = 멋스럽고 당당한, '세련된' = 깔끔하고 도시적인, '관능적인' = 부드러운 곡선과 은은한 매혹. 아이·학생 사진에는 '관능적인'을 쓰지 않는다)",
@@ -255,7 +256,7 @@ function sensePrompt() {
     "- whole은 사진 전체를 처음 봤을 때의 종합적인 느낌이다.",
     "",
     "[출력] JSON만. 아래 모양 그대로, 모든 칸을 빠짐없이 채운다 (scenes는 입력 장면 수만큼):",
-    '{"whole":{"mood_tags":["강렬한"],"music":"cinema","emotion":"강렬함","valence":0.45,"arousal":0.8,"brightness":0.3,"weight":0.6,"roughness":0.5,"flow":0.4,"colors":["#AA0000"],"why":"…"},' +
+    '{"whole":{"mood_tags":["강렬한"],"music":"cinema","emotion":"강렬함","valence":0.45,"arousal":0.8,"brightness":0.3,"weight":0.6,"roughness":0.5,"flow":0.4,"colors":["#AA0000"],"palette":["#FF2E63","#7B2FF7","#FF9F1C","#1B1F5E"],"why":"…"},' +
     ' "scenes":[{"emotion":"…","valence":0.5,"arousal":0.5,"brightness":0.5,"weight":0.5,"roughness":0.5,"flow":0.5,"colors":["#000000"],"why":"…"}]}',
     "(숫자는 예시일 뿐 — 사진을 보고 새로 매긴다. 장면의 emotion도 그 장면의 느낌으로 꼭 쓴다)"
   ].join("\n");
@@ -363,6 +364,48 @@ async function sceneImage(info) {
     }
   }
   throw lastErr || { status: 500, message: "image failed" };
+}
+
+// ---------------------------------------------------------------------
+// [수정 7-7] Google Lyria 3 Clip — 30초 악기 음악 (MP3). 키는 Vercel 환경 변수 GEMINI_API_KEY 에만
+// ---------------------------------------------------------------------
+const GENRE_EN = { classic: "calm classical ambient", ballad: "emotional piano ballad", calm: "slow meditative ambient", cinema: "cinematic orchestral",
+  musicbox: "gentle music box waltz", festival: "festive marching band", lofi: "lo-fi hip hop", jazz: "smooth jazz", electro: "electronic dance",
+  pop: "upbeat K-pop style dance pop", rock: "energetic rock", metal: "heavy metal", hiphop: "hip hop beat", rnb: "R&B soul", folk: "acoustic folk" };
+function musicPromptOf(w) {
+  const g = GENRE_EN[w.music] || (n01(w.arousal, 0.5) > 0.6 ? "upbeat pop" : "soft ambient");
+  const ar = n01(w.arousal, 0.5), va = n01(w.valence, 0.5), br = n01(w.brightness, 0.5);
+  const bpm = Math.round(66 + ar * 70);
+  const mood = [va > 0.62 ? "happy, bright, major key" : va < 0.38 ? "sad, melancholic, minor key" : "bittersweet",
+    ar > 0.65 ? "high energy, strong driving beat" : ar < 0.35 ? "very calm, gentle, soft dynamics" : "moderate energy",
+    br > 0.65 ? "airy and light" : br < 0.35 ? "dark and deep" : ""].filter(Boolean).join("; ");
+  return "Instrumental only, no vocals, no singing. A " + g + " piece at about " + bpm + " BPM. Mood: " + mood + ". Clear melody and rhythm, polished modern production.";
+}
+function findAudio(o, depth) {
+  if (!o || typeof o !== "object" || depth > 8) return null;
+  if (o.type === "audio" && typeof o.data === "string" && o.data.length > 1000) return o;
+  if (o.inlineData && typeof o.inlineData.data === "string") return { data: o.inlineData.data, mime_type: o.inlineData.mimeType };
+  for (const k of Object.keys(o)) { const r = findAudio(o[k], depth + 1); if (r) return r; }
+  return null;
+}
+async function lyriaMusic(w) {
+  if (!process.env.GEMINI_API_KEY) return { ok: false, error: "no_gemini_key" };
+  const prompt = musicPromptOf(w), model = process.env.GEMINI_MUSIC_MODEL || "lyria-3-clip-preview";
+  const ac = new AbortController(), timer = setTimeout(() => ac.abort(), 55000), t1 = Date.now();
+  try {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+      method: "POST", signal: ac.signal,
+      headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
+      body: JSON.stringify({ model: model, input: prompt })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { ok: false, error: "lyria_" + r.status, message: String((j.error && j.error.message) || "").slice(0, 200), prompt: prompt };
+    const a = findAudio(j, 0);
+    if (!a) return { ok: false, error: "no_audio", prompt: prompt, keys: Object.keys(j).slice(0, 8) };
+    return { ok: true, audio: a.data, mime: a.mime_type || a.mimeType || "audio/mpeg", model: model, prompt: prompt, gen_ms: Date.now() - t1 };
+  } catch (e) {
+    return { ok: false, error: e && e.name === "AbortError" ? "lyria_timeout" : "lyria_error", message: String(e && e.message || e).slice(0, 200), prompt: prompt };
+  } finally { clearTimeout(timer); }
 }
 
 // ---------------------------------------------------------------------
@@ -481,6 +524,7 @@ function cleanSense(s) {
   if (s.spread) o.spread = s.spread;
   if (Array.isArray(s.mood_tags)) o.mood_tags = s.mood_tags.filter((t) => MOOD_TAGS.includes(t)).slice(0, 3);
   if (typeof s.music === "string" && MUSIC[s.music]) o.music = s.music;
+  if (Array.isArray(s.palette)) { const pl = s.palette.filter((c) => /^#[0-9a-fA-F]{6}$/.test(c)).slice(0, 4); if (pl.length >= 2) o.palette = pl; }
   labelsOf(o);
   // [수정 6-10] AI가 감정 낱말을 빠뜨리면 예전에는 '평온'으로 채워서, 강렬한 작품의 장면이 '평온'으로 보였음 → 숫자로 계산한 분위기 이름으로
   if (!o.emotion) o.emotion = { "긴장": "긴장감", "슬픔": "쓸쓸함", "신비": "신비로움", "신남": "신남", "밝음": "밝음", "차분함": "차분함" }[o.mode] || "차분함";
@@ -576,6 +620,10 @@ module.exports = async (req, res) => {
     if (tooMany(ip)) return res.status(429).json({ error: "too_many" });
 
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+    if (body.task === "music") {          // [수정 7-7] 글 → 진짜 음악 (Google Lyria) — 키가 없거나 실패하면 앱이 원래 음악 생성기로
+      const out = await lyriaMusic(body.whole || {});
+      return res.status(200).json(Object.assign({ version: SERVER_VERSION, ms: { total: Date.now() - t0 } }, out));
+    }
     const type = ["photo", "video", "sound", "text"].includes(body.type) ? body.type : "photo";
     const inText = type === "text" ? String(body.text || "").trim().slice(0, 2000) : "";
     if (type === "text" && inText.length < 2) return res.status(400).json({ error: "no_text" });
