@@ -621,6 +621,7 @@
     .view-lead { font-size: 18px; line-height: 1.65; margin: 8px 0 0; color: #2A2723; }
     .vtabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 18px 0 0; border-bottom: 1px solid var(--rule); }
     .vtabs[data-n="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .vtabs[data-n="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .vtabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 12px 2px 10px; font-size: 16px; font-weight: 500; color: #6B665E; min-height: 48px; }
     .vtabs button[aria-selected="true"] { color: #111; font-weight: 700; border-bottom-color: #111; }
     .vtabs button:focus-visible { outline: 2px solid var(--muse-accent, #FF5A1F); outline-offset: -2px; }
@@ -645,8 +646,15 @@
     .read-parts li.on { background: #FFF1EA; }
     .read-parts li b { display: block; font-size: 18px; margin-bottom: 2px; }
     .read-parts .see { display: block; font-size: 13px; color: #8A847B; margin-top: 4px; }
-    .part-say { min-width: 44px; min-height: 44px; border-radius: 999px; border: 1.5px solid #111; background: transparent; font-size: 15px; font-weight: 800; }
-    .part-say.on { background: #111; color: #FFF; }
+    .read-parts li { grid-template-columns: 34px 1fr !important; cursor: default !important; }
+    .part-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .part-feel, .part-say { min-height: 44px; padding: 6px 16px; border-radius: 999px; border: 1.5px solid #111; background: transparent; font-size: 15px; font-weight: 700; color: #111; }
+    .part-feel { background: #111; color: #FFF; }
+    .part-say.on { background: #FF5A1F; border-color: #FF5A1F; color: #FFF; }
+    .mood-box { padding: 14px 16px; background: #ECE8E1; margin: 8px 0 16px; }
+    .mood-box small { display: block; font-size: 13px; color: #5E5A53; } .mood-box b { display: block; font-size: 21px; margin: 2px 0 6px; }
+    .mood-box .sw { width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: -3px; }
+    .mood-box p { margin: 8px 0 0; font-size: 16px; line-height: 1.7; color: #26231F; }
     .read-sec { font-family: var(--mono); font-size: 13px; letter-spacing: .06em; color: #5E5A53; margin: 24px 0 4px; }
     .read-parts .no { font-family: var(--mono); font-size: 13px; color: #6B665E; padding-top: 3px; }
     .read-parts .t { font-family: var(--mono); font-size: 12px; color: #6B665E; margin-left: 6px; font-weight: 400; }
@@ -940,11 +948,8 @@
     <p class="kicker">MENU</p>
     <h2>MuSE</h2>
     <div class="menu-list">
-      <button class="row-link" data-menu="gallery">갤러리</button>
-      <button class="row-link" data-menu="note">우리의 탐구 — 감각 세기 법칙</button>
-      <button class="row-link" data-menu="ready">소리 · 진동 다시 확인</button>
-      <button class="row-link" data-menu="redo">질문부터 다시 하기</button>
-      <button class="row-link" data-menu="fresh">새로 온 사람으로 처음부터</button>
+      <button class="row-link" data-menu="note">우리의 탐구</button>
+      <button class="row-link" data-menu="fresh">처음부터 다시 시작<small style="display:block;font-size:13px;font-weight:400;opacity:.7">소리·진동 확인과 내 감각 질문부터 새로 해요 (갤러리는 그대로)</small></button>
     </div>
     <p class="menu-note">찍은 사진·영상 장면과 들은 소리는 AI 분석을 위해 잠깐 보내고, 서버에 저장하지 않아요. 갤러리는 이 폰에만 저장돼요.<br>
       <a href="check.html">기기 점검</a> · <a href="vibe-test.html">진동 점검</a></p>
@@ -991,7 +996,6 @@
             <button role="tab" data-tab="feel" aria-selected="true">느껴보기</button>
             <button role="tab" data-tab="touch">만져보기</button>
             <button role="tab" data-tab="read">해설</button>
-            <button role="tab" data-tab="why">감각 풀이</button>
           </div>
           <p class="vstatus" id="sceneBar" aria-live="polite"></p>
           <div class="vpane" id="paneFeel"><div id="viewBtns"></div></div>
@@ -1070,7 +1074,7 @@
     // 0) 기본 도구
     // ==========================================================
     const $ = (id) => document.getElementById(id);
-    const APP_VER = "MuSE · 앱 7-10 — 사진도 진짜 음악 · 30초 고르기 · 감각 풀이 새로 · 부드러운 그림 전환";
+    const APP_VER = "MuSE · 앱 7-11 — AI 음악이 기본 · 해설에 분위기 · 부분 버튼 · 메뉴 정리";
     const copy = (obj) => JSON.parse(JSON.stringify(obj));   // 사본 만들기
     let currentScreen = "home";
 
@@ -3610,7 +3614,7 @@
           p.V.energy = 0.35 * p.V.energy + 0.65 * m.energy; p.V.layers = 0.5 * p.V.layers + 0.5 * m.layers;
         }
         orbSet(orbSt, p.V, p.pal); orbDraw(orbSt);
-        if (r === lastResult) $("whyBody").innerHTML = whyHTML(r);   // 감각 풀이의 색을 구슬 색과 맞춤
+        if (r === lastResult) { const mb = $("moodBox"); if (mb) mb.outerHTML = moodBoxHTML(r); }   // 해설의 분위기 색을 구슬 색과 맞춤
       }
       if (sartSt && r && r.whole) sartSt.mood = hexRGB(emotionColor(r.whole)) || sartSt.mood;
     }
@@ -3829,6 +3833,15 @@
       renderButtons();
     }
     async function fetchMusic(d, r) {
+      let n = 0;
+      for (let tryNo = 1; tryNo <= 2; tryNo++) {                         // 한 번 실패하면(키 없음 제외) 잠깐 뒤 한 번 더
+        n = tryNo; await fetchMusic1(d, r);
+        if (d.music || (d.musicInfo && /no_gemini_key/.test(d.musicInfo.error || "")) || lastData !== d) break;
+        await new Promise((ok) => setTimeout(ok, 1500));
+      }
+      if (d.musicInfo) d.musicInfo.tries = n;
+    }
+    async function fetchMusic1(d, r) {
       d.musicInfo = { state: "만드는 중" };
       const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 70000), t0 = performance.now();
       try {
@@ -3848,7 +3861,7 @@
         d.music = { pcm: p, sr: SND_SR, from: 0, dur: F.sec, full: F.sec, F: F };
         d.musicInfo = { state: "준비됨", model: j.model, gen_ms: j.gen_ms, total_ms: Math.round(performance.now() - t0), sec: +F.sec.toFixed(1), prompt: j.prompt };
         if (lastData === d && !isPlaying()) $("sceneBar").textContent = "AI가 만든 음악이 준비됐어요";
-        if (lastData === d && lastResult) $("whyBody").innerHTML = whyHTML(lastResult);
+
       } catch (e) {
         d.musicInfo = { state: "실패 → 원래 음악", error: e.name === "AbortError" ? "시간 초과" : String(e && e.message || e) };
       } finally { clearTimeout(to); }
@@ -4320,10 +4333,16 @@
           soundWaitEnd(); showReady();
           return;
         }
-        if (d.type === "text") { setMoodOf(r); fetchMusic(d, r); }     // [MuSE 7-7] 글: 진짜 음악(Lyria)을 뒤에서 만들기 — 안 되면 원래 음악
+        if (d.type === "text") setMoodOf(r);
+        if (d.type === "photo") prepareParts();
+        if (d.type === "text" || d.type === "photo") {                 // [MuSE 7-11] 음악은 AI(Google Lyria)가 만든 음악이 기본 → 만들어질 때까지 기다림 (정말 안 될 때만 원래 음악)
+          const wm = $("waitMsg"); if (wm) wm.textContent = "AI가 이 작품만의 음악을 만들고 있어요";
+          const vw = $("viewWait"); if (vw) vw.innerHTML = '<ol class="wsteps"><li class="now"><i></i>AI가 이 작품만의 음악을 만들고 있어요</li></ol>';
+          await fetchMusic(d, r);
+          if (seq !== analyzeSeq || currentScreen !== "view") return;
+        }
         endWaitArt(); soundWaitEnd();   // [수정 6-12] (7-8: 글의 검은 화면도 걷음) 기다리는 동안 보이던 빛 그림이 사라지며 원래 작품이 드러남
         prepareParts();                 // [수정 6-12] 눈길 안내·만져보기용 덩어리와 이름을 미리 준비
-        if (d.type === "photo") fetchMusic(d, r);     // [MuSE 7-10] 사진도 AI가 분위기로 만든 진짜 음악 (안 되면 원래 음악)
         if (d.type === "photo" || d.type === "text" || d.type === "sound") addToGallery(d, r);   // [수정 6-14] 📚 내 갤러리에 걸기 (7-3: 소리도)
         showReady();                    // [수정 6-4] 바로 소리를 내지 않고 '준비됐어요' → ▶ 버튼
       } catch (e) {
@@ -4430,16 +4449,17 @@
       const partsTitle = { photo: "눈에 띄는 부분", video: "장면 순서", sound: "소리의 흐름", text: "중요한 부분" }[t] || "눈에 띄는 부분";
       const times = t === "sound" ? soundPartTimes(r) : null;
       $("textBody").innerHTML =
+        moodBoxHTML(r) +
         '<p class="read-sum">' + esc(r.summary) + "</p>" +
         (r.interpretation ? sentencesKo(r.interpretation).map((x) => '<p class="read-p">' + esc(x) + "</p>").join("") : "") +
         (r.heard && r.heard.speech ? '<p class="read-p"><b>들린 말:</b> ' + esc(r.heard.speech) + "</p>" : "") +
         '<p class="read-sec">' + esc(partsTitle) + "</p>" +
-        '<ol class="read-parts">' + (r.scenes || []).map((s, i) => "<li tabindex='0' role='button' data-part='" + i + "'><span class='no'>" + String(i + 1).padStart(2, "0") + "</span><span><b>" + esc(s.name) +
+        '<ol class="read-parts">' + (r.scenes || []).map((s, i) => "<li data-part='" + i + "'><span class='no'>" + String(i + 1).padStart(2, "0") + "</span><span><b>" + esc(s.name) +
           (times && times[i] ? '<span class="t">' + fmtSec(times[i].from) + "–" + fmtSec(times[i].to) + "</span>" : "") + "</b>" + esc(s.text) +
-          "<span class='see'>누르면 작품에서 " + (t === "sound" ? "그 부분을 들려줘요" : t === "text" ? "보여 줘요" : "그 부분을 보여 줘요") + "</span></span>" +
-          (canVoice ? "<button class='part-say' data-say='" + i + "' aria-label='이 부분만 소리 내어 읽기'>▶</button>" : "") + "</li>").join("") + "</ol>" +
-        (r.mood_line ? '<div class="ai-feel"><small>AI의 느낌</small>' + esc(r.mood_line) +
-          ((r.whole && r.whole.mood_tags && r.whole.mood_tags.length) ? "<br>" + r.whole.mood_tags.map((x) => '<span class="chip">' + esc(x) + "</span>").join("") : "") + "</div>" : "") +
+          // [7-11] 아이콘만 있던 ▶(읽기)와 '회색 글씨 누르기'(작품에서 느끼기)가 구별되지 않던 것 → 글자가 있는 버튼 두 개
+          "<span class='part-btns'><button class='part-feel' data-feel='" + i + "'>✨ 작품에서 느끼기</button>" +
+          (canVoice ? "<button class='part-say' data-say='" + i + "'>🗣 읽어 주기</button>" : "") + "</span></span></li>").join("") + "</ol>" +
+
         (t === "text" && lastData.text ? '<details class="card" style="margin-top:14px"><summary>원래 글</summary><p class="read-p" style="white-space:pre-wrap">' + esc(lastData.text) + "</p></details>" : "") +
         '<button class="big ghost" data-v="voice" id="btnReadAloud"' + (canVoice ? "" : " hidden") + ">소리 내어 읽기</button><div class=\"result\" id=\"voiceInfo\"></div>";
       $("whyBody").innerHTML = whyHTML(r);
@@ -4451,6 +4471,14 @@
     function vibeBars(pat) {
       const arr = (Array.isArray(pat) ? pat : [pat]).slice(0, 12), mx = Math.max(...arr, 1);
       return '<span class="vbars">' + arr.map((v, i) => '<i class="' + (i % 2 ? "off" : "") + '" style="height:' + Math.max(3, Math.round(22 * (i % 2 ? 0.2 : v / mx))) + "px;width:" + Math.max(3, Math.round(v / 12)) + 'px"></i>').join("") + "</span>";
+    }
+    // [MuSE 7-11] 해설 맨 위: 이 작품의 분위기 (분위기 낱말 + 분위기 색 + AI가 느낀 한 줄) — 예전 '감각 풀이' 탭에서 옮김
+    function moodBoxHTML(r) {
+      if (!r || !r.whole) return "";
+      const W = r.whole, d = lastData || {}, tags = (W.mood_tags || []).slice(0, 3);
+      const pal = (d.type === "sound" || d.type === "text") && orbSt ? orbSt.PAL.slice(0, 4) : (W.colors || []).concat([emotionColor(W)]).filter(Boolean).slice(0, 4);
+      return '<div class="mood-box" id="moodBox"><small>이 작품의 분위기</small><b>' + esc(tags.length ? tags.join(" · ") : (W.emotion || "-")) + "</b><div>" +
+        pal.map((h) => '<i class="sw" style="background:' + esc(h) + '"></i>').join("") + "</div>" + (r.mood_line ? "<p>" + esc(r.mood_line) + "</p>" : "") + "</div>";
     }
     // [MuSE 7-10] '감각 풀이' — 모든 작품에 같은 '규칙'을 보여 주던 것을 → '이 작품에서는 왜 이렇게 느껴지는지'를 이 작품의 값으로
     //   맨 위: 이 작품의 분위기 + 분위기 색 · 그 아래: 보기·듣기·떨림마다 '이 작품에서 하는 일' + 내 세기 (− + 로 바로 바꿈)
@@ -4668,7 +4696,7 @@
     const idbPut = (k, v) => idbDo("readwrite", (st) => st.put(v, k)).catch(() => null);
     function idbPrune(keep) {                                         // 갤러리에서 빠진 작품의 원본은 지움
       idbDo("readonly", (st) => st.getAllKeys()).then((keys) => {
-        const gone = (keys || []).filter((k) => !keep.includes(k));
+        const gone = (keys || []).filter((k) => !keep.includes(k) && !keep.includes(parseInt(k, 10)));   // (음악은 '번호-m')
         if (gone.length) idbDo("readwrite", (st) => { gone.forEach((k) => st.delete(k)); });
       }).catch(() => {});
     }
@@ -4698,6 +4726,11 @@
       list.unshift(item);
       gallerySave(list.slice(0, GALLERY_MAX));
       if (d.type === "photo") { d.galleryId = item.id; galleryKeepParts(d); idbPrune(galleryList().map((x) => x.id)); }
+      if ((d.type === "photo" || d.type === "text") && d.music) {          // [MuSE 7-11] AI가 만든 음악도 이 폰에 저장 → 갤러리에서 다시 열어도 같은 음악
+        const M = d.music, q = new Int16Array(M.pcm.length);
+        for (let i = 0; i < q.length; i++) q[i] = Math.max(-1, Math.min(1, M.pcm[i])) * 32767;
+        idbPut(item.id + "-m", { pcm16: q, sr: M.sr });
+      }
       if (d.type === "sound" && d.snd) {                // [MuSE 7-3] 들은 소리도 이 폰 저장소에 (다시 느끼기에서 다시 틀려고) — 30초 × 22kHz ≈ 1.3MB
         const S = d.snd, q = new Int16Array(S.pcm.length);
         for (let i = 0; i < q.length; i++) q[i] = Math.max(-1, Math.min(1, S.pcm[i])) * 32767;
@@ -4787,6 +4820,10 @@
           if (rec.image) lastData.sceneImg = rec.image;
           lastData.source = "내 갤러리 (저장한 소리)";
         }
+      }
+      if (it.type === "photo" || it.type === "text") {                  // [MuSE 7-11] 저장해 둔 AI 음악
+        const mr = await idbGet(it.id + "-m");
+        if (mr && mr.pcm16) { const pcm = new Float32Array(mr.pcm16.length); for (let i = 0; i < pcm.length; i++) pcm[i] = mr.pcm16[i] / 32767; const F = soundFeatures(pcm, mr.sr); lastData.music = { pcm: pcm, sr: mr.sr, from: 0, dur: F.sec, full: F.sec, F: F }; }
       }
       lastResult = { summary: it.summary, interpretation: it.interpretation, mood_line: it.mood_line, kind: it.kind, material: it.material, heard: it.heard || null, think: it.think || null, short_name: it.title,
                      whole: it.whole, scenes: (it.scenes || []).map((s) => ({ name: s.name, text: s.text, sense: s.sense || it.whole, cells: [], from: s.from, to: s.to })),
@@ -5057,7 +5094,8 @@
       const canVoice = profile.sound.on && soundUsable();
       const tabs = $("vtabs");
       tabs.querySelector('[data-tab="touch"]').hidden = !canTouch;
-      tabs.dataset.n = canTouch ? "4" : "3";
+      tabs.dataset.n = canTouch ? "3" : "2";
+      if (viewTab === "why") viewTab = "read";                           // [7-11] 감각 풀이 탭은 뺌 → 분위기는 해설 탭 맨 위로
       tabs.querySelectorAll("button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === viewTab)));
       ["Feel", "Touch", "Read", "Why"].forEach((k) => { $("pane" + k).hidden = viewTab !== k.toLowerCase(); });
       senseLiveState();
@@ -5093,11 +5131,11 @@
     function readReset() {
       readOn = null;
       const m = $("btnReadAloud"); if (m) m.textContent = "소리 내어 읽기";
-      document.querySelectorAll(".part-say.on").forEach((x) => { x.classList.remove("on"); x.textContent = "▶"; });
+      document.querySelectorAll(".part-say.on").forEach((x) => { x.classList.remove("on"); x.textContent = "🗣 읽어 주기"; });
     }
     $("paneRead").addEventListener("click", (e) => {
       const r = lastResult; if (!r) return;
-      const say = e.target.closest("button[data-say]"), all = e.target.closest("button[data-v=voice]"), li = e.target.closest("li[data-part]");
+      const say = e.target.closest("button[data-say]"), all = e.target.closest("button[data-v=voice]"), li = e.target.closest("button[data-feel]");
       if (say || all) {
         const key = say ? "p" + say.dataset.say : "all", was = readOn;
         stopVoice(); readReset();
@@ -5105,13 +5143,13 @@
         stopSense(); stopSoundFollow(); stopKinetic(); clearTimeout(wholeTimer);
         readOn = key;
         let text;
-        if (say) { const s = r.scenes[Number(say.dataset.say)]; text = (s.name ? s.name + ". " : "") + s.text; say.classList.add("on"); say.textContent = "■"; showPartOnArt(Number(say.dataset.say), true); }   // 읽는 동안에는 작품 소리를 내지 않음 (겹치지 않게)
+        if (say) { const s = r.scenes[Number(say.dataset.say)]; text = (s.name ? s.name + ". " : "") + s.text; say.classList.add("on"); say.textContent = "■ 읽기 멈추기"; showPartOnArt(Number(say.dataset.say), true); }   // 읽는 동안에는 작품 소리를 내지 않음 (겹치지 않게)
         else { text = [r.summary, r.interpretation].concat((r.scenes || []).map((s) => s.text)).filter(Boolean).join(" "); all.textContent = "■ 읽기 멈추기"; }
         narrate(text, r.whole && r.whole.emotion, () => { if (readOn === key) readReset(); });
         renderButtons();
         return;
       }
-      if (li) showPartOnArt(Number(li.dataset.part));
+      if (li) showPartOnArt(Number(li.dataset.feel));
     });
     // [7-10] 감각 풀이에서 − + 로 내 세기를 바로 바꿈 (1~5)
     $("whyBody").addEventListener("click", (e) => {
@@ -5121,7 +5159,7 @@
       save(KEY_PROFILE, profile);
       if (lastResult) $("whyBody").innerHTML = whyHTML(lastResult);
     });
-    $("paneRead").addEventListener("keydown", (e) => { const li = e.target.closest && e.target.closest("li[data-part]"); if (li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); showPartOnArt(Number(li.dataset.part)); } });
+
     let partShowT = 0;
     function showPartOnArt(i, quiet) {
       const r = lastResult, s = r && r.scenes && r.scenes[i], d = lastData; if (!s || !d) return;
