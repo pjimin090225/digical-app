@@ -602,6 +602,11 @@
     .vtabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 12px 2px 10px; font-size: 16px; font-weight: 500; color: #6B665E; min-height: 48px; }
     .vtabs button[aria-selected="true"] { color: #111; font-weight: 700; border-bottom-color: #111; }
     .vtabs button:focus-visible { outline: 2px solid var(--muse-accent, #FF5A1F); outline-offset: -2px; }
+    .scene-glow { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0.05; background: radial-gradient(circle at 50% 45%, var(--sg, #FFD9A8) 0%, transparent 72%); }
+    .scene-tag { position: absolute; left: 10px; bottom: 10px; font-size: 12px; line-height: 1.4; color: #F2EFEA; background: rgba(0,0,0,0.5); padding: 3px 9px; border-radius: 999px; pointer-events: none; }
+    .snd-strip { position: relative; height: 48px; margin-top: 8px; background: #F3F1ED; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
+    .snd-strip canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .wait-skip { margin-top: 14px; font: inherit; font-size: 14px; color: #E9E6E0; background: transparent; border: 1px solid rgba(233,230,224,0.5); border-radius: 999px; padding: 8px 16px; min-height: 40px; cursor: pointer; }
     .vstatus:empty { min-height: 0; margin: 6px 0 0; }
     .vstatus { min-height: 26px; margin: 14px 0 0; font-size: 17px; font-weight: 700; line-height: 1.45; }
     .vpane { padding: 4px 0 8px; }
@@ -916,6 +921,7 @@
         <div class="art" id="art">
           <div class="art-wrap" id="artWrap">
             <img id="artImg" alt="찍은 작품" draggable="false">
+            <div class="scene-glow" id="sceneGlow" hidden></div>
             <canvas class="light-mask" id="lightMask" hidden></canvas>
             <canvas class="art-canvas" id="artCanvas" hidden></canvas>
             <div class="glow" id="glow"></div>
@@ -928,7 +934,9 @@
           </div>
           <div class="tour-cap" id="tourCap" hidden></div>
           <div class="kin" id="kin" hidden></div>
+          <span class="scene-tag" id="sceneTag" hidden>AI가 들은 소리로 상상한 장면 · 정답 아님</span>
         </div>
+        <div class="snd-strip" id="sndStrip" hidden aria-hidden="true"><canvas id="stripCv"></canvas></div>
       </div>
       <div class="view-panel">
         <p class="kicker" id="viewKicker"></p>
@@ -966,7 +974,7 @@
   <!-- [수정 6-14] 기다리는 동안 전체 화면 빛 그림 -->
   <div class="wait-full" id="waitFull" hidden>
     <canvas id="waitCanvas"></canvas>
-    <div class="wait-info"><div class="wait-style" id="waitStyle"></div><div id="waitMsg">AI가 작품을 천천히 보고 있어요</div></div>
+    <div class="wait-info"><div class="wait-style" id="waitStyle"></div><div id="waitMsg">AI가 작품을 천천히 보고 있어요</div><button class="wait-skip" id="waitSkip" hidden>장면 없이 먼저 보기</button></div>
   </div>
 
   <!-- ===================== ⑧ 아직 만들지 않은 화면 ===================== -->
@@ -1018,7 +1026,7 @@
     // 0) 기본 도구
     // ==========================================================
     const $ = (id) => document.getElementById(id);
-    const APP_VER = "MuSE · 앱 7-5 — 소리·글의 모양 그림 · 신나는 음악 · 새 관람객 시작";
+    const APP_VER = "MuSE · 앱 7-6 — 소리로 그리는 장면 · 검은 화면 빛 물결 · 소리 결 띠";
     const copy = (obj) => JSON.parse(JSON.stringify(obj));   // 사본 만들기
     let currentScreen = "home";
 
@@ -3228,7 +3236,7 @@
       $("camMsg").textContent = "";
       showConfirm({
         type: "sound", images: [still.toDataURL("image/jpeg", 0.9)], source: source, audio: F.summary,
-        snd: { pcm: p, sr: SND_SR, from: from, dur: F.sec, F: F, full: fullDur || F.sec },
+        snd: { pcm: p, sr: SND_SR, from: from, dur: F.sec, F: F, S: spectro(p, SND_SR), full: fullDur || F.sec },
         wav: wavBase64(p16, 16000)
       });
     }
@@ -3249,7 +3257,10 @@
     let sartSt = null;
     function setArtKind(d) {
       const art = $("art"), kin = $("kin");
-      const k = d && ((d.type === "sound" && d.snd) || d.type === "text");
+      const k = d && ((d.type === "sound" && d.snd && !d.sceneImg) || d.type === "text");
+      const sc = !!(d && d.type === "sound" && d.sceneImg);             // [MuSE 7-6] 장면이 있으면: 장면(그림) + 아래 소리 결 띠
+      $("sndStrip").hidden = !sc; $("sceneTag").hidden = !sc; $("sceneGlow").hidden = !sc;
+      if (sc) { buildStrip(d); requestAnimationFrame(() => drawStrip(-1)); $("sceneGlow").style.setProperty("--sg", lastResult && lastResult.whole ? emotionColor(lastResult.whole) : "#FFD9A8"); }
       art.classList.toggle("kinetic", !!k);
       art.classList.toggle("sound-art", !!(d && d.type === "sound"));
       kin.hidden = !k;
@@ -3337,7 +3348,8 @@
           if (v > 0.12) { const on = Math.round(8 + 62 * v); navigator.vibrate([on, 100 - on]); } else navigator.vibrate(0);
         }
         run.lastF = f; run.f = f;
-        drawSoundFrame(f, onset);
+        if (d.sceneImg) { drawStrip(f); if (onset && profile.visual.on) sceneGlow(Math.min(1, 0.4 + S.F.L[f]) * (0.5 + 0.1 * profile.visual.level), onset === 2 ? 700 : 450); }
+        else drawSoundFrame(f, onset);
         let k = -1; parts.forEach((p, j) => { if (t >= p.from) k = j; });
         if (k !== run.part && k >= 0 && lastResult.scenes[k]) {
           run.part = k;
@@ -3362,7 +3374,7 @@
       const B = $("kinBar"); if (B) B.style.width = "0%";
       const R = $("kinCapR"); if (R) R.textContent = "";
       const Lc = $("kinCapL"); if (Lc) Lc.textContent = "";
-      drawSoundFrame(-1);
+      drawSoundFrame(-1); drawStrip(-1);
     }
     function finishSoundFollow() {
       stopSoundFollow();
@@ -3507,6 +3519,139 @@
       };
       if (!reduceMotion()) raf = requestAnimationFrame(step);
       return () => { alive = false; cancelAnimationFrame(raf); stop(); const l = $("kinCapL"), r = $("kinCapR"); if (l) l.textContent = ""; if (r) r.textContent = ""; drawSoundFrame(-1); };
+    }
+
+    // ==========================================================
+    // [MuSE 7-6] 🎨 소리 → 장면 (Sound-to-Scene)
+    //   ① 분석 중: 사진 모드처럼 검은 전체 화면 — 들은 소리를 다시 따라가며 '그 순간 소리가 나는 높이'에서 빛 알갱이가 피어나 흘러감
+    //   ② AI가 들은 것만으로 장면 그림 한 장 (서버 task: scene) → 그 그림이 소리 모드의 '작품'
+    //   ③ 느껴보기: 원래 소리 + 장면 위 빛(박마다) + 떨림 + 아래 '소리 결 띠'(지금 들리는 자리)
+    //   그림이 늦거나 실패하면 → 소리 모양 그림으로 그대로 감상 (제출·시연이 막히지 않게)
+    // ==========================================================
+    // 소리의 결(스펙트로그램): 조각마다 48칸 (낮은 60Hz ~ 높은 8kHz, 귀처럼 로그 간격), 그 소리 안에서 0~1로
+    function spectro(pcm, sr) {
+      const n = Math.max(1, Math.floor((pcm.length - FFT_N) / SND_HOP) + 1), B = 48;
+      const re = new Float32Array(FFT_N), im = new Float32Array(FFT_N), mag = new Float32Array(FFT_N / 2), seg = new Float32Array(FFT_N);
+      const edges = []; for (let b = 0; b <= B; b++) edges.push(Math.max(1, Math.round(60 * Math.pow(8000 / 60, b / B) / (sr / FFT_N))));
+      const M = [], all = [];
+      for (let f = 0; f < n; f++) {
+        for (let i = 0; i < FFT_N; i++) seg[i] = pcm[f * SND_HOP + i] || 0;
+        fftMag(seg, re, im, mag);
+        const row = new Float32Array(B);
+        for (let b = 0; b < B; b++) { let s = 0, c = 0; for (let i = edges[b]; i <= Math.max(edges[b], edges[b + 1] - 1); i++) { s += mag[i]; c++; } row[b] = Math.log1p(s / c * 20); if (f % 2 === 0) all.push(row[b]); }
+        M.push(row);
+      }
+      all.sort((a, b) => a - b);
+      const lo = all[Math.floor(all.length * 0.3)] || 0, hi = all[Math.floor(all.length * 0.985)] || 1;
+      M.forEach((r) => { for (let b = 0; b < B; b++) r[b] = clamp01((r[b] - lo) / Math.max(1e-6, hi - lo)); });
+      return { M: M, n: n, B: B };
+    }
+    const BAND_COL = [[60, 80, 255], [140, 70, 240], [214, 63, 209], [255, 100, 120], [255, 150, 60], [255, 200, 60]];
+    function bandCol(y) { const x = clamp01(y) * (BAND_COL.length - 1), i = Math.min(BAND_COL.length - 2, Math.floor(x)), t = x - i; return BAND_COL[i].map((v, k) => Math.round(v + (BAND_COL[i + 1][k] - v) * t)); }
+
+    // ① 분석 중: 소리의 빛 물결 (검은 전체 화면)
+    let swRun = null;
+    function soundFullWait(d) {
+      const full = $("waitFull"), cv = $("waitCanvas"), S = d.snd && d.snd.S, F = d.snd && d.snd.F;
+      if (!S || !F) return waitStages($("viewWait"));
+      const stopSteps = waitSteps($("viewWait"), ["AI가 소리를 듣고 있어요", "들린 것을 쉬운 말로 쓰고 있어요", "장면을 그리고 있어요"]);
+      const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(window.innerWidth * dpr), H = Math.round(window.innerHeight * dpr);
+      cv.width = W; cv.height = H; cv.style.width = window.innerWidth + "px"; cv.style.height = window.innerHeight + "px";
+      const g = cv.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+      full.hidden = false; full.style.opacity = "1";
+      $("waitStyle").textContent = "LISTENING"; $("waitMsg").textContent = "AI가 소리를 듣고 있어요";
+      const run = { on: true, P: [], lastF: -1, t0: performance.now(), prev: performance.now(), raf: 0 };
+      swRun = run;
+      const ex = W * (W > H ? 0.6 : 0.78), top = H * 0.16, span = H * 0.62;
+      const step = () => {
+        if (!run.on) return;
+        const now = performance.now(), dt = Math.min(0.05, (now - run.prev) / 1000); run.prev = now;
+        const t = ((now - run.t0) / 1000) % F.sec, f = Math.min(F.n - 1, Math.floor(t / F.hop)), row = S.M[Math.min(S.n - 1, f)];
+        g.globalCompositeOperation = "source-over"; g.fillStyle = "rgba(0,0,0,0.16)"; g.fillRect(0, 0, W, H);     // 지난 빛이 천천히 사라짐 (꼬리)
+        if (f < run.lastF) run.P = [];
+        let on = 0; for (let k = run.lastF + 1; k <= f; k++) if (k >= 0 && F.on[k]) on = Math.max(on, F.on[k]); run.lastF = f;
+        for (let b = 0; b < S.B; b += 2) {                                 // 그 순간 소리가 나는 높이에서 빛이 피어남
+          const v = Math.max(row[b], row[b + 1] || 0); if (v < 0.18) continue;
+          const n = v * v * 0.9;
+          for (let i = 0; i < n; i++) { if (Math.random() > n - i) break;
+            run.P.push({ x: ex + (Math.random() - 0.5) * W * 0.1, y: top + span * (1 - (b + 2 * Math.random()) / S.B), vx: -(55 + 110 * v) * dpr * (0.7 + 0.6 * Math.random()), vy: (Math.random() - 0.5) * 14 * dpr,
+                         life: 1, d: 0.16 + 0.12 * Math.random(), r: (0.6 + 1.8 * v) * dpr, c: bandCol(b / (S.B - 1)), ph: Math.random() * 6.28 }); }
+        }
+        if (on) {                                                         // 박: 그 높이에서 빛이 퍼짐
+          let bb = 0, bv = 0; for (let b = 0; b < S.B; b++) if (row[b] > bv) { bv = row[b]; bb = b; }
+          const y = top + span * (1 - (bb + 0.5) / S.B), c = bandCol(bb / (S.B - 1));
+          for (let i = 0; i < (on === 2 ? 36 : 22); i++) { const a = Math.random() * 6.283, sp = (25 + 60 * Math.random()) * dpr; run.P.push({ x: ex, y: y, vx: Math.cos(a) * sp - 30 * dpr, vy: Math.sin(a) * sp, life: 1, d: 0.5, r: (0.8 + 1.2 * Math.random()) * dpr, c: c, ph: 0 }); }
+        }
+        if (run.P.length > 1600) run.P.splice(0, run.P.length - 1600);
+        g.globalCompositeOperation = "lighter";
+        for (const p of run.P) {
+          p.life -= dt * p.d; if (p.life <= 0) continue;
+          const dm = Math.pow(0.7, dt); p.vx *= dm; p.vy *= dm;
+          p.x += p.vx * dt; p.y += p.vy * dt + Math.sin(t * 0.9 + p.ph + p.x * 0.006) * dpr * 0.35;
+          const a = Math.min(1, p.life * 1.4) * 0.32, rr = p.r * (1.6 + 1.2 * (1 - p.life));
+          g.fillStyle = sartRGBA(p.c, a * 0.35); g.beginPath(); g.arc(p.x, p.y, rr * 2.2, 0, 6.283); g.fill();
+          g.fillStyle = sartRGBA(p.c, a); g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill();
+        }
+        run.P = run.P.filter((p) => p.life > 0);
+        g.globalCompositeOperation = "source-over";
+        $("waitStyle").textContent = "LISTENING · " + fmtSec(t) + " / " + fmtSec(F.sec);
+        run.raf = requestAnimationFrame(step);
+      };
+      if (!reduceMotion()) run.raf = requestAnimationFrame(step);
+      const t2 = setInterval(() => { const li = $("viewWait").querySelector("li.now"); if (li) $("waitMsg").textContent = li.textContent; }, 500);
+      return () => { stopSteps(); clearInterval(t2); };            // (화면 걷기는 soundWaitEnd에서)
+    }
+    function soundWaitEnd() {
+      const r = swRun; swRun = null;
+      $("waitSkip").hidden = true;
+      if (!r) return;
+      const full = $("waitFull");
+      full.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1100, easing: "ease-in" }).onfinish = () => { r.on = false; cancelAnimationFrame(r.raf); full.hidden = true; full.style.opacity = "1"; };
+    }
+    // ② 장면 그림 받기 (최대 70초) — 실패하면 null
+    async function fetchScene(d, r) {
+      const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 70000);
+      try {
+        const res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, signal: ctl.signal,
+          body: JSON.stringify({ type: "sound", task: "scene", heard: r.heard || null, summary: r.summary, interpretation: r.interpretation,
+                                 tags: (r.whole && r.whole.mood_tags) || [], parts: (r.scenes || []).map((s) => ({ name: s.name, text: s.text })) }) });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j.ok || !j.image) { d.sceneErr = (j && (j.detail || j.error)) || ("HTTP " + res.status); return null; }
+        d.sceneInfo = { model: j.model, ms: j.ms && j.ms.total, prompt: j.prompt, title: j.title };
+        return j.image;
+      } catch (e) { d.sceneErr = e.name === "AbortError" ? "시간 초과" : String(e); return null; }
+      finally { clearTimeout(to); }
+    }
+    // 장면을 작품 자리에 놓기
+    function applyScene(d, img) {
+      d.sceneImg = img; d.images = [img];
+      $("artImg").src = img;
+      setArtKind(d);
+      drawStrip(-1);
+    }
+    // ③ 아래 '소리 결 띠' — 장면 아래에 그 소리의 결을 가늘게, 지금 들리는 자리는 세로 줄
+    let stripImg = null;
+    function buildStrip(d) {
+      const S = d && d.snd && d.snd.S; stripImg = null; if (!S) return;
+      const cols = Math.min(300, S.n), off = document.createElement("canvas"); off.width = cols; off.height = S.B;
+      const g = off.getContext("2d"), id = g.createImageData(cols, S.B);
+      for (let x = 0; x < cols; x++) { const f = Math.floor(x * S.n / cols); for (let b = 0; b < S.B; b++) { const v = Math.pow(S.M[f][b], 1.4), c = bandCol(b / (S.B - 1)), i = ((S.B - 1 - b) * cols + x) * 4; id.data[i] = c[0]; id.data[i + 1] = c[1]; id.data[i + 2] = c[2]; id.data[i + 3] = Math.round(255 * v * 0.95); } }
+      g.putImageData(id, 0, 0); stripImg = off;
+    }
+    function drawStrip(f) {
+      const cv = $("stripCv"); if (!cv || !stripImg || $("sndStrip").hidden) return;
+      const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+      const W = Math.max(10, Math.round(r.width * dpr)), H = Math.max(10, Math.round(r.height * dpr));
+      if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+      const g = cv.getContext("2d"); g.fillStyle = SART_BG; g.fillRect(0, 0, W, H);
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(stripImg, 0, 0, W, H);
+      if (f >= 0 && lastData && lastData.snd) { const x = W * f / lastData.snd.F.n; g.fillStyle = "rgba(255,255,255,0.55)"; g.fillRect(x - W * 0.03, 0, W * 0.03, H); g.fillStyle = "#1A1917"; g.fillRect(x, 0, Math.max(1, dpr), H); }
+    }
+    // 장면 위 빛 (박마다 번짐) — 분위기 색
+    function sceneGlow(a, ms) {
+      const el = $("sceneGlow"); if (!el || el.hidden) return;
+      if (reduceMotion()) { el.style.opacity = String(0.15 * a); return; }
+      el.animate([{ opacity: 0.05 }, { opacity: 0.12 + 0.5 * a }, { opacity: 0.05 }], { duration: ms || 500, easing: "ease-out" });
     }
 
     // ==========================================================
@@ -3697,7 +3842,7 @@
       if (d.type === "photo") prepareParts();   // [수정 6-15] 덩어리 나누기 + 재질·볼 곳 묻기를 해설과 '동시에
       viewHeader(null, d);
       setArtKind(d);
-      const stop = d.type === "text" ? waitText(d) : d.type === "sound" ? waitSound(d) : waitStages($("viewWait"));
+      const stop = d.type === "text" ? waitText(d) : d.type === "sound" ? soundFullWait(d) : waitStages($("viewWait"));
       const tStart = performance.now();
       try {
         // 사진이면 번호 칸을 그린 사진을 보냄 (사용자 화면에는 원래 사진)
@@ -3713,7 +3858,7 @@
                                 audio: d.audio || null, audioWav: d.type === "sound" ? d.wav || null : undefined,
                                 explain: profile.explain, target: target });
         if (seq !== analyzeSeq || currentScreen !== "view") return;   // 기다리는 사이 다른 화면으로 갔으면 무시
-        if (r.needs_choice) { stop(); showChoice(d, r); return; }
+        if (r.needs_choice) { stop(); soundWaitEnd(); showChoice(d, r); return; }
         await applyCells(r, d);
         if (seq !== analyzeSeq || currentScreen !== "view") return;
         stop();
@@ -3732,7 +3877,20 @@
         }
         renderTexts(r);
         if (d.type === "text") kinIdle();           // [MuSE 7-3] 원래 글 → 쉬운 해설 첫 문장으로 바뀜
-        if (d.type === "sound") { setMoodOf(r); drawSoundFrame(-1); }
+        if (d.type === "sound") {               // [MuSE 7-6] 소리: 해설 다음에 장면 그림 (기다리는 동안 검은 화면의 빛 물결이 이어짐)
+          setMoodOf(r); drawSoundFrame(-1);
+          $("waitMsg").textContent = "장면을 그리고 있어요";
+          let skipped = false;
+          $("waitSkip").hidden = false;
+          $("waitSkip").onclick = () => { skipped = true; soundWaitEnd(); showReady(); $("sceneBar").textContent = "장면은 아직 그리는 중이에요"; };
+          const img = await fetchScene(d, r);
+          if (seq !== analyzeSeq) return;
+          if (img) { applyScene(d, img); renderTexts(r); }
+          addToGallery(d, r);
+          if (!skipped) { soundWaitEnd(); showReady(); }
+          else if (!isPlaying()) { renderButtons(); $("sceneBar").textContent = img ? "장면이 도착했어요" : ""; }
+          return;
+        }
         endWaitArt();                   // [수정 6-12] 기다리는 동안 보이던 빛 그림이 사라지며 원래 작품이 드러남
         prepareParts();                 // [수정 6-12] 눈길 안내·만져보기용 덩어리와 이름을 미리 준비
         if (d.type === "photo" || d.type === "text" || d.type === "sound") addToGallery(d, r);   // [수정 6-14] 📚 내 갤러리에 걸기 (7-3: 소리도)
@@ -3740,7 +3898,7 @@
       } catch (e) {
         if (seq !== analyzeSeq) return;
         stop();
-        endWaitArt();
+        endWaitArt(); soundWaitEnd();
         setViewParts("error");
         $("viewChoice").innerHTML = "<p><b>" + esc(ERR_TEXT[e.error] || ERR_TEXT.ai_error) + "</b></p>" +
           '<button class="big" id="btnRetryAI">다시 해 보기</button>' +
@@ -3873,6 +4031,7 @@
         h += row("보기", "소리가 크면 구슬이 커지고, 낮은 소리는 파랑 · 높은 소리는 주황", lv("visual"));
         h += row("떨림", "박마다 톡, 큰 소리는 진하게", lv("touch"));
         h += row("들은 것", r.heard ? "AI가 소리를 직접 들었어요" : "AI가 소리를 듣지 못해, 크기와 빠르기로만 짐작했어요");
+        if (lastData && lastData.sceneImg) h += row("장면", "AI가 들은 것만으로 상상해 그린 그림이에요. 정답이 아니에요");
       } else {
         h += row("듣기", t === "video" ? "영상의 원래 소리" : esc(P.genreName) + " · " + speed, lv("sound"));
         h += row("보기", t === "text" ? "낱말이 박자에 맞춰 나타나요" : "작품 색의 빛이 박자에 맞춰 숨 쉬어요", lv("visual"));
@@ -4085,7 +4244,7 @@
       if (d.type === "sound" && d.snd) {                // [MuSE 7-3] 들은 소리도 이 폰 저장소에 (다시 느끼기에서 다시 틀려고) — 30초 × 22kHz ≈ 1.3MB
         const S = d.snd, q = new Int16Array(S.pcm.length);
         for (let i = 0; i < q.length; i++) q[i] = Math.max(-1, Math.min(1, S.pcm[i])) * 32767;
-        idbPut(item.id, { pcm16: q, sr: S.sr, from: S.from, dur: S.dur, full: S.full });
+        idbPut(item.id, { pcm16: q, sr: S.sr, from: S.from, dur: S.dur, full: S.full, image: d.sceneImg || null });
         idbPrune(galleryList().map((x) => x.id));
       }
       return item;
@@ -4163,7 +4322,8 @@
         if (rec && rec.pcm16) {
           const pcm = new Float32Array(rec.pcm16.length); for (let i = 0; i < pcm.length; i++) pcm[i] = rec.pcm16[i] / 32767;
           const F = soundFeatures(pcm, rec.sr);
-          lastData.snd = { pcm: pcm, sr: rec.sr, from: rec.from || 0, dur: F.sec, F: F, fileUrl: null, full: rec.full || F.sec };
+          lastData.snd = { pcm: pcm, sr: rec.sr, from: rec.from || 0, dur: F.sec, F: F, S: spectro(pcm, rec.sr), fileUrl: null, full: rec.full || F.sec };
+          if (rec.image) lastData.sceneImg = rec.image;
           lastData.source = "내 갤러리 (저장한 소리)";
         }
       }
@@ -4416,7 +4576,7 @@
     const FEEL_HINT = {
       photo: "음악·빛·떨림이 함께 나와요.",
       video: "영상에 맞춰 빛과 떨림이 더해져요.",
-      sound: "들은 소리를 다시 들려주며, 그 소리의 모양이 박마다 빛나고 떨려요.",
+      sound: "들은 소리를 다시 들려주며, 박마다 빛이 번지고 떨려요.",
       text: "글이 박자에 맞춰 한 낱말씩 나와요."
     };
     function renderButtons() {

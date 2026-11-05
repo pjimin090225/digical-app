@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "7-4";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "7-6";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -322,6 +322,50 @@ function heardText(h, sec) {
 }
 
 // ---------------------------------------------------------------------
+// [수정 7-6] 🎨 소리 → 장면 그림 (Sound-to-Scene)
+//   ① AI가 '실제로 들은 것'만으로 그림 설명(영어)을 씀 — 사람 얼굴·글자·실제 인물·작품 이름은 넣지 않음
+//   ② 이미지 모델이 정사각형 그림 한 장을 그림 → 앱은 이 그림을 '소리의 작품'으로 사진처럼 감상
+//   화면에는 늘 'AI가 들은 소리로 상상한 장면 · 정답 아님'이라고 밝힘
+// ---------------------------------------------------------------------
+const IMAGE_MODELS = [process.env.OPENAI_IMAGE_MODEL, "gpt-image-2", "gpt-image-1.5", "gpt-image-1-mini"].filter(Boolean);
+const SCENE_STYLE = "soft painterly illustration, gentle film grain, luminous diffused light, calm uncluttered composition, square format, no text";
+async function sceneImage(info) {
+  const sys = [
+    "You write one English prompt for an image model. The image is a scene imagined ONLY from sounds that were actually heard.",
+    "Rules: include only things that can be inferred from the heard sounds (e.g. rain → rainy window; piano → a piano). Do not invent events, stories or symbols.",
+    "No readable text, letters, logos, brands. No real people, celebrities, singers or named artworks. People may appear only small, from behind or as silhouettes, never with detailed faces.",
+    "If speech was heard, depict the setting where such talking happens, not the speaker's face and not the words.",
+    "Choose light and color to match the given mood words.",
+    "Output JSON only: {\"prompt\":\"…(max 60 words)…\",\"title_ko\":\"짧은 한국어 이름 (12자 이내)\"}"
+  ].join("\n");
+  const user = "Heard (from the listening model): " + JSON.stringify(info.heard || {}).slice(0, 600) +
+    "\nEasy explanation (Korean): " + String(info.summary || "").slice(0, 200) + " " + String(info.interpretation || "").slice(0, 200) +
+    "\nMood words (Korean): " + (Array.isArray(info.tags) ? info.tags.join(", ") : "") +
+    "\nParts in time order: " + (Array.isArray(info.parts) ? info.parts.map((p) => p.name + ": " + p.text).join(" / ").slice(0, 400) : "");
+  const p = await callAI([{ role: "system", content: sys }, { role: "user", content: user }], 0.5);
+  const prompt = String(p.data.prompt || "").slice(0, 600) + ". Style: " + SCENE_STYLE + ".";
+  let lastErr = null;
+  for (const model of IMAGE_MODELS) {
+    for (const extra of [{ quality: "medium", output_format: "jpeg", output_compression: 82 }, {}]) {   // 안 받는 설정이 있으면 기본값으로 다시
+      const r = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + process.env.OPENAI_API_KEY },
+        body: JSON.stringify(Object.assign({ model: model, prompt: prompt, size: "1024x1024", n: 1 }, extra))
+      }).catch((e) => ({ ok: false, status: 0, json: async () => ({ error: { message: String(e) } }) }));
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.data && j.data[0] && (j.data[0].b64_json || j.data[0].url)) {
+        const d0 = j.data[0], fmt = extra.output_format === "jpeg" ? "jpeg" : "png";
+        return { image: d0.b64_json ? "data:image/" + fmt + ";base64," + d0.b64_json : d0.url, model: model, prompt: prompt, title: String(p.data.title_ko || "").slice(0, 16) };
+      }
+      lastErr = { status: r.status, message: (j.error && j.error.message) || "", model: model };
+      if (r.status === 401 || r.status === 429) throw lastErr;
+      if (r.status !== 400) break;                                   // 설정 문제(400)일 때만 기본 설정으로 한 번 더, 그 밖에는 다음 모델로
+    }
+  }
+  throw lastErr || { status: 500, message: "image failed" };
+}
+
+// ---------------------------------------------------------------------
 // OpenAI 부르기 (모델을 앞에서부터 시도)
 // ---------------------------------------------------------------------
 async function callAI(messages, temperature, models) {
@@ -594,6 +638,11 @@ module.exports = async (req, res) => {
       }).filter((r) => r.n >= 1 && r.n <= n);
       return res.status(200).json({ ok: true, version: SERVER_VERSION, model: first.model, seen: String(first.data.seen || "").slice(0, 120),
                                     regions: regs, fixed: fixed, ms: { total: Date.now() - t0 } });
+    }
+
+    if (body.task === "scene") {          // [수정 7-6] 소리 → 장면 그림
+      const out = await sceneImage({ heard: body.heard, summary: body.summary, interpretation: body.interpretation, tags: body.tags, parts: body.parts });
+      return res.status(200).json({ ok: true, version: SERVER_VERSION, image: out.image, model: out.model, prompt: out.prompt, title: out.title, ms: { total: Date.now() - t0 } });
     }
 
     if (body.task === "frame") {          // (예전 방식, 지금 앱은 쓰지 않음)
