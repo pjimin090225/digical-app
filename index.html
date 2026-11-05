@@ -287,12 +287,21 @@
     .art-wrap { transition: transform 1.4s cubic-bezier(.4,0,.2,1); transform-origin: 50% 50%; }
     .art-video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
     .tour-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
-    .tour-cap { position: absolute; left: 12px; bottom: 12px; background: rgba(0,0,0,0.78); color: #FFF; font-size: 24px; font-weight: 800; padding: 6px 16px; border-radius: 999px; pointer-events: none; line-height: 1.4; }
+    .tour-cap { position: absolute; z-index: 6; left: 12px; bottom: 12px; background: rgba(0,0,0,0.78); color: #FFF; font-size: 24px; font-weight: 800; padding: 6px 16px; border-radius: 999px; pointer-events: none; line-height: 1.4; }
     .light-ring { position: absolute; width: 40%; aspect-ratio: 1; border-radius: 50%; border: 6px solid var(--mood); pointer-events: none; transform: translate(-50%, -50%); }
     .glow { position: absolute; opacity: 0; pointer-events: none; mix-blend-mode: screen; }
     .hl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
     .touch-mask { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
     .touch-ring { position: absolute; width: 76px; height: 76px; margin: -38px 0 0 -38px; border: 5px solid #FFF; border-radius: 50%; outline: 2px solid rgba(0,0,0,0.75); outline-offset: 0; pointer-events: none; }
+    /* [MuSE 7-9] 폰을 축소하면 화면이 반만 보이던 것: 개발용 정보의 아주 긴 글자 한 줄이 화면 폭을 넓혔음 → 줄바꿈 + 가로 넘침 막기 */
+    html, body { overflow-x: clip; }
+    #devBody, #devBody * { overflow-wrap: anywhere; word-break: break-word; }
+    /* [MuSE 7-9] 만져보기: 작품이 커서 아래 이름 칸이 화면 밖이면, 지금 만지는 곳 이름을 화면 위쪽에 띄움 */
+    .touch-float { position: fixed; left: 50%; top: max(14px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 60; background: rgba(20,20,20,0.9); color: #FFF;
+                   font-weight: 800; font-size: 18px; line-height: 1.4; padding: 8px 18px; border-radius: 999px; pointer-events: none; max-width: 90vw; text-align: center; }
+    /* [MuSE 7-9] 화면이 바뀌기 전 준비하는 동안(소리 읽기·갤러리 열기) 이전 화면이 그대로 보이던 것 → 검은 막 + 한 줄 */
+    .busy { position: fixed; inset: 0; z-index: 99; background: #000; color: #EEE; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; transition: opacity .35s; }
+    .busy.out { opacity: 0; pointer-events: none; }
     .touch-label { line-height: 1.4; position: absolute; transform: translateX(-50%); background: #1A1A1A; color: #FFF; font-weight: 800; padding: 4px 14px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
     .scene-bar { margin: calc(var(--gap) * 1.5) 0 0; font-weight: 800; font-size: 20px; }
     .row2 { display: flex; gap: var(--gap); }
@@ -613,11 +622,19 @@
     .vpane .big { margin: 12px 0 0; }
     .vpane .note { font-size: 15px; color: #5E5A53; margin: 10px 0 0; line-height: 1.6; }
     .vpane .big.stop { background: transparent; color: #111; border-color: #111; }
-    .read-sum { font-size: 19px; font-weight: 700; line-height: 1.6; margin: 6px 0 0; }
-    .read-p { font-size: 17px; line-height: 1.7; margin: 8px 0 0; }
-    .read-parts { list-style: none; padding: 0; margin: 14px 0 0; border-top: 1px solid var(--rule); }
-    .read-parts li { display: grid; grid-template-columns: 34px 1fr; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--rule); font-size: 17px; line-height: 1.6; }
-    .read-parts li b { display: block; }
+    /* [MuSE 7-9] 해설 가독성: 한 문장에 한 줄 · 글자 크게 · 줄 사이 넉넉하게 · 구획마다 여백 · 글 폭 제한 */
+    #textBody { max-width: 40em; word-break: keep-all; overflow-wrap: anywhere; }
+    .read-sum { font-size: 21px; font-weight: 800; line-height: 1.55; margin: 8px 0 14px; color: #111; }
+    .read-p { font-size: 18px; line-height: 1.85; margin: 0 0 10px; color: #26231F; }
+    .read-parts { list-style: none; padding: 0; margin: 8px 0 0; border-top: 1px solid var(--rule); }
+    .read-parts li { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: start; padding: 14px 6px; border-bottom: 1px solid var(--rule); font-size: 18px; line-height: 1.75; cursor: pointer; border-radius: 6px; }
+    .read-parts li:hover, .read-parts li:focus-visible { background: #ECE8E1; outline: none; }
+    .read-parts li.on { background: #FFF1EA; }
+    .read-parts li b { display: block; font-size: 18px; margin-bottom: 2px; }
+    .read-parts .see { display: block; font-size: 13px; color: #8A847B; margin-top: 4px; }
+    .part-say { min-width: 44px; min-height: 44px; border-radius: 999px; border: 1.5px solid #111; background: transparent; font-size: 15px; font-weight: 800; }
+    .part-say.on { background: #111; color: #FFF; }
+    .read-sec { font-family: var(--mono); font-size: 13px; letter-spacing: .06em; color: #5E5A53; margin: 24px 0 4px; }
     .read-parts .no { font-family: var(--mono); font-size: 13px; color: #6B665E; padding-top: 3px; }
     .read-parts .t { font-family: var(--mono); font-size: 12px; color: #6B665E; margin-left: 6px; font-weight: 400; }
     .ai-feel { margin: 16px 0 0; padding: 14px 16px; background: #ECE8E1; font-size: 16px; line-height: 1.6; }
@@ -976,6 +993,8 @@
   <div class="sheet gal-sheet" id="galDetail" hidden></div>
 
   <!-- [수정 6-14] 기다리는 동안 전체 화면 빛 그림 -->
+  <div class="touch-float" id="touchFloat" hidden></div>
+  <div class="busy" id="busy" hidden><span id="busyMsg"></span></div>
   <div class="wait-full" id="waitFull" hidden>
     <canvas id="waitCanvas"></canvas>
     <div class="wait-info"><div class="wait-style" id="waitStyle"></div><div id="waitMsg">AI가 작품을 천천히 보고 있어요</div><button class="wait-skip" id="waitSkip" hidden>장면 없이 먼저 보기</button></div>
@@ -1030,14 +1049,25 @@
     // 0) 기본 도구
     // ==========================================================
     const $ = (id) => document.getElementById(id);
-    const APP_VER = "MuSE · 앱 7-8 — 기다림 그림 4가지 · 큰 구슬 · 색 맞춤 · 실제 소리로 에너지";
+    const APP_VER = "MuSE · 앱 7-9 — 분위기 정확도 · 은은한 그림 · 분위기 맞춤 진동 · 해설 개선";
     const copy = (obj) => JSON.parse(JSON.stringify(obj));   // 사본 만들기
     let currentScreen = "home";
 
     // 화면 바꾸기: 원하는 화면 하나만 보이게 함
     // 카메라 화면을 떠날 때는 카메라·마이크를 꼭 끔 (배터리·사생활 보호)
+    // [MuSE 7-9] 준비하는 동안 덮는 검은 막
+    async function busyOn(msg) { const b = $("busy"); $("busyMsg").textContent = msg || ""; b.classList.remove("out"); b.hidden = false; await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0))); }
+    function busyOff() { const b = $("busy"); if (b.hidden) return; b.classList.add("out"); setTimeout(() => { b.hidden = true; b.classList.remove("out"); }, 380); }
+    function touchSay(t) {
+      $("sceneBar").textContent = t;
+      const fl = $("touchFloat"), r = $("sceneBar").getBoundingClientRect();
+      const off = r.top > window.innerHeight - 30 || r.bottom < 0;
+      fl.textContent = t; fl.hidden = !off;
+      clearTimeout(fl._t); fl._t = setTimeout(() => { fl.hidden = true; }, 2500);
+    }
     function go(id) {
       closeSheets();
+      { const tf = $("touchFloat"); if (tf) tf.hidden = true; }
       if (currentScreen === "camera" && id !== "camera") leaveCamera();
       if (currentScreen === "view" && id !== "view") { stopSense(); stopVoice(); clearTimeout(wholeTimer); analyzeSeq++; }
       if (currentScreen === "note" && id !== "note") { stopSense(); abState = null; }
@@ -2936,7 +2966,7 @@
       const summary = {
         sec: sec, loud: mL < 0.3 ? "작음" : mL < 0.6 ? "보통" : "큼", change: sL < 0.12 ? "잔잔함" : sL < 0.22 ? "변화 있음" : "변화 큼",
         pitch: mP < 0.35 ? "낮은 소리 위주" : mP < 0.65 ? "중간 소리 위주" : "높은 소리 위주",
-        accents: acc.length, bpm: bpmFrom(acc), windowMs: FFT_N / sr * 1000, procMs: null,
+        accents: acc.length, bpm: bpmFrom(acc), windowMs: FFT_N / sr * 1000, procMs: null, mL: +mL.toFixed(2), mP: +mP.toFixed(2), sL: +sL.toFixed(2),
         quiet: Ls.filter((x) => x < 0.08).length / Math.max(1, n)      // 조용한 부분 비율 (말소리 사이 쉼 등)
       };
       return { L: L, P: P, B: B, on: on, hop: hop, n: n, sec: sec, summary: summary };
@@ -3230,6 +3260,10 @@
     // 소리 한 덩어리(파일 또는 녹음) → 감상 화면으로
     async function soundToView(pcm, sr, source, isFile, fullDur) {
       $("camMsg").textContent = "소리를 읽는 중이에요…";
+      await busyOn("소리를 읽는 중이에요…");
+      try { await soundToView2(pcm, sr, source, isFile, fullDur); } finally { busyOff(); }
+    }
+    async function soundToView2(pcm, sr, source, isFile, fullDur) {
       let p = await resamplePCM(pcm, sr, SND_SR);
       const from = isFile ? pickWindow(p, SND_SR) : Math.max(0, p.length / SND_SR - SND_MAX);
       p = p.slice(Math.floor(from * SND_SR), Math.floor((from + SND_MAX) * SND_SR));
@@ -3267,7 +3301,7 @@
     const ORB_VS = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
     const ORB_FS = [
       "precision highp float;",
-      "uniform vec2 R;uniform float T,F,FD,SOFT,HI,BR,SPD,CY,SC;uniform vec3 P0,P1,P2,P3;uniform vec4 A0[4],A1[4],A2[4];uniform vec4 E[6];",
+      "uniform vec2 R;uniform float T,F,FD,SOFT,HI,BR,SPD,CY,SC,GN;uniform vec3 P0,P1,P2,P3;uniform vec4 A0[4],A1[4],A2[4];uniform vec4 E[6];",
       "float smin(float a,float b,float k){float h=clamp(0.5+0.5*(b-a)/k,0.0,1.0);return mix(b,a,h)-k*h*(1.0-h);}",
       "float smax(float a,float b,float k){return -smin(-a,-b,k);}",
       "float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}",
@@ -3290,6 +3324,7 @@
       "  vec3 c=fill(q,A2[k]);c=mix(c,vec3(1.0),exp(-dot(q+vec2(0.12,-0.15),q+vec2(0.12,-0.15))/0.03)*0.22);col=mix(col,c,al*0.93);inside=max(inside,al);}",
       " vec2 cl=floor(gl_FragCoord.xy/2.0);float h1=hash(cl),h2=hash(cl+vec2(7.3,1.9));float tw=0.5+0.5*sin(T*(1.2+h1*1.8)+h1*62.8);",
       " col+=step(0.994,h2)*pow(tw,3.0)*inside*min(1.0,HI*1.4)*0.55;",
+      " col=mix(bg,col,GN);",
       " col+=(hash(gl_FragCoord.xy+fract(T*3.7)*vec2(17.0,31.0))-0.5)*mix(0.04,0.09,inside);",
       " gl_FragColor=vec4(col,1.0);}"].join("\n");
     const ORB_PAL0 = ["#4B5BFF", "#E04FD0", "#FF8A3D", "#9AD8FF"];
@@ -3309,7 +3344,7 @@
       const bf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
       const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       const U = {};
-      ["R", "T", "F", "FD", "SOFT", "HI", "BR", "SPD", "CY", "SC", "P0", "P1", "P2", "P3", "A0", "A1", "A2", "E"].forEach((k) => { U[k] = gl.getUniformLocation(pr, /^(A0|A1|A2|E)$/.test(k) ? k + "[0]" : k); });
+      ["R", "T", "F", "FD", "SOFT", "HI", "BR", "SPD", "CY", "SC", "GN", "P0", "P1", "P2", "P3", "A0", "A1", "A2", "E"].forEach((k) => { U[k] = gl.getUniformLocation(pr, /^(A0|A1|A2|E)$/.test(k) ? k + "[0]" : k); });
       const st = { cv: cv, gl: gl, U: U, V: { energy: 0.4, tension: 0.3, bright: 0.5, layers: 0.4 }, PAL: ORB_PAL0.slice(), seed: opt.seed || 1, SH: [], echoes: [], ei: 0,
                    T: 2 + ((opt.seed || 1) % 97) / 10, F: 0, FD: 0.6, sm: { A: 0.2, H: 0.4, HI: 0.1 }, feed: null, cy: opt.cy || 0, sc: opt.sc || 1, raf: 0, last: 0, alive: true };
       orbBuild(st);
@@ -3362,9 +3397,11 @@
       const spd = 0.15 + 2.0 * Math.pow(V.energy, 1.5);
       gl.uniform1f(U.T, st.T); gl.uniform1f(U.F, st.F); gl.uniform1f(U.FD, st.FD); gl.uniform1f(U.HI, sm.HI); gl.uniform1f(U.BR, V.bright); gl.uniform1f(U.SPD, spd);
       gl.uniform1f(U.CY, st.cy); gl.uniform1f(U.SC, st.sc);
+      // [MuSE 7-8] 너무 세다는 의견 → 기본을 은은하게, '보기' 세기(1~5)에 따라 0.5~0.9
+      const lv = typeof profile !== "undefined" && profile.visual ? profile.visual.level : 3; gl.uniform1f(U.GN, 0.4 + 0.1 * Math.max(1, Math.min(5, lv)));
       gl.uniform1f(U.SOFT, (0.03 + 0.075 * (1 - V.energy)) * (1.35 - 0.75 * sm.A));
       const dk = 0.2 * (1 - V.bright);
-      [U.P0, U.P1, U.P2, U.P3].forEach((u, i) => gl.uniform3fv(u, orbHex(st.PAL[i]).map((c) => c * (1 - dk))));
+      [U.P0, U.P1, U.P2, U.P3].forEach((u, i) => { const c = orbHex(st.PAL[i]), gy = (c[0] + c[1] + c[2]) / 3; gl.uniform3fv(u, c.map((v) => (v * 0.82 + gy * 0.18) * (1 - dk))); });
       const a0 = new Float32Array(16), a1 = new Float32Array(16), a2 = new Float32Array(16), w = st.T * spd, m = 0.03 + 0.07 * V.tension + 0.05 * V.energy;
       st.SH.forEach((q, k) => {
         a0.set([q.cx + q.ox + m * Math.sin(w * 0.5 + q.ph), q.cy + q.oy + m * Math.cos(w * 0.43 + q.ph * 1.3), q.r * (1 + 0.035 * Math.sin(w * 0.7 + q.ph) + 0.025 * sm.A), q.rot + q.or], k * 4);
@@ -3463,7 +3500,7 @@
         orbSt = ost;
         const p = lastResult && lastResult.whole && lastData === d ? orbParamsOf(lastResult.whole) : isT ? { V: { energy: 0.35, tension: 0.25, bright: 0.55, layers: 0.35 }, pal: ORB_PAL0 } : orbParamsOfSound(d.snd.F);
         orbSet(orbSt, p.V, p.pal); orbSize(orbSt); orbRun(orbSt);
-        if (isT) kinShowText(d.text || "", false);
+        if (isT) { const tw = String(d.text || "").split(/\s+/).filter(Boolean); kinShowText(tw.slice(0, 10).join(" ") + (tw.length > 10 ? " …" : ""), false); }   // [MuSE 7-8] 긴 글 원문이 그림을 덮지 않게 앞부분만
         return;
       }
       sizeKin();
@@ -3547,16 +3584,21 @@
         const now = performance.now();
         let onset = 0;
         for (let k = Math.max(0, run.lastF + 1); k <= f; k++) if (S.F.on[k]) { onset = Math.max(onset, S.F.on[k]); run.onsets++; }
-        // ✋ 떨림 ① 박: 짧고 또렷하게
-        if (onset && tl && vibeUsable() && now - run.lastVib > 160) {
-          run.lastVib = now;
-          buzz(Math.round((onset === 2 ? 70 : 45) + 50 * S.F.L[f] * tl));
+        // ✋ [MuSE 7-8] 떨림을 작품 분위기에 맞게 — 예전에는 0.1초마다 소리 크기만큼 계속 떨려 '다다다다'처럼 느껴졌음
+        //   신나는 곡(에너지 높음): 강한 박(쿵)에만 또렷하게, 약한 박은 사이가 넉넉할 때만 짧게 · 계속 떨림 없음
+        //   잔잔한 곡(에너지 낮음): 박이 드물어서 0.3초마다 소리 크기를 부드럽게 따라가는 약한 떨림 (켜짐 비율 최대 40%)
+        const En = orbSt ? orbSt.V.energy : 0.5, gapS = En > 0.6 ? 230 : 380;
+        if (onset && tl && vibeUsable()) {
+          const since = now - run.lastVib;
+          if ((onset === 2 && since > gapS) || (onset === 1 && since > gapS * 1.8)) {
+            run.lastVib = now;
+            buzz(Math.round((onset === 2 ? 45 : 25) + 35 * S.F.L[f] * tl));
+          }
         } else if (onset && tl && !vibeUsable()) heartGlow();
-        // ✋ 떨림 ② 소리 크기를 계속 따라감 (0.1초마다 켜짐 비율로 세기 흉내) — 잔잔한 소리도 느껴지게, 손을 대고 있으면 더 진하게
-        if (tl && canVibrate && now - run.lastVib > 140 && now - run.lastEnv > 100) {
+        if (tl && canVibrate && En < 0.55 && now - run.lastVib > 300 && now - run.lastEnv > 300) {
           run.lastEnv = now;
-          const v = Math.min(1, Math.pow(S.F.L[f], 0.8) * (0.45 + 0.55 * tl));
-          if (v > 0.12) { const on = Math.round(8 + 62 * v); navigator.vibrate([on, 100 - on]); } else navigator.vibrate(0);
+          const v = Math.min(1, Math.pow(S.F.L[f], 0.9) * (0.4 + 0.6 * tl));
+          if (v > 0.18) { const on = Math.round(20 + 100 * v); navigator.vibrate([on, 300 - on]); } else navigator.vibrate(0);
         }
         run.lastF = f; run.f = f;
         if (d.type === "text" && (onset || t - (run.lastWord || 0) > 0.55)) { kinBeat(onset === 2); run.lastWord = t; }   // 박이 드문 음악에서도 낱말이 이어서 나오게
@@ -3704,7 +3746,7 @@
       const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 70000), t0 = performance.now();
       try {
         const res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, signal: ctl.signal,
-          body: JSON.stringify({ type: "text", task: "music", whole: r.whole || {} }) });
+          body: JSON.stringify({ type: "text", task: "music", whole: r.whole || {}, summary: r.summary || "", interpretation: r.interpretation || "", tags: (r.whole && r.whole.mood_tags) || [], text: String(d.text || "").slice(0, 800) }) });
         const j = await res.json().catch(() => ({}));
         if (!res.ok || !j.ok || !j.audio) { d.musicInfo = { state: "실패 → 원래 음악", error: j.error || ("HTTP " + res.status), message: j.message || "", prompt: j.prompt || "" }; return; }
         const bin = atob(j.audio), u8 = new Uint8Array(bin.length);
@@ -3712,6 +3754,9 @@
         const m = await decodeToMono({ arrayBuffer: async () => u8.buffer });
         let p = await resamplePCM(m.pcm, m.sr, SND_SR);
         p = p.slice(0, SND_MAX * SND_SR);
+        { const fi = Math.round(0.04 * SND_SR), fo = Math.min(p.length >> 1, Math.round(2.8 * SND_SR));          // [MuSE 7-8] 갑자기 끝나지 않게: 끝 2.8초 동안 천천히 작아짐
+          for (let i = 0; i < fi; i++) p[i] *= i / fi;
+          for (let i = 0; i < fo; i++) { const k = p.length - 1 - i, x = i / fo; p[k] *= x * x; } }
         const F = soundFeatures(p, SND_SR);
         d.music = { pcm: p, sr: SND_SR, from: 0, dur: F.sec, full: F.sec, F: F };
         d.musicInfo = { state: "준비됨", model: j.model, gen_ms: j.gen_ms, total_ms: Math.round(performance.now() - t0), sec: +F.sec.toFixed(1), prompt: j.prompt };
@@ -3808,7 +3853,7 @@
       cv.width = W; cv.height = H; cv.style.width = window.innerWidth + "px"; cv.style.height = window.innerHeight + "px";
       const g = cv.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
       full.hidden = false; full.style.opacity = "1";
-      const LABEL = opt.label || "LISTENING";
+      const LABEL = opt.label || "LISTENING", GA = 0.45 + 0.09 * Math.max(1, Math.min(5, profile.visual.level));   // 밝기 = '보기' 세기 (너무 세다는 의견)
       $("waitStyle").textContent = LABEL; $("waitMsg").textContent = (opt.steps || ["AI가 소리를 듣고 있어요"])[0];
       const run = { on: true, P: [], R: [], lastF: -1, t0: performance.now(), prev: performance.now(), raf: 0, s0: Math.floor(Math.random() * SW_STYLES.length), lv: new Float32Array(S.B) };
       swRun = run;
@@ -3817,12 +3862,15 @@
         if (!run.on) return;
         const now = performance.now(), dt = Math.min(0.05, (now - run.prev) / 1000); run.prev = now;
         const el = (now - run.t0) / 1000, t = el % F.sec, f = Math.min(F.n - 1, Math.floor(t / F.hop)), row = S.M[Math.min(S.n - 1, f)];
-        const style = SW_STYLES[(run.s0 + Math.floor(el / 5)) % SW_STYLES.length];
-        g.globalCompositeOperation = "source-over"; g.fillStyle = style === "lines" ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.16)"; g.fillRect(0, 0, W, H);   // 지난 빛이 천천히 사라짐 (그림체가 바뀔 때도 자연스럽게 겹침)
+        const style = SW_STYLES[(run.s0 + Math.floor(el / 6)) % SW_STYLES.length], inSwitch = el % 6 < 0.9 && el > 1;
+        // [MuSE 7-8] 그림체가 바뀔 때 겹치던 것: 바뀌는 0.9초 동안은 새 빛을 만들지 않고 화면을 빨리 어둡게 → 그다음 새 그림체
+        if (inSwitch && !run.sw) { run.sw = true; } if (!inSwitch && run.sw) { run.sw = false; run.P = []; run.R = []; }
+        g.globalCompositeOperation = "source-over"; g.fillStyle = inSwitch ? "rgba(0,0,0,0.3)" : style === "lines" ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.16)"; g.fillRect(0, 0, W, H);   // 지난 빛이 천천히 사라짐 (그림체가 바뀔 때도 자연스럽게 겹침)
         if (f < run.lastF) { run.P = []; run.R = []; }
         let on = 0; for (let k = run.lastF + 1; k <= f; k++) if (k >= 0 && F.on[k]) on = Math.max(on, F.on[k]); run.lastF = f;
         let bb = 0, bv = 0; for (let b = 0; b < S.B; b++) { run.lv[b] += (row[b] - run.lv[b]) * Math.min(1, dt * 10); if (row[b] > bv) { bv = row[b]; bb = b; } }
         const Lf = F.L[f] || 0;
+        if (inSwitch) { run.raf = requestAnimationFrame(step); return; }
         if (style === "flow" || style === "stars") {
           for (let b = 0; b < S.B; b += 2) {
             const v = Math.max(row[b], row[b + 1] || 0); if (v < 0.18) continue;
@@ -3844,13 +3892,13 @@
         g.globalCompositeOperation = "lighter";
         if (style === "rings") {                                           // 파동: 가운데에서 소리 크기만큼 숨 쉬는 빛 + 박마다 퍼지는 고리
           const base = (40 + 160 * Lf) * dpr, c0 = bandCol(bb / (S.B - 1));
-          const gr = g.createRadialGradient(cx, cy, 0, cx, cy, base * 1.6); gr.addColorStop(0, sartRGBA(c0, 0.22)); gr.addColorStop(1, sartRGBA(c0, 0)); g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, base * 1.6, 0, 6.283); g.fill();
-          for (const q of run.R) { q.r += q.v * dt; q.a *= Math.pow(0.22, dt); g.strokeStyle = sartRGBA(q.c, q.a); g.lineWidth = q.w; g.beginPath(); g.arc(cx, cy, q.r, 0, 6.283); g.stroke(); }
+          const gr = g.createRadialGradient(cx, cy, 0, cx, cy, base * 1.6); gr.addColorStop(0, sartRGBA(c0, 0.2 * GA)); gr.addColorStop(1, sartRGBA(c0, 0)); g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, base * 1.6, 0, 6.283); g.fill();
+          for (const q of run.R) { q.r += q.v * dt; q.a *= Math.pow(0.22, dt); g.strokeStyle = sartRGBA(q.c, q.a * GA); g.lineWidth = q.w; g.beginPath(); g.arc(cx, cy, q.r, 0, 6.283); g.stroke(); }
           run.R = run.R.filter((q) => q.a > 0.02 && q.r < Math.max(W, H));
         } else if (style === "lines") {                                    // 소리 선: 높이마다 한 줄 — 그 높이의 소리만큼 출렁임
           for (let b = 2; b < S.B; b += 4) {
             const v = run.lv[b], y0 = top + span * (1 - b / S.B), c = bandCol(b / (S.B - 1));
-            g.strokeStyle = sartRGBA(c, 0.12 + 0.55 * v); g.lineWidth = (0.8 + 2.2 * v) * dpr; g.beginPath();
+            g.strokeStyle = sartRGBA(c, (0.12 + 0.55 * v) * GA); g.lineWidth = (0.8 + 2.2 * v) * dpr; g.beginPath();
             for (let x = 0; x <= W; x += 12 * dpr) { const yy = y0 + Math.sin(x / (60 * dpr) + el * (1.2 + b * 0.05)) * v * 26 * dpr * (0.5 + 0.5 * Math.sin(x / W * 3.14)); if (x === 0) g.moveTo(x, yy); else g.lineTo(x, yy); }
             g.stroke();
           }
@@ -3860,7 +3908,7 @@
           const dm = Math.pow(0.7, dt); p.vx *= dm; p.vy *= dm;
           p.x += p.vx * dt; p.y += p.vy * dt + (p.tw ? 0 : Math.sin(t * 0.9 + p.ph + p.x * 0.006) * dpr * 0.35);
           const twk = p.tw ? 0.4 + 0.6 * Math.pow(0.5 + 0.5 * Math.sin(el * 3 + p.ph), 2) : 1;
-          const a = Math.min(1, p.life * 1.4) * 0.32 * twk, rr = p.r * (1.6 + 1.2 * (1 - p.life));
+          const a = Math.min(1, p.life * 1.4) * 0.32 * twk * GA, rr = p.r * (1.6 + 1.2 * (1 - p.life));
           g.fillStyle = sartRGBA(p.c, a * 0.35); g.beginPath(); g.arc(p.x, p.y, rr * 2.2, 0, 6.283); g.fill();
           g.fillStyle = sartRGBA(p.c, a); g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill();
         }
@@ -3875,6 +3923,7 @@
     }
     // 글을 '소리처럼' 바꿔 기다리는 그림에 씀: 낱말 하나 = 0.3초, 낱말 길이 = 크기, 글자 모양 = 높이, 낱말 시작 = 박
     function textFullWait(d) {
+      const ke = $("kinText"); if (ke) ke.hidden = true;               // 기다리는 동안 원문 글자는 숨김
       const words = String(d.text || "").split(/\s+/).filter(Boolean).slice(0, 120);
       if (!words.length) return waitStages($("viewWait"));
       const hop = SND_HOP / SND_SR, per = 0.3, fpw = Math.max(2, Math.round(per / hop)), n = words.length * fpw + Math.round(1.2 / hop), B = 48;
@@ -4131,7 +4180,7 @@
       const seq = ++analyzeSeq;
       stopSense(); stopVoice();
       setViewParts("wait");
-      if (d.type === "photo") startWaitArt();   // [수정 6-12] 분석을 기다리는 10초 남짓 동안: 작품이 빛 알갱이로 반짝임
+      if (d.type === "photo" || d.type === "video") startWaitArt();   // [MuSE 7-9] 영상도 첫 장면으로 빛 그림 (예전에는 사진만)   // [수정 6-12] 분석을 기다리는 10초 남짓 동안: 작품이 빛 알갱이로 반짝임
       if (d.type === "photo") prepareParts();   // [수정 6-15] 덩어리 나누기 + 재질·볼 곳 묻기를 해설과 '동시에
       viewHeader(null, d);
       setArtKind(d);
@@ -4286,11 +4335,13 @@
       const times = t === "sound" ? soundPartTimes(r) : null;
       $("textBody").innerHTML =
         '<p class="read-sum">' + esc(r.summary) + "</p>" +
-        (r.interpretation ? '<p class="read-p">' + esc(r.interpretation) + "</p>" : "") +
+        (r.interpretation ? sentencesKo(r.interpretation).map((x) => '<p class="read-p">' + esc(x) + "</p>").join("") : "") +
         (r.heard && r.heard.speech ? '<p class="read-p"><b>들린 말:</b> ' + esc(r.heard.speech) + "</p>" : "") +
-        '<p class="kicker" style="margin-top:18px">' + esc(partsTitle) + "</p>" +
-        '<ol class="read-parts">' + (r.scenes || []).map((s, i) => "<li><span class='no'>" + String(i + 1).padStart(2, "0") + "</span><span><b>" + esc(s.name) +
-          (times && times[i] ? '<span class="t">' + fmtSec(times[i].from) + "–" + fmtSec(times[i].to) + "</span>" : "") + "</b>" + esc(s.text) + "</span></li>").join("") + "</ol>" +
+        '<p class="read-sec">' + esc(partsTitle) + "</p>" +
+        '<ol class="read-parts">' + (r.scenes || []).map((s, i) => "<li tabindex='0' role='button' data-part='" + i + "'><span class='no'>" + String(i + 1).padStart(2, "0") + "</span><span><b>" + esc(s.name) +
+          (times && times[i] ? '<span class="t">' + fmtSec(times[i].from) + "–" + fmtSec(times[i].to) + "</span>" : "") + "</b>" + esc(s.text) +
+          "<span class='see'>누르면 작품에서 " + (t === "sound" ? "그 부분을 들려줘요" : t === "text" ? "보여 줘요" : "그 부분을 보여 줘요") + "</span></span>" +
+          (canVoice ? "<button class='part-say' data-say='" + i + "' aria-label='이 부분만 소리 내어 읽기'>▶</button>" : "") + "</li>").join("") + "</ol>" +
         (r.mood_line ? '<div class="ai-feel"><small>AI의 느낌</small>' + esc(r.mood_line) +
           ((r.whole && r.whole.mood_tags && r.whole.mood_tags.length) ? "<br>" + r.whole.mood_tags.map((x) => '<span class="chip">' + esc(x) + "</span>").join("") : "") + "</div>" : "") +
         (t === "text" && lastData.text ? '<details class="card" style="margin-top:14px"><summary>원래 글</summary><p class="read-p" style="white-space:pre-wrap">' + esc(lastData.text) + "</p></details>" : "") +
@@ -4599,6 +4650,10 @@
     // 저장해 둔 기록으로 감상 화면 열기 (AI를 다시 부르지 않음)
     async function replayGallery(it) {
       if (!it) return;
+      await busyOn("작품을 여는 중이에요…");
+      try { await replayGallery2(it); } finally { busyOff(); }
+    }
+    async function replayGallery2(it) {
       const rec = it.type === "text" ? null : await idbGet(it.id);     // [수정 6-16] 처음 분석한 원본 사진 + 나누기·재질 결과 (7-3: 소리는 녹음)
       const img = rec && rec.image ? rec.image : it.thumb;
       const m = it.meta || {};
@@ -4905,14 +4960,86 @@
       if (v === "stop") { stopSense(); stopSoundFollow(); stopKinetic(); $("sceneBar").textContent = "멈췄어요"; renderButtons(); }
     };
     // 해설 탭: 소리 내어 읽기 (감각은 멈춤)
+    // [MuSE 7-9] 소리 내어 읽기: 다시 누르면 멈춤 · 부분마다 ▶로 그 부분만 · 부분을 누르면 작품에서 그 부분을 보여 줌
+    let readOn = null;
+    function readReset() {
+      readOn = null;
+      const m = $("btnReadAloud"); if (m) m.textContent = "소리 내어 읽기";
+      document.querySelectorAll(".part-say.on").forEach((x) => { x.classList.remove("on"); x.textContent = "▶"; });
+    }
     $("paneRead").addEventListener("click", (e) => {
-      const b = e.target.closest("button[data-v=voice]");
-      if (!b) return;
-      stopSense(); stopSoundFollow(); stopKinetic(); clearTimeout(wholeTimer);
-      const r = lastResult;
-      narrate([r.summary, r.interpretation].concat((r.scenes || []).map((s) => s.text)).filter(Boolean).join(" "), r.whole && r.whole.emotion, null);
-      renderButtons();
+      const r = lastResult; if (!r) return;
+      const say = e.target.closest("button[data-say]"), all = e.target.closest("button[data-v=voice]"), li = e.target.closest("li[data-part]");
+      if (say || all) {
+        const key = say ? "p" + say.dataset.say : "all", was = readOn;
+        stopVoice(); readReset();
+        if (was === key) return;                                       // 같은 버튼 = 멈추기
+        stopSense(); stopSoundFollow(); stopKinetic(); clearTimeout(wholeTimer);
+        readOn = key;
+        let text;
+        if (say) { const s = r.scenes[Number(say.dataset.say)]; text = (s.name ? s.name + ". " : "") + s.text; say.classList.add("on"); say.textContent = "■"; showPartOnArt(Number(say.dataset.say)); }
+        else { text = [r.summary, r.interpretation].concat((r.scenes || []).map((s) => s.text)).filter(Boolean).join(" "); all.textContent = "■ 읽기 멈추기"; }
+        narrate(text, r.whole && r.whole.emotion, () => { if (readOn === key) readReset(); });
+        renderButtons();
+        return;
+      }
+      if (li) showPartOnArt(Number(li.dataset.part));
     });
+    $("paneRead").addEventListener("keydown", (e) => { const li = e.target.closest && e.target.closest("li[data-part]"); if (li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); showPartOnArt(Number(li.dataset.part)); } });
+    let partShowT = 0;
+    function showPartOnArt(i) {
+      const r = lastResult, s = r && r.scenes && r.scenes[i], d = lastData; if (!s || !d) return;
+      document.querySelectorAll(".read-parts li").forEach((x, j) => x.classList.toggle("on", j === i));
+      clearTimeout(partShowT);
+      const cap = $("tourCap");
+      if (d.type === "photo") { stopSense(); spotBox(s.box || (s.rects && s.rects.length ? bboxOf(s.rects) : null)); }
+      if (d.type === "video") {
+        const f = (s.frames || [])[0], img = f && d.images[f - 1];
+        if (img) { if (vf.el) { try { vf.el.pause(); } catch (e2) {} vf.el.hidden = true; } $("artImg").style.visibility = "visible"; $("artImg").src = img; }
+      }
+      if (d.type === "sound" && d.snd) {                                  // 소리: 그 부분만 다시 들려줌 (최대 6초)
+        const tm = soundPartTimes(r)[i];
+        if (tm) playSoundRange(tm.from, Math.min(tm.to, tm.from + 6));
+      }
+      if (orbSt && d.type !== "sound") orbBeat(orbSt, 0.6);
+      cap.textContent = String(i + 1).padStart(2, "0") + " " + (s.name || ""); cap.hidden = false;
+      const ar = $("art").getBoundingClientRect();
+      if (ar.bottom < 60 || ar.top > window.innerHeight - 60) $("art").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
+      partShowT = setTimeout(() => {
+        cap.hidden = true;
+        document.querySelectorAll(".read-parts li.on").forEach((x) => x.classList.remove("on"));
+        if (d.type === "photo") tourReset();
+        if (d.type === "video" && lastData === d) $("artImg").src = d.images[0];
+      }, 4500);
+    }
+    // 사진: AI가 고른 부분 둘레만 밝게 두고 나머지를 부드럽게 어둡게 (느껴보기의 '부분 보기'처럼) — 칸 테두리는 그리지 않음
+    function spotBox(b) {
+      if (!b) return;
+      const cv = $("tourMask"); cv.width = 500; cv.height = 500;
+      const g = cv.getContext("2d"); g.clearRect(0, 0, 500, 500);
+      g.fillStyle = "rgba(0,0,0,0.62)"; g.fillRect(0, 0, 500, 500);
+      const cx = (b[0] + b[2]) / 4, cy = (b[1] + b[3]) / 4, rx = Math.max(30, (b[2] - b[0]) / 4 * 0.62), ry = Math.max(30, (b[3] - b[1]) / 4 * 0.62);
+      g.globalCompositeOperation = "destination-out";
+      g.save(); g.translate(cx, cy); g.scale(rx, ry);
+      const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1.25); gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(0.75, "rgba(0,0,0,1)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 1.25, 0, 6.283); g.fill(); g.restore();
+      g.globalCompositeOperation = "source-over";
+      cv.hidden = false; cv.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, fill: "forwards" });
+    }
+    // 소리의 한 부분만 짧게 다시 틀기 (해설에서 부분을 눌렀을 때)
+    let rangeSrc = null;
+    function playSoundRange(a, b) {
+      const S = lastData && lastData.snd, ctx = getAudio(); if (!S || !ctx) return;
+      try { if (rangeSrc) rangeSrc.stop(); } catch (e) {}
+      if (!(profile.sound.on && soundUsable())) return;
+      if (ctx.state === "suspended") ctx.resume();
+      const buf = ctx.createBuffer(1, S.pcm.length, S.sr); buf.getChannelData(0).set(S.pcm);
+      const src = ctx.createBufferSource(), g = ctx.createGain(); src.buffer = buf; src.connect(g); g.connect(ctx.destination);
+      const t0 = ctx.currentTime + 0.03, len = Math.max(0.5, b - a);
+      g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.9, t0 + 0.08); g.gain.setValueAtTime(0.9, t0 + len - 0.4); g.gain.linearRampToValueAtTime(0, t0 + len);
+      src.start(t0, a, len); rangeSrc = src;
+      const F = S.F; if (orbSt && F) { const t1 = performance.now(); const tk = () => { const tt = (performance.now() - t1) / 1000; if (tt > len || rangeSrc !== src) return; const f = Math.min(F.n - 1, Math.floor((a + tt) / F.hop)); orbFeed(orbSt, F.L[f], F.P[f], F.B[2][f]); if (F.on[f]) orbBeat(orbSt, F.L[f]); requestAnimationFrame(tk); }; requestAnimationFrame(tk); }
+    }
     $("art").onclick = () => {};
 
     // ----- ✋ 손으로 만져보기 [수정 6-7]: 덩어리 + '문지르는 소리'(재질) + 질감 진동 -----
@@ -5583,7 +5710,7 @@
         if (mh.seg !== curSeg) {
           curSeg = mh.seg; drawSeg(mh.seg);
           const st = touchMap.seg.st[mh.seg];
-          $("sceneBar").textContent = partLabel(st);
+          touchSay(partLabel(st));
         }
         return;
       }
@@ -5610,7 +5737,7 @@
         touchSegSound(m.seg, out.gain);
         if (tPrev && canBuzz) { buzz(Math.round(30 + 25 * out.vibe)); vibeAt = now; }
         const st = touchMap.seg.st[m.seg];
-        $("sceneBar").textContent = partLabel(st);
+        touchSay(partLabel(st));
       }
       // 2) 👁 손가락 둘레 빛
       if (profile.visual.on) {
@@ -6721,7 +6848,7 @@
       artRaf = requestAnimationFrame(drawArt);
     }
     function setArtMode(on, s) {
-      artMode = !!on && lastData && lastData.type === "photo";
+      artMode = !!on && lastData && (lastData.type === "photo" || lastData.type === "video");
       cancelAnimationFrame(artRaf);
       const full = $("waitFull");
       if (!artMode) { full.hidden = true; return; }
@@ -6928,7 +7055,9 @@
         " · 보낸 크기 약 " + kb + "KB<br>" +
         (d.type === "video" ? '<div class="thumbs">' + d.images.map((s) => '<img alt="" src="' + s + '">').join("") + "</div>" +
           "<b>들은 소리</b><br>" + summaryText(d.audio).replace(/\n/g, "<br>") + "<br>" : "") +
-        "<b>버전</b>: 앱 7-2 · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        "<b>버전</b>: " + esc(APP_VER.replace(/^MuSE · /, "").split(" — ")[0]) + " · 서버 " + esc(r.version || "옛 버전") + "<br>" +
+        (r.whole && r.whole.mix_from ? "<b>분위기 합치기(소리)</b>: 활기 = AI " + r.whole.mix_from.ai_arousal + " · 직접 들은 에너지 " + (r.whole.mix_from.heard_energy ?? "-") + " · 기기가 잰 값 " + (r.whole.mix_from.measured ?? "-") + " → " + r.whole.arousal + "<br>" : "") +
+        (r.heard && (r.heard.genre || r.heard.song_guess) ? "<b>들은 장르·곡</b>: " + esc(String(r.heard.genre || "-")) + " · 목소리 " + esc(String(r.heard.vocal || "-")) + (r.heard.song_guess ? " · 곡 " + esc(String(r.heard.song_guess)) : "") + "<br>" : "") +
         (d.type === "photo" ? "<b>작품 잘라내기</b>: " + esc(d.cropInfo || "-") + " · 위치 방식: 번호 칸 " + GRID + "×" + GRID + "<br>" : "") +
         "<br><b>🤖 AI</b> 모델 " + esc(r.model) + " · 종류 " + esc(r.kind) + (r.is_artwork ? " (작품)" : " (작품 아님)") +
         (r.title_guess ? " · 작품 추측: " + esc(r.title_guess) : "") + (r.target ? " · 고른 대상: " + esc(r.target) : "") + "<br>" +

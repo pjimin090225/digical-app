@@ -11,7 +11,7 @@
 // =====================================================================
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const SERVER_VERSION = "7-7";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
+const SERVER_VERSION = "7-9";   // 앱 '개발용 정보'에 표시됨 → 새 코드가 올라갔는지 확인용
 
 // 사용할 AI 모델 (앞에서부터 시도). Vercel 환경 변수 OPENAI_MODEL로 바꿀 수 있음
 const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Boolean);
@@ -19,7 +19,7 @@ const MODELS = [process.env.OPENAI_MODEL, "gpt-4o-mini", "gpt-5-mini"].filter(Bo
 //   → 이 일만 그림 위치를 더 잘 보는 큰 모델을 먼저 씀 (없으면 차례로 다음 모델). 1번에 약 10원 안팎 더 듦
 const VISION_MODELS = [process.env.OPENAI_VISION_MODEL, "gpt-4.1", "gpt-4o", "gpt-4o-mini"].filter(Boolean);
 // [수정 7-3] 소리를 '직접 듣는' 모델 (앞에서부터 시도). 계정에서 못 쓰는 모델이면 다음으로, 모두 안 되면 예전처럼 숫자로만 짐작
-const AUDIO_MODELS = [process.env.OPENAI_AUDIO_MODEL, "gpt-audio-mini", "gpt-audio-1.5", "gpt-audio", "gpt-4o-mini-audio-preview", "gpt-4o-audio-preview"].filter(Boolean);
+const AUDIO_MODELS = [process.env.OPENAI_AUDIO_MODEL, "gpt-audio-1.5", "gpt-audio", "gpt-audio-mini", "gpt-4o-mini-audio-preview", "gpt-4o-audio-preview"].filter(Boolean);
 
 // 쉬운 말 규칙 (CEFR A1/A2의 능력 기준을 한국어 쉬운 글 규칙으로 응용)
 const RULES = { maxWords: 12, maxSummaryWords: 15, minScenes: 2, maxScenes: 5 };
@@ -162,6 +162,7 @@ function textPrompt(type, explain, target, cropped, pixel, heard) {
         "- 각 장면의 cells: 그 장면이 실제로 보이는 칸 번호를 모두 쓴다. 한 칸에 조금이라도 걸치면 넣는다. 장면마다 칸이 달라야 한다."
       : "- cells와 frame_cells는 빈 목록 [] 으로 둔다.",
     type === "video" ? "- 영상은 '무엇이 일어나는지'를 말한다. '보여요', '보여줘요'를 반복하지 않는다.\n" +
+      "- 장면 이름(name)은 그 장면에서 일어나는 일을 짧게 쓴다 (예: '공을 차는 아이', '무대 인사'). '첫 번째 장면', '장면 1' 같은 순서 이름은 쓰지 않는다 (순서 번호는 앱이 따로 붙인다).\n" +
       "- 영상이면 scenes는 '시간 순서대로 나눈 장면'이다(앞 장면이 먼저). 각 장면에 frames: 그 장면에 해당하는 장면 사진 번호들(1부터, 겹치지 않게, 장면 순서대로 이어지게)을 쓴다. 모든 장면 사진이 어느 한 장면에 들어가야 한다." : "",
     type === "text" ? "- 글이면: summary는 '무엇에 대한 글인지', interpretation과 scenes는 글의 중요한 내용을 쉬운 말로. 글에 없는 내용은 지어내지 않는다. 장면 대신 '중요한 부분'으로 나눈다. material은 글에 나온 중심 대상의 재질(모르면 '모름')." : "",
     type === "sound" ? "- 소리면: kind는 음악·노래·말소리·자연 소리·생활 소리·섞인 소리 중 하나. summary는 '무슨 소리인지' 1문장. interpretation은 소리의 크기·빠르기·높낮이가 어떻게 들리는지.\n" +
@@ -262,6 +263,20 @@ function sensePrompt() {
   ].join("\n");
 }
 
+// [수정 7-9] '첫 번째 장면', '장면 2' 같은 순서 이름이면 → 해설 첫 낱말들로 이름을 바꿈 (순서 번호는 앱이 따로 보여 줌)
+function plainName(name, text) {
+  const n = String(name || "").trim();
+  if (n && !/^(첫|두|세|네|다섯|여섯|일곱|여덟|아홉|열|마지막)\s*(번째)?\s*장면|^장면\s*\d+|^\d+\s*번?\s*장면|^scene\s*\d+/i.test(n)) return n;
+  const w = String(text || "").replace(/[.!?…].*$/, "").split(/\s+/).filter(Boolean).slice(0, 3).join(" ");
+  return w.slice(0, 14) || n;
+}
+// [수정 7-8] 기기가 잰 값으로 '객관적인 활기'를 계산 (박의 빈도·빠르기·크기) — 곡 분위기를 가사에 끌려가지 않게
+function measuredArousal(a) {
+  if (!a || !isFinite(Number(a.sec))) return null;
+  const sec = Math.max(1, Number(a.sec)), rate = (Number(a.accents) || 0) / sec, bpm = Number(a.bpm) || 0;
+  const r = Math.max(0, Math.min(1, (rate - 0.4) / 3)), b = bpm ? Math.max(0, Math.min(1, (bpm - 70) / 70)) : r, l = isFinite(Number(a.mL)) ? Number(a.mL) : 0.5;
+  return +Math.max(0.05, Math.min(0.95, 0.12 + 0.42 * r + 0.3 * b + 0.16 * l)).toFixed(2);
+}
 function audioText(a) {
   if (!a) return "소리 정보: 없음";
   return "소리 정보(기기 분석): 크기 " + a.loud + ", " + a.change + ", " + a.pitch +
@@ -282,10 +297,16 @@ function parseLooseJSON(t) {
 }
 async function listenAI(b64, sec) {
   const sys = [
-    "너는 소리를 듣고 무엇이 들리는지 정확하게 적는 도우미다. 지어내지 않는다. 잘 안 들리면 '잘 들리지 않음'이라고 쓴다.",
+    "너는 소리를 듣고 무엇이 들리는지 정확하게 적는 음악·소리 전문가다. 지어내지 않는다. 잘 안 들리면 '잘 들리지 않음'이라고 쓴다.",
     "전체 길이는 약 " + Math.round(sec) + "초다.",
+    "[분위기 판단 규칙 — 꼭 지킨다] 노래의 분위기는 가사 내용보다 '소리'로 판단한다: 빠르기, 드럼·비트의 세기, 리듬, 음색, 창법, 장조/단조 느낌.",
+    "  예) 빠르고 센 댄스 비트에 이별 가사 → energy 높음(0.7 이상), valence는 비트·창법 느낌을 따름. 느린 피아노 발라드 → energy 낮음.",
+    "  목소리가 여자인지 남자인지 주의해서 듣는다 (높고 가는 목소리를 남자라고 하지 않는다).",
+    "  유명한 곡이라고 '확실히' 알아들었을 때만 song_guess에 '가수 - 제목'을 쓴다. 조금이라도 헷갈리면 빈 문자열.",
     "JSON만 출력한다:",
     '{"kind":"음악|노래|말소리|자연 소리|생활 소리|섞인 소리","heard":["들리는 것 3~5개, 짧게 (예: 피아노, 빗소리, 여자 목소리)"],',
+    ' "genre":"장르 한두 낱말 (예: 댄스 팝, 발라드, 힙합, 록, 클래식, 재즈, 자연 소리)","vocal":"여자|남자|여럿|없음",',
+    ' "energy":0.0,"valence":0.0,"mood":["소리에서 느껴지는 분위기 낱말 2~3개"],"song_guess":"",',
     ' "speech":"사람 말이 또렷하면 무슨 내용인지 1~2문장으로 요약 (가사는 그대로 적지 않고 무엇에 대한 노래인지만). 없으면 빈 문자열",',
     ' "tempo":"느림|보통|빠름","loud":"작음|보통|큼|점점 커짐|점점 작아짐|크고 작음이 바뀜",',
     ' "parts":[{"from":0,"to":10,"what":"그동안 들리는 것 (15자 안팎)"}]}  (parts는 2~4개, 시간 순서, 겹치지 않게)'
@@ -317,9 +338,14 @@ function heardText(h, sec) {
   const parts = (Array.isArray(h.parts) ? h.parts : []).slice(0, 4).map((p) => Number(p.from).toFixed(0) + "~" + Number(p.to).toFixed(0) + "초: " + String(p.what || "").slice(0, 40)).join(" / ");
   return "[AI가 직접 들은 내용 — 사실로 써도 됨]\n종류: " + String(h.kind || "").slice(0, 12) +
     "\n들리는 것: " + (Array.isArray(h.heard) ? h.heard.slice(0, 6).map((x) => String(x).slice(0, 20)).join(", ") : "") +
+    (h.genre ? "\n장르: " + String(h.genre).slice(0, 20) : "") + (h.vocal ? " · 목소리: " + String(h.vocal).slice(0, 6) : "") +
+    (Array.isArray(h.mood) && h.mood.length ? "\n소리에서 느껴지는 분위기: " + h.mood.slice(0, 3).map((x) => String(x).slice(0, 10)).join(", ") : "") +
+    (isFinite(Number(h.energy)) ? " · 에너지 " + Number(h.energy).toFixed(2) : "") + (isFinite(Number(h.valence)) ? " · 기분 " + Number(h.valence).toFixed(2) : "") +
+    (h.song_guess ? "\n알아들은 곡: " + String(h.song_guess).slice(0, 60) + " (그 곡의 일반적인 분위기도 참고)" : "") +
     (h.speech ? "\n말 내용(요약): " + String(h.speech).slice(0, 200) : "") +
     "\n빠르기: " + String(h.tempo || "-").slice(0, 8) + " · 크기: " + String(h.loud || "-").slice(0, 16) +
-    (parts ? "\n시간 순서: " + parts : "") + "\n전체 길이: 약 " + Math.round(sec) + "초\n";
+    (parts ? "\n시간 순서: " + parts : "") + "\n전체 길이: 약 " + Math.round(sec) + "초\n" +
+    "[규칙] 분위기 숫자(valence·arousal)와 분위기 낱말은 가사 내용이 아니라 위의 '소리' 정보(장르·빠르기·에너지·분위기)를 따른다. 해설에서 가사 이야기는 할 수 있지만, 느낌은 소리 쪽이 기준이다.\n";
 }
 
 // ---------------------------------------------------------------------
@@ -379,7 +405,7 @@ function musicPromptOf(w) {
   const mood = [va > 0.62 ? "happy, bright, major key" : va < 0.38 ? "sad, melancholic, minor key" : "bittersweet",
     ar > 0.65 ? "high energy, strong driving beat" : ar < 0.35 ? "very calm, gentle, soft dynamics" : "moderate energy",
     br > 0.65 ? "airy and light" : br < 0.35 ? "dark and deep" : ""].filter(Boolean).join("; ");
-  return "Instrumental only, no vocals, no singing. A " + g + " piece at about " + bpm + " BPM. Mood: " + mood + ". Clear melody and rhythm, polished modern production.";
+  return "Instrumental only, no vocals, no singing. A " + g + " piece at about " + bpm + " BPM. Mood: " + mood + ". Clear melody and rhythm, polished modern production, short intro and a natural ending with a gentle fade-out.";
 }
 function findAudio(o, depth) {
   if (!o || typeof o !== "object" || depth > 8) return null;
@@ -388,9 +414,26 @@ function findAudio(o, depth) {
   for (const k of Object.keys(o)) { const r = findAudio(o[k], depth + 1); if (r) return r; }
   return null;
 }
-async function lyriaMusic(w) {
+async function musicPromptAI(w, info) {
+  try {
+    const sys = ["You write ONE English prompt for an instrumental music generator (30-second clip).",
+      "Match the mood, energy and genre of the given Korean work as closely as possible. Mention: genre/style, tempo (BPM), 2-4 key instruments, mood words, dynamics.",
+      "Rules: instrumental only, no vocals, no singing. No artist names, no song titles, no lyrics.",
+      "The clip must sound like a complete short piece: short intro, then main groove, and a natural ending with a gentle fade-out in the last seconds.",
+      "Output JSON only: {\"prompt\":\"... (max 70 words)\"}"].join("\n");
+    const user = "Korean summary: " + String(info.summary || "").slice(0, 300) + "\nInterpretation: " + String(info.interpretation || "").slice(0, 300) +
+      "\nMood words (Korean): " + (Array.isArray(info.tags) ? info.tags.join(", ") : "") + "\nEmotion: " + String(w.emotion || "") +
+      "\nGenre chosen by analysis: " + (GENRE_EN[w.music] || "-") + "\nvalence " + n01(w.valence, 0.5) + ", arousal " + n01(w.arousal, 0.5) + ", brightness " + n01(w.brightness, 0.5) +
+      "\nOriginal text (excerpt, may be lyrics; use only for mood): " + String(info.text || "").slice(0, 700);
+    const p = await callAI([{ role: "system", content: sys }, { role: "user", content: user }], 0.4);
+    const t = String((p.data && p.data.prompt) || "").trim();
+    if (t.length > 30) return (/instrumental/i.test(t) ? t : "Instrumental only, no vocals. " + t).slice(0, 700);
+  } catch (e) {}
+  return null;
+}
+async function lyriaMusic(w, info) {
   if (!process.env.GEMINI_API_KEY) return { ok: false, error: "no_gemini_key" };
-  const prompt = musicPromptOf(w), model = process.env.GEMINI_MUSIC_MODEL || "lyria-3-clip-preview";
+  const prompt = (info && await musicPromptAI(w, info)) || musicPromptOf(w), model = process.env.GEMINI_MUSIC_MODEL || "lyria-3-clip-preview";
   const ac = new AbortController(), timer = setTimeout(() => ac.abort(), 55000), t1 = Date.now();
   try {
     const r = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
@@ -621,7 +664,7 @@ module.exports = async (req, res) => {
 
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     if (body.task === "music") {          // [수정 7-7] 글 → 진짜 음악 (Google Lyria) — 키가 없거나 실패하면 앱이 원래 음악 생성기로
-      const out = await lyriaMusic(body.whole || {});
+      const out = await lyriaMusic(body.whole || {}, { summary: body.summary, interpretation: body.interpretation, tags: body.tags, text: body.text });
       return res.status(200).json(Object.assign({ version: SERVER_VERSION, ms: { total: Date.now() - t0 } }, out));
     }
     const type = ["photo", "video", "sound", "text"].includes(body.type) ? body.type : "photo";
@@ -782,6 +825,18 @@ module.exports = async (req, res) => {
     const tagAlign = alignToTags(W0, W0.mood_tags, 0.5);
     const wholeOut = Object.assign(cleanSense(W0), { tag_from: tagFrom, tag_align: tagAlign, music_votes: W0.music_votes || 0 });
     const sScenes = scenes.map((_, i) => Object.assign(cleanSense((sense.data.scenes || [])[i]), { mood_tags: wholeOut.mood_tags || [] }));
+    // [수정 7-8] 소리: 분위기 숫자를 ① AI 판단 ② AI가 직접 들은 에너지·기분 ③ 기기가 잰 활기로 합침 (한쪽이 틀려도 덜 틀리게)
+    if (type === "sound") {
+      const ai = { a: wholeOut.arousal, v: wholeOut.valence }, ma = measuredArousal(body.audio);
+      const he = heard && isFinite(Number(heard.energy)) ? n01(heard.energy, 0.5) : null, hv = heard && isFinite(Number(heard.valence)) ? n01(heard.valence, 0.5) : null;
+      const parts = [[ai.a, 0.25]]; if (he !== null) parts.push([he, 0.4]); if (ma !== null) parts.push([ma, 0.35]);
+      const wsum = parts.reduce((x, p) => x + p[1], 0), na = +(parts.reduce((x, p) => x + p[0] * p[1], 0) / wsum).toFixed(2);
+      const nv = hv !== null ? +(0.5 * ai.v + 0.5 * hv).toFixed(2) : ai.v;
+      const da = na - ai.a, dv = nv - ai.v;
+      wholeOut.arousal = na; wholeOut.valence = nv; labelsOf(wholeOut);
+      sScenes.forEach((o) => { o.arousal = +Math.max(0.02, Math.min(0.98, o.arousal + da)).toFixed(2); o.valence = +Math.max(0.02, Math.min(0.98, o.valence + dv)).toFixed(2); labelsOf(o); });
+      wholeOut.mix_from = { ai_arousal: ai.a, heard_energy: he, measured: ma, ai_valence: ai.v, heard_valence: hv };
+    }
     // [수정 5-1] 대비 강조는 끔: AI가 '비슷하다'고 본 장면을 일부러 다르게 만들면 없는 차이를 지어내는 것이 됨
     //            (장면끼리 구분되는지는 베버의 '알아챌 수 있는 최소 차이' 기준으로 소리·빛 쪽에서 설계)
     const CONTRAST_ON = false;
@@ -807,12 +862,13 @@ module.exports = async (req, res) => {
       material: MATERIALS.includes(text.material) ? text.material : "모름",
       whole: wholeOut,
       senseMethod: "사진 직접 보기 + 눈금 예시 + " + senseTries + "번 평균",
-      scenes: scenes.map((s, i) => ({ name: s.name, text: s.text, cells: cleanCells(s.cells), look: s.look || "", sense: sScenes[i],
+      scenes: scenes.map((s, i) => ({ name: plainName(s.name, s.text), text: s.text, cells: cleanCells(s.cells), look: s.look || "", sense: sScenes[i],
         frames: type === "video" && Array.isArray(s.frames) ? s.frames.map((f) => Math.round(Number(f))).filter((f) => f >= 1 && f <= images.length).slice(0, 12) : undefined,
         from: type === "sound" && isFinite(Number(s.from)) ? Math.max(0, Number(s.from)) : undefined,
         to: type === "sound" && isFinite(Number(s.to)) ? Math.max(0, Number(s.to)) : undefined })),
       heard: heard ? { kind: String(heard.kind || "").slice(0, 12), heard: (Array.isArray(heard.heard) ? heard.heard : []).slice(0, 6).map((x) => String(x).slice(0, 20)),
-                       speech: String(heard.speech || "").slice(0, 200), tempo: String(heard.tempo || "").slice(0, 8), loud: String(heard.loud || "").slice(0, 16) } : null,
+                       speech: String(heard.speech || "").slice(0, 200), tempo: String(heard.tempo || "").slice(0, 8), loud: String(heard.loud || "").slice(0, 16),
+                       genre: String(heard.genre || "").slice(0, 20), vocal: String(heard.vocal || "").slice(0, 6), song_guess: String(heard.song_guess || "").slice(0, 60) } : null,
       listen: listenInfo,
       contrast: contrast,
       check: { passed: violations.length === 0, violations: violations, tries: tries, stats: stats(text),
