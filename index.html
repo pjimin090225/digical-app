@@ -820,18 +820,22 @@
     .tour-card h1 { font-family: var(--font-title); font-weight: 900; font-size: 28px; line-height: 1.3; margin: 8px 0; }
     .tour-card p { color: var(--sub); }
     .tour-card .orb { margin: 26px auto; }
-    .coach { position: fixed; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 60; max-width: 520px; margin: 0 auto; background: #111; color: #F4F2EE; border-radius: 8px; padding: 14px 16px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+    .coach { position: fixed; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 60; max-width: 520px; margin: 0 auto; background: #111; color: #F4F2EE; border-radius: 8px; padding: 18px 16px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.3); overflow: hidden; word-break: keep-all; }
+    .coach::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: linear-gradient(90deg, var(--see), var(--hear), var(--feel)); }
     .coach b { display: block; font-size: 18px; } .coach p { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: #E2DED6; }
     .coach-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-    .coach-dots { display: flex; gap: 5px; flex: 1; } .coach-dots i { width: 7px; height: 7px; border-radius: 50%; background: #F4F2EE; opacity: .3; } .coach-dots i.on { opacity: 1; }
+    .coach-dots { display: flex; gap: 5px; flex: 1; } .coach-dots i { width: 7px; height: 7px; border-radius: 50%; background: #F4F2EE; opacity: .3; } .coach-dots i.on { opacity: 1; background: var(--hear); } .coach-dots i:nth-child(3n+1).on { background: var(--see); } .coach-dots i:nth-child(3n).on { background: var(--feel); }
     .coach-next { font: inherit; font-weight: 700; font-size: 16px; min-height: 44px; padding: 0 18px; border: 0; border-radius: 4px; background: #F4F2EE; color: #111; }
     .coach-skip { font: inherit; font-size: 14px; min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: #B5AFA6; text-decoration: underline; }
-    .coach-ring { position: fixed; z-index: 59; border: 3px solid var(--orange); border-radius: 8px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(17,17,17,.38); transition: left .25s, top .25s, width .25s, height .25s; animation: coachPulse 1.6s ease-in-out infinite; }
-    @keyframes coachPulse { 50% { box-shadow: 0 0 0 9999px rgba(17,17,17,.38), 0 0 0 7px rgba(255,90,31,.35); } }
-    @media (prefers-reduced-motion: reduce) { .coach-ring { animation: none; transition: none; } }
-    body.touring #view { padding-bottom: 170px; }
+    .coach-ring { position: fixed; z-index: 59; border-radius: 10px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(17,17,17,.38); transition: left .3s, top .3s, width .3s, height .3s; }
+    .coach-ring::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 3px; background: linear-gradient(120deg, var(--see), var(--hear), var(--feel), var(--see)); background-size: 300% 100%;
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: coachFlow 3s linear infinite; }
+    @keyframes coachFlow { to { background-position: 300% 0; } }
+    @media (prefers-reduced-motion: reduce) { .coach-ring, .coach-ring::before { animation: none; transition: none; } }
+    body.touring #view, body.touring #room { padding-bottom: 190px; }
+    #room, #tour, .room-card { word-break: keep-all; }
     /* [MuSE 7-14] 우리의 탐구 — 새 구성 (울타리 → 방법 → 감각 세기 → 검증 → 남은 과제) */
-    #note .rs { max-width: 680px; margin: 0 auto; font-size: 17px; line-height: 1.75; }
+    #note .rs { max-width: 680px; margin: 0 auto; font-size: 17px; line-height: 1.75; word-break: keep-all; overflow-wrap: break-word; }
     #note .rs p { margin: 12px 0 0; }
     #note .rs b { font-weight: 700; }
     #note .rs-line { display: flex; height: 6px; max-width: 120px; margin: 4px 0 16px; } #note .rs-line i { flex: 1; }
@@ -863,10 +867,13 @@
     #note .rs-wall { display: grid; grid-template-columns: 64px 1fr; gap: 16px; margin-top: 12px; }
     #note .rs-wall .t { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; color: var(--sub); } #note .rs-wall p { margin-top: 4px; }
     #note .rs-path { display: grid; gap: 10px; margin-top: 16px; }
-    #note .rs-path .row { display: grid; grid-template-columns: 70px 1fr; gap: 10px; align-items: center; } #note .rs-path .who { font-size: 14px; font-weight: 700; }
+    #note .rs-path .row { display: grid; grid-template-columns: 62px 1fr; gap: 8px; align-items: center; } #note .rs-path .who { font-size: 14px; font-weight: 700; }
     #note .rs-path .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-    #note .rs-path i { font-style: normal; font-size: 14px; padding: 6px 10px; border: 1.5px solid var(--text); background: var(--card); }
-    #note .rs-path i.wall { border-style: dashed; color: var(--sub); } #note .rs-path i.on { background: var(--text); color: var(--bg); }
+    #note .rs-path i { font-style: normal; font-size: 14px; padding: 6px 8px; border: 1.5px solid var(--text); background: var(--card); white-space: nowrap; }
+    #note .rs-path .chain { gap: 4px !important; flex-wrap: nowrap !important; }
+    #note .rs-path i.wall { border-style: dashed; color: var(--sub); }
+    #note .rs-path i.s1, #note .rs-path i.s2, #note .rs-path i.s3 { color: #fff; border-color: transparent; font-weight: 700; } #note .rs-path i.s1 { background: var(--see); } #note .rs-path i.s2 { background: var(--hear); } #note .rs-path i.s3 { background: var(--feel); }
+    #note .rs-path .chain i.s2, #note .rs-path .chain i.s3 { margin-left: -2px; }
     #note .rs-path .chain b { font-family: var(--mono); font-weight: 400; color: var(--sub); }
     #note .rs-name { margin-top: 28px; background: var(--text); color: var(--bg); padding: 18px; }
     #note .rs-name .mk { margin: 0; display: flex; align-items: baseline; gap: 10px; } #note .rs-name .mk b { font-family: var(--font-title); font-weight: 900; font-size: 34px; line-height: 1; } #note .rs-name .mk span { font-size: 13px; color: var(--off); }
@@ -874,6 +881,11 @@
     #note .rs-name li { counter-increment: bk; display: grid; grid-template-columns: 26px 1fr; font-size: 15px; line-height: 1.65; color: var(--off); }
     #note .rs-name li::before { content: counter(bk); font-family: var(--mono); color: var(--bg); grid-row: span 2; }
     #note .rs-name li b { color: var(--bg); font-size: 16px; display: block; }
+    #note .rs-qs { margin-top: 32px; }
+    #note .rs-qh { font-family: var(--font-title); font-weight: 900; font-size: 21px; margin: 0 0 12px !important; }
+    #note .rs-q { display: grid; grid-template-columns: 52px 1fr; gap: 14px; align-items: center; background: var(--card); border: 1px solid var(--rule); padding: 14px 16px; margin-top: 8px; }
+    #note .rs-q span { font-family: var(--mono); font-weight: 500; font-size: 20px; color: var(--sub); }
+    #note .rs-q p { margin: 0 !important; font-size: 18px; line-height: 1.55; }
     #note .rs-thesis { margin-top: 28px !important; font-family: var(--font-title); font-weight: 700; font-size: 19px; line-height: 1.6; border-left: 4px solid var(--text); padding-left: 16px; }
     #note .rs-flow { list-style: none; padding: 0; margin: 18px 0 0; }
     #note .rs-flow li { display: grid; grid-template-columns: 40px 1fr; gap: 12px; padding: 14px 0; border-top: 1px solid var(--rule); } #note .rs-flow li:last-child { border-bottom: 1px solid var(--rule); }
@@ -885,7 +897,7 @@
     #note .rs-orb { position: relative; background: #121212; aspect-ratio: 1; max-width: 100%; overflow: hidden; }
     #note .rs-orb canvas { width: 100%; height: 100%; display: block; }
     #note .rs-orb span { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: 12px; color: #F2EFEA; letter-spacing: .06em; }
-    @media (max-width: 599px) { #note .rs-orb { max-width: 320px; } }
+    @media (max-width: 599px) { #note .rs-orb { max-width: 320px; width: 100%; margin: 0 auto; } }
     #note .rs-ui ul { list-style: none; padding: 0; margin: 0; } #note .rs-ui li { padding: 10px 0; border-top: 1px solid var(--rule); } #note .rs-ui li:first-child { border-top: 0; padding-top: 0; }
     #note .rs-ui li b { display: block; } #note .rs-ui li span { color: var(--sub); font-size: 15px; }
     #note .rs-x2 { display: grid; gap: 10px; margin-top: 16px; }
@@ -911,11 +923,11 @@
     #note .rs-next p { margin: 0; font-size: 15px; line-height: 1.65; }
     #note .rs-ref { margin-top: 40px; font-size: 13px; color: var(--sub); border-top: 1px solid var(--rule); padding-top: 12px; } #note .rs-ref p { margin: 4px 0 0; }
     @supports (animation-timeline: view()) { @media (prefers-reduced-motion: no-preference) {
-      #note .rs-chap, #note .rs-eras > div, #note .rs-flow li, #note .rs-vs3 > div, #note .rs-next li, #note .rs-pull, #note .rs-name, #note .rs-thesis, #note .rs-wall, #note .rs-ui, #note .rs-x2 .r { animation: rsRise linear both; animation-timeline: view(); animation-range: entry 0% entry 45%; }
-      #note .rs-eras .rs-ic *, #note .rs-wall .rs-ic * { stroke-dasharray: 240; animation: rsDraw linear both; animation-timeline: view(); animation-range: entry 10% cover 40%; }
-      #note .rs-x2 .gr { transform-origin: left; animation: rsGrow linear both; animation-timeline: view(); animation-range: entry 20% cover 45%; }
+      #note .rs-chap, #note .rs-eras > div, #note .rs-flow li, #note .rs-vs3 > div, #note .rs-next li, #note .rs-pull, #note .rs-name, #note .rs-q, #note .rs-ui, #note .rs-x2 .r { animation: rsRise ease-out both; animation-timeline: view(); animation-range: entry 0% cover 35%; }
+      #note .rs-eras .rs-ic * { stroke-dasharray: 240; animation: rsDraw ease-out both; animation-timeline: view(); animation-range: entry 0% cover 50%; }
+      #note .rs-x2 .gr { transform-origin: left; animation: rsGrow ease-out both; animation-timeline: view(); animation-range: entry 0% cover 50%; }
     } }
-    @keyframes rsRise { from { opacity: .25; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes rsRise { from { opacity: .35; transform: translateY(10px); } to { opacity: 1; transform: none; } }
     @keyframes rsDraw { from { stroke-dashoffset: 240; } to { stroke-dashoffset: 0; } }
     @keyframes rsGrow { from { transform: scaleX(.5); } to { transform: scaleX(1); } }
     #note .row2 .big { font-size: 16px; }
@@ -1084,7 +1096,6 @@
     <h2>MuSE</h2>
     <div class="menu-list">
       <button class="row-link" data-menu="room">전시실</button>
-      <button class="row-link" data-menu="tour">사용법 다시 보기</button>
       <button class="row-link" data-menu="note">우리의 탐구</button>
       <button class="row-link" data-menu="fresh">처음부터 다시 시작</button>
     </div>
@@ -1188,26 +1199,29 @@
       <p class="rs-pull">이익은 소수가 갖고, 고통은 모두가 나눠 졌습니다.<small>울타리가 세워질 때마다 되풀이된 구조입니다.</small></p>
       <p>그러나 AI는 사람이 만든 데이터 없이는 무너집니다. 사람은 AI에 기대는 존재가 아니라 AI를 떠받치는 주인입니다. 우리는 돈과 권력보다 <b>사람의 가치</b>를 먼저 두는 쪽에 섰습니다.</p>
       <p class="rs-sub">가장 먼저 밀려나는 사람</p>
-      <div class="rs-wall"><svg class="rs-ic" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6h26l12 12v40H14z"/><path d="M40 6v12h12M22 28h22M22 36h22M22 44h16"/></g></svg>
-        <div><span class="t">설명의 울타리</span><p>울타리 안의 문화는 긴 글과 빠른 화면으로 전해집니다. 그래서 글을 이해하기 어려운 <b>인지적 약자</b>가 가장 먼저 밀려납니다.</p></div></div>
+      <p>울타리 안의 문화는 긴 글과 빠른 화면으로 전해집니다. 그래서 글을 이해하기 어려운 <b>인지적 약자</b>가 가장 먼저 밀려납니다.</p>
       <div class="rs-path">
         <div class="row"><span class="who">지금까지</span><div class="chain"><i>작품</i><b>→</b><i class="wall">쉬운 글 해설</i><b>→</b><i>감상</i></div></div>
-        <div class="row"><span class="who">MuSE</span><div class="chain"><i>작품</i><b>→</b><i class="on">빛·소리·진동</i><b>→</b><i>감상</i></div></div>
+        <div class="row"><span class="who">MuSE</span><div class="chain"><i>작품</i><b>→</b><i class="s1">빛</i><i class="s2">소리</i><i class="s3">진동</i><b>→</b><i>감상</i></div></div>
       </div>
       <div class="rs-name">
         <p class="mk"><b>Blacks</b><span>우리 팀 이름</span></p>
         <ol>
-          <li><b>울타리에 맞선 사람들</b>18세기 울타리에 맞선 저항자 'Blacks'처럼, 디지털 울타리 앞에서 사람의 편에 섭니다.</li>
-          <li><b>블랙 스완, 우아함</b>백조처럼 우아하게. 누구나 문화를 우아하게 누리기를 바랍니다.</li>
-          <li><b>블랙 스완, 예상 밖의 사건</b>검은 백조는 없다고 여겨졌지만 실제로 있었습니다. 일어난 적 없다고 앞으로도 일어나지 않는 것은 아닙니다. 모두가 문화를 누리는 일도 그렇습니다.</li>
+          <li><b>울타리에 맞선 사람들</b>디지털 울타리 앞에서 사람의 편에 섭니다.</li>
+          <li><b>블랙 스완 · 우아함</b>누구나 문화를 우아하게 누리도록.</li>
+          <li><b>블랙 스완 · 예상 밖의 일</b>없다고 여겨진 일도 일어납니다.</li>
         </ol>
       </div>
-      <p class="rs-thesis">그래서 우리는 두 가지를 물었습니다.<br>① 작품의 분위기를 글보다 먼저 감각으로 전할 수 있을까?<br>② 그 감각의 세기를 사용자가 직접 정하게 할 수 있을까?</p>
+      <div class="rs-qs">
+        <p class="rs-qh">그래서 우리는 두 가지를 물었습니다</p>
+        <div class="rs-q"><span>Q1</span><p>작품의 분위기를 글보다 먼저 <b>감각으로</b> 전할 수 있을까?</p></div>
+        <div class="rs-q"><span>Q2</span><p>그 감각의 세기를 <b>사용자가 직접</b> 정하게 할 수 있을까?</p></div>
+      </div>
     </div>
 
     <div class="rs-sec" id="rs2">
       <div class="rs-chap"><span>2</span><h3>작품이 감각이 되기까지</h3></div>
-      <p>①번 질문에 대한 우리의 답입니다. AI는 해석을 돕고, 느끼고 고르는 것은 사람이 합니다.</p>
+      <p>Q1에 대한 우리의 답입니다. AI는 해석을 돕고, 느끼고 고르는 것은 사람이 합니다.</p>
       <ol class="rs-flow">
         <li><span class="n">1</span><div><b>넣기</b><span>사진·영상·글·소리 중 하나를 넣습니다.</span></div></li>
         <li><span class="n">2</span><div><b>읽기</b><span>AI가 작품의 분위기를 숫자 4개와 색 4개로 정리합니다. 작품을 몇 부분으로 나누고, 부분마다 쉬운 해설을 붙입니다.</span></div></li>
@@ -1230,7 +1244,7 @@
 
     <div class="rs-sec" id="rs3">
       <div class="rs-chap"><span>3</span><h3>같은 3단계인데, 왜 느낌이 다를까</h3></div>
-      <p>②번 질문에 대한 답입니다. 빛·소리·진동을 똑같이 2배로 키워도, 사람이 느끼는 정도는 감각마다 다릅니다.</p>
+      <p>Q2에 대한 답입니다. 빛·소리·진동을 똑같이 2배로 키워도, 사람이 느끼는 정도는 감각마다 다릅니다.</p>
       <div class="rs-x2" role="img" aria-label="자극을 2배로 했을 때 느끼는 세기: 빛 1.26배, 소리 1.59배, 진동 1.52배">
         <div class="r"><span>빛</span><div class="tr"><div class="base"></div><div class="gr" style="width:63%;background:var(--see)"></div></div><b>×1.26</b></div>
         <div class="r"><span>소리</span><div class="tr"><div class="base"></div><div class="gr" style="width:79.5%;background:var(--hear)"></div></div><b>×1.59</b></div>
@@ -1312,7 +1326,7 @@
     // 0) 기본 도구
     // ==========================================================
     const $ = (id) => document.getElementById(id);
-    const APP_VER = "MuSE · 앱 7-15 — 전시실 · 튜토리얼 · QR 모드 뺌";
+    const APP_VER = "MuSE · 앱 7-16 — 튜토리얼 다듬기 · 탐구 화면 정리";
     const copy = (obj) => JSON.parse(JSON.stringify(obj));   // 사본 만들기
     let currentScreen = "home";
 
@@ -7936,7 +7950,7 @@
       //   스티븐스: 감각마다 자극을 다르게 → 세 감각 느낌이 고르게
       const felt = (which) => SENSES.map((k) => feelOf(k, stimOf(k, P, which), "stevens"));
       const bars = (label, arr) => "<div class='caplab'>" + label + "</div>" + SENSES.map((k, i) =>
-        "<div class='feelrow'><span>" + SENSE_KO[k] + "</span><div class='capbar'><div class='capfill' style='width:" +
+        "<div class='feelrow'><span>" + SENSE_KO[k] + "</span><div class='capbar'><div class='capfill' style='background:var(--" + ({ visual: "see", sound: "hear", touch: "feel" })[k] + ");width:" +
         Math.round(arr[i] * 100) + "%'></div><div class='capline' style='left:" + Math.round(P * 100) + "%'></div></div><b>" +
         Math.round(arr[i] * 100) + "%</b></div>").join("");
       const ff = felt("fechner"), fs = felt("stevens");
@@ -7972,7 +7986,7 @@
       for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(X(0), Y(i / 4)); g.lineTo(X(1), Y(i / 4)); g.stroke(); }
       g.fillStyle = "#4A4A4A"; g.font = "20px sans-serif";
       g.fillText("느낌", 2, Y(1) + 14); g.fillText("자극 →", X(1) - 64, H - 6);
-      const COL = { visual: "#C77700", sound: "#2F5F8F", touch: "#2E7D32" };
+      const COL = { visual: "#3F6BFF", sound: "#FF7A2F", touch: "#D63FD1" };   // [MuSE 7-16] 감각 구슬 색과 같게
       const curve = (fn, color, dash, faint) => {
         g.globalAlpha = faint ? 0.25 : 1;
         g.strokeStyle = color; g.lineWidth = faint ? 3 : 6; g.setLineDash(dash || []);
@@ -8112,12 +8126,9 @@
       $("roomGrid").innerHTML = list.length ? list.map((w, i) =>
         '<button class="room-card" data-i="' + i + '" aria-label="' + esc((w.title || "작품") + ", " + (w.artist || "") + ", 느껴보기") + '">' +
         '<img class="rimg" alt="" loading="lazy" src="works/' + esc(w.file) + '" onerror="this.style.visibility=\'hidden\'">' +
-        '<span class="rtxt"><b>' + esc(w.title || "작품") + "</b><span>" + esc([w.artist, w.year].filter(Boolean).join(" · ")) + '</span><span class="rready" data-ready="' + esc(w.id) + '"></span></span></button>').join("")
+        '<span class="rtxt"><b>' + esc(w.title || "작품") + "</b><span>" + esc([w.artist, w.year].filter(Boolean).join(" · ")) + '</span></span></button>').join("")
         : '<p class="note">작품 목록(works/works.json)을 불러오지 못했어요.</p>';
-      list.forEach(async (w) => {                       // 미리 만든 결과가 있는지 표시
-        const ok = await roomCache(w.id, true);
-        const el = document.querySelector('[data-ready="' + w.id + '"]'); if (el) el.textContent = ok ? "바로 시작" : "AI가 읽어요 · 약 20초";
-      });
+      list.forEach((w) => { roomCache(w.id, true); });     // 미리 만든 결과를 먼저 불러 둠
       renderRoomDev();
     }
     $("roomGrid").onclick = (e) => {
@@ -8154,7 +8165,8 @@
     }
     // 개발용(?dev=1): 이 폰에서 분석한 부스 작품 결과를 파일로 내려받기 → works 폴더에 cache-번호.json 으로 올리면 모두가 바로 봄
     function renderRoomDev() {
-      const box = $("roomDev"); if (!DEV) { box.hidden = true; return; }
+      let MAKE = false; try { MAKE = new URLSearchParams(location.search).get("make") === "1"; } catch (e) {}
+      const box = $("roomDev"); if (!MAKE) { box.hidden = true; return; }
       const list = roomWorks || [], gal = galleryList();
       box.hidden = false;
       box.innerHTML = "<b>부스 작품 미리 만들기 (개발용)</b><p class='note'>① 작품을 눌러 AI 분석과 음악이 끝날 때까지 기다려요 → ② 여기로 돌아와 '내려받기' → ③ 받은 파일을 works 폴더에 올려요.</p>" +
@@ -8179,11 +8191,11 @@
     // [MuSE 7-15] 튜토리얼 — 예시 작품(전시실 1번)으로 직접 해 보기
     // ==========================================================
     const KEY_TOUR = "digical.tour.v1";
-    let tour = null;                     // { step, t, partClicked }
-    const TOUR_N = 4;
+    let tour = null;                     // { step, t, partClicked, want, seen }
+    const TOUR_N = 5;
     function tourOffer() {
       try { localStorage.setItem(KEY_TOUR, "offered"); } catch (e) {}
-      $("tourCard").innerHTML = '<p class="kicker">HOW TO</p><h1>감각 설정이 끝났어요</h1><p>예시 작품 하나로 MuSE를 어떻게 쓰는지 30초만 같이 해 볼까요?</p>' +
+      $("tourCard").innerHTML = '<p class="kicker">HOW TO</p><h1>감각 설정이 끝났어요</h1><p>전시실 작품 하나로 MuSE 쓰는 법을 같이 해 볼까요? 1분이면 돼요.</p>' +
         '<div class="orb" data-orb style="--size:140px;--blur:8px"></div>' +
         '<button class="big primary" data-t="go">같이 해 보기</button><button class="big ghost" data-t="skip">건너뛰기</button>';
       try { setOrb($("tourCard").querySelector(".orb"), profile); } catch (e) {}
@@ -8191,8 +8203,8 @@
     }
     function tourEndCard() {
       tourStop();
-      $("tourCard").innerHTML = '<p class="kicker">HOW TO · 끝</p><h1>이제 직접 해 볼 차례예요</h1><p>부스 작품을 고르거나, 내 주변의 작품을 찍어 보세요. 사용법은 메뉴의 \'사용법 다시 보기\'에서 언제든 볼 수 있어요.</p>' +
-        '<button class="big primary" data-t="room" style="margin-top:28px">전시실에서 작품 고르기</button><button class="big ghost" data-t="cam">카메라로 찍기</button>';
+      $("tourCard").innerHTML = '<p class="kicker">HOW TO · 끝</p><h1>이제 직접 해 볼 차례예요</h1><p>전시실에서 다른 작품을 고르거나, 내 주변의 작품을 찍어 보세요.</p>' +
+        '<button class="big primary" data-t="room" style="margin-top:28px">전시실로 가기</button><button class="big ghost" data-t="cam">카메라로 찍기</button>';
       go("tour");
     }
     $("tourCard").onclick = async (e) => {
@@ -8203,13 +8215,10 @@
       if (t === "room") { wantRoom = false; openRoom(); }
     };
     async function tourStart() {
-      const list = await loadRoomWorks();
-      const w = list[0];
-      if (!w) { tourEndCard(); return; }
-      tour = { step: 1, t: performance.now(), partClicked: 0 };
+      tour = { step: 0, t: performance.now(), partClicked: 0, want: "", seen: "", since: 0 };
       document.body.classList.add("touring");
-      clearInterval(tourStart.iv); tourStart.iv = setInterval(tourTick, 250);
-      await openRoomWork(w);
+      await openRoom();
+      clearInterval(tourStart.iv); tourStart.iv = setInterval(tourTick, 200);
       tourTick();
     }
     function tourStop() {
@@ -8217,45 +8226,58 @@
       document.body.classList.remove("touring");
       $("coach").hidden = true; $("coachRing").hidden = true;
     }
-    function coachSay(h, p, step, next) {
-      $("coach").hidden = false;
-      if ($("coachH").textContent !== h) $("coachH").textContent = h;
-      if ($("coachP").textContent !== p) $("coachP").textContent = p;
-      $("coachDots").innerHTML = Array.from({ length: TOUR_N }, (_, i) => '<i class="' + (i + 1 === step ? "on" : "") + '"></i>').join("");
-      $("coachNext").hidden = !next;
+    // 같은 안내가 0.4초 이상 이어질 때만 바꿔 줌 → 안내가 깜빡이지 않게
+    function coachShow(st) {
+      const key = st.h + "|" + st.step + "|" + (st.next || "");
+      if (key !== tour.want) { tour.want = key; tour.since = performance.now(); }
+      if (tour.seen !== key && performance.now() - tour.since < 400 && tour.seen) { ringOn(tour.target); return; }
+      if (tour.seen !== key) {
+        tour.seen = key;
+        $("coachH").textContent = st.h; $("coachP").textContent = st.p;
+        $("coachDots").innerHTML = Array.from({ length: TOUR_N }, (_, i) => '<i class="' + (i + 1 === st.step ? "on" : "") + '"></i>').join("");
+        $("coachNext").hidden = !st.next; $("coachNext").textContent = st.next || "다음";
+        $("coach").hidden = false;
+      }
+      tour.target = st.target || null;
+      ringOn(tour.target);
     }
     function ringOn(el) {
       const R = $("coachRing");
-      if (!el || !el.getClientRects().length) { R.hidden = true; return; }
+      if (!el || !el.isConnected || !el.getClientRects().length) { R.hidden = true; return; }
       const r = el.getBoundingClientRect();
-      if (r.bottom > innerHeight - 170 || r.top < 0) { if (!el.dataset.tourScrolled) { el.dataset.tourScrolled = "1"; el.scrollIntoView({ block: "center", behavior: reduceMotion() ? "auto" : "smooth" }); } }
+      if ((r.bottom > innerHeight - 190 || r.top < 0) && el.dataset.tourScrolled !== "1") { el.dataset.tourScrolled = "1"; el.scrollIntoView({ block: "center", behavior: reduceMotion() ? "auto" : "smooth" }); }
       R.hidden = false;
       Object.assign(R.style, { left: (r.left - 6) + "px", top: (r.top - 6) + "px", width: (r.width + 12) + "px", height: (r.height + 12) + "px" });
     }
     function tourTick() {
       if (!tour) return;
-      if (currentScreen !== "view") { if (performance.now() - tour.t > 1500 && currentScreen !== "tour") tourStop(); return; }
-      const main = !$("viewMain").hidden;
-      if (!main) { coachSay("작품을 읽는 중이에요", "AI가 작품의 분위기를 읽고, 이 작품만의 음악을 만들고 있어요. 잠깐만 기다려 주세요.", 1, false); ringOn(null); return; }
+      if (tour.step === 0) {
+        if (currentScreen === "view") { tour.step = 1; }
+        else if (currentScreen === "room") { coachShow({ step: 1, h: "작품을 하나 골라 보세요", p: "부스에 걸린 작품이에요. 마음에 드는 작품을 눌러요.", target: document.querySelector("#roomGrid .room-card") ? $("roomGrid") : null }); return; }
+        else return;
+      }
+      if (currentScreen !== "view") { tourStop(); return; }
+      if ($("viewMain").hidden) { coachShow({ step: 2, h: "작품을 읽는 중이에요", p: "AI가 작품의 분위기를 읽고 있어요. 잠깐만 기다려 주세요." }); return; }
       if (tour.step === 1) {
-        if (isPlaying()) { tour.step = 2; tour.t = performance.now(); }
-        else { if (viewTab !== "feel") { viewTab = "feel"; renderButtons(); } coachSay("여기를 눌러 보세요", "작품의 분위기가 빛·소리·떨림으로 바뀌어요.", 1, false); ringOn(document.querySelector('#viewBtns [data-v="again"]')); return; }
+        if (isPlaying()) tour.step = 2;
+        else { coachShow({ step: 2, h: "▶ 느껴보기를 눌러 보세요", p: "작품의 분위기가 빛·소리·떨림으로 바뀌어요.", target: viewTab === "feel" ? document.querySelector('#viewBtns [data-v="again"]') : document.querySelector('#vtabs [data-tab="feel"]') }); return; }
       }
-      if (tour.step === 2) {
-        coachSay("지금 느껴지나요?", "구슬과 빛은 분위기, 음악은 AI가 이 작품만을 위해 만든 곡, 떨림은 박자예요. 다 들었으면 '다음'을 눌러요.", 2, true);
-        ringOn(null); return;
-      }
+      if (tour.step === 2) { coachShow({ step: 3, h: "지금 느껴지나요?", p: "구슬과 빛은 분위기, 음악은 AI가 이 작품만을 위해 만든 곡, 떨림은 박자예요. 충분히 느꼈으면 '다음'을 눌러요.", next: "다음" }); return; }
       if (tour.step === 3) {
-        if (viewTab !== "read") { coachSay("해설을 눌러 보세요", "작품을 쉬운 말로 풀어 줘요.", 3, false); ringOn(document.querySelector('#vtabs [data-tab="read"]')); return; }
-        if (!tour.partClicked) { coachSay("부분을 골라 느껴 보세요", "'작품에서 느끼기'를 누르면 그 부분만 빛·소리·떨림으로 느낄 수 있어요.", 3, false); ringOn(document.querySelector("#textBody [data-feel]")); return; }
-        if (performance.now() - tour.partClicked > 5000) { tour.step = 4; }
-        else { coachSay("좋아요!", "이렇게 작품을 부분부분 느껴 볼 수 있어요.", 3, false); ringOn(null); return; }
+        if (tour.partClicked) tour.step = 4;
+        else if (viewTab !== "read") { coachShow({ step: 4, h: "해설을 눌러 보세요", p: "작품을 쉬운 말로 풀어 줘요.", target: document.querySelector('#vtabs [data-tab="read"]') }); return; }
+        else { coachShow({ step: 4, h: "부분을 골라 느껴 보세요", p: "'작품에서 느끼기'를 누르면 그 부분만 빛·소리·떨림으로 느낄 수 있어요.", target: document.querySelector("#textBody [data-feel]") }); return; }
       }
-      if (tour.step === 4) { stopSense && stopSense(); tourEndCard(); }
+      if (tour.step === 4) { coachShow({ step: 5, h: "잘했어요!", p: "이렇게 작품 전체도, 부분부분도 느낄 수 있어요. 다 됐으면 '마치기'를 눌러요.", next: "마치기" }); return; }
     }
-    $("coachNext").onclick = () => { if (!tour) return; if (tour.step === 2) { try { stopSense(); } catch (e) {} tour.step = 3; tour.t = performance.now(); tourTick(); } };
-    $("coachSkip").onclick = () => { try { stopSense(); } catch (e) {} tourStop(); go("camera"); };
+    $("coachNext").onclick = () => {
+      if (!tour) return;
+      if (tour.step === 2) { try { stopSense(); } catch (e) {} tour.step = 3; tourTick(); }
+      else if (tour.step === 4) { try { stopSense(); } catch (e) {} tourEndCard(); }
+    };
+    $("coachSkip").onclick = () => { try { stopSense(); } catch (e) {} tourStop(); if (currentScreen !== "room") go("camera"); };
     document.addEventListener("click", (e) => { if (tour && tour.step === 3 && e.target.closest && e.target.closest("#textBody [data-feel]")) tour.partClicked = performance.now(); }, true);
+    $("roomGrid").addEventListener("click", () => { if (tour && tour.step === 0) $("coachRing").hidden = true; }, true);
     addEventListener("scroll", () => { if (tour) tourTick(); }, { passive: true });
     addEventListener("resize", () => { if (tour) tourTick(); });
 
