@@ -541,7 +541,7 @@
     .zoom-pill button { height: 40px; border: 0; border-radius: 20px; background: transparent; color: #FFF; font-family: var(--mono); font-size: 14px; font-weight: 500; padding: 0; }
     .zoom-pill button[aria-pressed="true"] { background: #F2EFEA; color: #111; }
     #camera .hint { color: #FFF; font-size: 17px; font-weight: 500; margin: 0; text-align: center; line-height: 1.45; text-shadow: 0 1px 6px rgba(0,0,0,0.6); }
-    #camera .modebar { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; width: 100%; max-width: 420px; margin: 4px 0 0; padding: 5px;
+    #camera .modebar { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; width: 100%; max-width: 420px; margin: 4px 0 0; padding: 5px;
                        border-radius: 14px; background: rgba(30,30,30,0.62); touch-action: none; }
     .mode-ind { position: absolute; left: 0; top: 0; border-radius: 10px; background: #F2EFEA; box-shadow: 0 4px 12px rgba(0,0,0,0.35); pointer-events: none;
                 transition: transform .32s cubic-bezier(.3,.8,.3,1), width .32s, height .32s; }
@@ -779,6 +779,8 @@
     #ready .linkbtn { color: #CFCBC4; margin-top: 6px; }
     #ready .feel-area { padding: 20px 0; }
     body[data-screen="ready"] footer { display: none; }
+    /* [MuSE 7-13] 아래쪽 버전·점검 글씨는 숨김 — 버전은 MuSE 로고(메뉴)에서만 */
+    footer, #homeFoot { display: none !important; }
 
     /* ---------- [MuSE 7-2] 글로 만나기 (카메라 위 어두운 유리 판) ---------- */
     #camera #textPanel { background: rgba(22,22,22,0.92); color: #F2EFEA; border: 1px solid #3A3A3A; border-radius: 12px; padding: 14px 14px 12px; -webkit-user-select: text; user-select: text; }
@@ -800,6 +802,122 @@
     #note .capbar { background: #E2DED6; border-radius: 2px; height: 14px; }
     #note .capfill { background: #111; }
     #note .note-demo { border-radius: 4px; background: #141414; }
+    /* [MuSE 7-15] 전시실 · 튜토리얼 */
+    #room { padding-bottom: 48px; }
+    .room-head { margin: 4px 0 18px; } .room-head h1 { font-family: var(--font-title); font-weight: 900; font-size: 32px; margin: 4px 0; } .room-head p { margin: 0; color: var(--sub); font-size: 16px; }
+    .room-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 720px) { .room-grid { grid-template-columns: repeat(3, 1fr); } }
+    .room-card { display: grid; grid-template-columns: 42% 1fr; align-items: center; text-align: left; background: var(--card); border: 1px solid var(--rule); padding: 0; color: var(--text); font: inherit; cursor: pointer; min-width: 0; }
+    .room-card:active { transform: scale(.98); }
+    .room-card .rimg { aspect-ratio: 4 / 5; width: 100%; object-fit: cover; background: #1a1a1a; display: block; }
+    @media (min-width: 720px) { .room-card { grid-template-columns: 1fr; align-items: stretch; } }
+    .room-card .rtxt { padding: 12px 14px; min-width: 0; } .room-card b { display: block; font-family: var(--font-title); font-size: 19px; line-height: 1.35; }
+    .room-card span { display: block; font-size: 13px; color: var(--sub); margin-top: 2px; }
+    .room-card .rready { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; margin-top: 6px; color: var(--sub); }
+    .room-dev-row { display: flex; gap: 8px; align-items: center; justify-content: space-between; border-top: 1px solid var(--rule); padding: 8px 0; font-size: 14px; }
+    #tour { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+    .tour-card { max-width: 440px; width: 100%; }
+    .tour-card h1 { font-family: var(--font-title); font-weight: 900; font-size: 28px; line-height: 1.3; margin: 8px 0; }
+    .tour-card p { color: var(--sub); }
+    .tour-card .orb { margin: 26px auto; }
+    .coach { position: fixed; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 60; max-width: 520px; margin: 0 auto; background: #111; color: #F4F2EE; border-radius: 8px; padding: 14px 16px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+    .coach b { display: block; font-size: 18px; } .coach p { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: #E2DED6; }
+    .coach-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .coach-dots { display: flex; gap: 5px; flex: 1; } .coach-dots i { width: 7px; height: 7px; border-radius: 50%; background: #F4F2EE; opacity: .3; } .coach-dots i.on { opacity: 1; }
+    .coach-next { font: inherit; font-weight: 700; font-size: 16px; min-height: 44px; padding: 0 18px; border: 0; border-radius: 4px; background: #F4F2EE; color: #111; }
+    .coach-skip { font: inherit; font-size: 14px; min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: #B5AFA6; text-decoration: underline; }
+    .coach-ring { position: fixed; z-index: 59; border: 3px solid var(--orange); border-radius: 8px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(17,17,17,.38); transition: left .25s, top .25s, width .25s, height .25s; animation: coachPulse 1.6s ease-in-out infinite; }
+    @keyframes coachPulse { 50% { box-shadow: 0 0 0 9999px rgba(17,17,17,.38), 0 0 0 7px rgba(255,90,31,.35); } }
+    @media (prefers-reduced-motion: reduce) { .coach-ring { animation: none; transition: none; } }
+    body.touring #view { padding-bottom: 170px; }
+    /* [MuSE 7-14] 우리의 탐구 — 새 구성 (울타리 → 방법 → 감각 세기 → 검증 → 남은 과제) */
+    #note .rs { max-width: 680px; margin: 0 auto; font-size: 17px; line-height: 1.75; }
+    #note .rs p { margin: 12px 0 0; }
+    #note .rs b { font-weight: 700; }
+    #note .rs-line { display: flex; height: 6px; max-width: 120px; margin: 4px 0 16px; } #note .rs-line i { flex: 1; }
+    #note .rs-kick { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; color: var(--sub); margin: 0; }
+    #note h2.rs-h1 { font-family: var(--font-title); font-weight: 900; font-size: 32px; line-height: 1.25; margin: 6px 0 0; text-wrap: balance; }
+    #note .rs-lead { font-size: 18px; color: var(--sub); } #note .rs-lead span { display: block; }
+    #note .rs-nav { position: sticky; top: 0; z-index: 5; background: var(--bg); margin: 22px 0 0; padding: 10px 0; border-bottom: 1px solid var(--rule); display: flex; gap: 6px; overflow-x: auto; }
+    #note .rs-nav a { flex: none; font-size: 14px; color: var(--text); text-decoration: none; border: 1.5px solid var(--text); border-radius: 4px; padding: 6px 10px; white-space: nowrap; }
+    #note .rs-nav a b { font-family: var(--mono); font-weight: 500; margin-right: 4px; }
+    #note .rs-sec { padding-top: 64px; scroll-margin-top: 56px; }
+    #note .rs-chap { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; border-bottom: 2px solid var(--text); padding-bottom: 10px; }
+    #note .rs-chap span { font-family: var(--font-title); font-weight: 900; font-size: 60px; line-height: .9; }
+    #note .rs-chap h3 { margin: 0; padding: 0; border: 0; font-family: var(--font-title); font-weight: 900; font-size: 23px; line-height: 1.3; text-wrap: balance; }
+    #note .rs-sub { font-family: var(--font-title); font-weight: 700; font-size: 19px; margin-top: 30px !important; }
+    #note .rs-pull { margin-top: 22px !important; font-family: var(--font-title); font-weight: 900; font-size: 22px; line-height: 1.45; border-left: 4px solid var(--text); padding-left: 14px; text-wrap: balance; }
+    #note .rs-pull small { display: block; font-family: inherit; font-weight: 400; font-size: 15px; color: var(--sub); margin-top: 6px; }
+    #note .rs-ic { width: 64px; height: 64px; display: block; }
+    #note .rs-eras { display: grid; grid-template-columns: 1fr; margin-top: 22px; border-top: 2px solid var(--text); }
+    #note .rs-eras > div { display: grid; grid-template-columns: 64px 1fr; gap: 4px 16px; border-bottom: 1px solid var(--rule); padding: 18px 4px; min-width: 0; }
+    #note .rs-eras .rs-ic { grid-row: 1 / span 2; }
+    #note .rs-eras .e { margin: 0; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; color: var(--sub); }
+    #note .rs-eras .e b { display: block; font-family: var(--font-title); font-weight: 900; font-size: 21px; letter-spacing: 0; color: var(--text); margin-top: 2px; }
+    #note .rs-eras dl { grid-column: 2; margin: 0; display: grid; grid-template-columns: 44px 1fr; gap: 8px 10px; font-size: 14px; line-height: 1.5; }
+    #note .rs-eras dt { color: var(--sub); font-size: 13px; } #note .rs-eras dd { margin: 0; color: var(--sub); } #note .rs-eras dd b { display: block; color: var(--text); font-size: 15px; }
+    #note .rs-eras .now { background: var(--text); color: var(--bg); padding: 18px 14px; border-bottom: 0; }
+    #note .rs-eras .now .e, #note .rs-eras .now dt, #note .rs-eras .now dd { color: var(--off); } #note .rs-eras .now .e b, #note .rs-eras .now dd b { color: var(--bg); }
+    #note .rs-eras .qq { border: 1.5px dashed var(--off); padding: 4px 8px; font-size: 13px; line-height: 1.4; } #note .rs-eras .qq b { font-family: var(--font-title); font-size: 20px; line-height: 1.2; }
+    @media (min-width: 640px) { #note .rs-eras { grid-template-columns: repeat(3, 1fr); border-top: 0; gap: 12px; } #note .rs-eras > div { grid-template-columns: 1fr; border: 1.5px solid var(--text); padding: 18px; } #note .rs-eras .rs-ic { grid-row: auto; margin-bottom: 6px; } #note .rs-eras dl { grid-column: 1; } }
+    #note .rs-wall { display: grid; grid-template-columns: 64px 1fr; gap: 16px; margin-top: 12px; }
+    #note .rs-wall .t { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; color: var(--sub); } #note .rs-wall p { margin-top: 4px; }
+    #note .rs-path { display: grid; gap: 10px; margin-top: 16px; }
+    #note .rs-path .row { display: grid; grid-template-columns: 70px 1fr; gap: 10px; align-items: center; } #note .rs-path .who { font-size: 14px; font-weight: 700; }
+    #note .rs-path .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    #note .rs-path i { font-style: normal; font-size: 14px; padding: 6px 10px; border: 1.5px solid var(--text); background: var(--card); }
+    #note .rs-path i.wall { border-style: dashed; color: var(--sub); } #note .rs-path i.on { background: var(--text); color: var(--bg); }
+    #note .rs-path .chain b { font-family: var(--mono); font-weight: 400; color: var(--sub); }
+    #note .rs-name { margin-top: 28px; background: var(--text); color: var(--bg); padding: 18px; }
+    #note .rs-name .mk { margin: 0; display: flex; align-items: baseline; gap: 10px; } #note .rs-name .mk b { font-family: var(--font-title); font-weight: 900; font-size: 34px; line-height: 1; } #note .rs-name .mk span { font-size: 13px; color: var(--off); }
+    #note .rs-name ol { list-style: none; counter-reset: bk; padding: 0; margin: 14px 0 0; display: grid; gap: 12px; }
+    #note .rs-name li { counter-increment: bk; display: grid; grid-template-columns: 26px 1fr; font-size: 15px; line-height: 1.65; color: var(--off); }
+    #note .rs-name li::before { content: counter(bk); font-family: var(--mono); color: var(--bg); grid-row: span 2; }
+    #note .rs-name li b { color: var(--bg); font-size: 16px; display: block; }
+    #note .rs-thesis { margin-top: 28px !important; font-family: var(--font-title); font-weight: 700; font-size: 19px; line-height: 1.6; border-left: 4px solid var(--text); padding-left: 16px; }
+    #note .rs-flow { list-style: none; padding: 0; margin: 18px 0 0; }
+    #note .rs-flow li { display: grid; grid-template-columns: 40px 1fr; gap: 12px; padding: 14px 0; border-top: 1px solid var(--rule); } #note .rs-flow li:last-child { border-bottom: 1px solid var(--rule); }
+    #note .rs-flow .n { font-family: var(--mono); font-size: 20px; line-height: 1.3; } #note .rs-flow b { display: block; font-size: 18px; } #note .rs-flow li > div > span { display: block; color: var(--sub); font-size: 16px; }
+    #note .rs-chips { display: flex !important; flex-wrap: wrap; gap: 6px; margin-top: 8px; } #note .rs-chips i { font-style: normal; font-size: 14px; padding: 2px 9px; border-radius: 999px; color: #fff; }
+    #note .rs-small { display: block; font-size: 14px !important; color: var(--sub); margin-top: 8px; }
+    #note .rs-ui { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 14px; }
+    @media (min-width: 600px) { #note .rs-ui { grid-template-columns: 240px 1fr; align-items: start; } }
+    #note .rs-orb { position: relative; background: #121212; aspect-ratio: 1; max-width: 100%; overflow: hidden; }
+    #note .rs-orb canvas { width: 100%; height: 100%; display: block; }
+    #note .rs-orb span { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: 12px; color: #F2EFEA; letter-spacing: .06em; }
+    @media (max-width: 599px) { #note .rs-orb { max-width: 320px; } }
+    #note .rs-ui ul { list-style: none; padding: 0; margin: 0; } #note .rs-ui li { padding: 10px 0; border-top: 1px solid var(--rule); } #note .rs-ui li:first-child { border-top: 0; padding-top: 0; }
+    #note .rs-ui li b { display: block; } #note .rs-ui li span { color: var(--sub); font-size: 15px; }
+    #note .rs-x2 { display: grid; gap: 10px; margin-top: 16px; }
+    #note .rs-x2 .r { display: grid; grid-template-columns: 44px 1fr 60px; gap: 10px; align-items: center; font-size: 15px; font-variant-numeric: tabular-nums; }
+    #note .rs-x2 .tr { position: relative; height: 18px; background: var(--off); }
+    #note .rs-x2 .base { position: absolute; top: -4px; bottom: -4px; left: 50%; width: 2px; background: var(--text); z-index: 1; }
+    #note .rs-x2 .gr { position: absolute; inset: 0 auto 0 0; } #note .rs-x2 .r b { font-family: var(--mono); font-weight: 500; text-align: right; }
+    #note .rs-vs3 { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 16px; }
+    @media (min-width: 560px) { #note .rs-vs3 { grid-template-columns: 1fr 1fr 1fr; } }
+    #note .rs-vs3 > div { border: 1px solid var(--rule); padding: 12px 14px; background: var(--card); min-width: 0; } #note .rs-vs3 .bad { border: 1.5px dashed var(--sub); }
+    #note .rs-vs3 .t { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; color: var(--sub); } #note .rs-vs3 b { display: block; font-family: var(--font-title); font-size: 18px; margin: 2px 0 4px; }
+    #note .rs-vs3 p { margin: 0; font-size: 15px; line-height: 1.65; }
+    #note .rs-more { margin: 16px 0; border-top: 1px solid var(--rule); padding-top: 10px; } #note .rs-more summary { cursor: pointer; font-weight: 700; font-size: 15px; min-height: 44px; display: flex; align-items: center; }
+    #note .rs-chk, #note .rs-lim { list-style: none; padding: 0; margin: 16px 0; }
+    #note .rs-chk li { display: grid; grid-template-columns: auto 1fr; gap: 12px; border-top: 1px solid var(--rule); padding-top: 10px; margin-top: 10px; }
+    #note .rs-chk .tag { font-family: var(--mono); font-size: 12px; padding: 2px 7px; border: 1.5px solid var(--text); white-space: nowrap; align-self: start; }
+    #note .rs-chk b, #note .rs-lim b { display: block; } #note .rs-chk span:not(.tag), #note .rs-lim span { display: block; color: var(--sub); font-size: 15px; }
+    #note .rs-lim li { padding: 12px 0; border-top: 1px solid var(--rule); } #note .rs-lim li:last-child { border-bottom: 1px solid var(--rule); }
+    #note .rs-next { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 10px; }
+    @media (min-width: 560px) { #note .rs-next { grid-template-columns: 1fr 1fr; } #note .rs-next li.wide { grid-column: 1 / -1; } }
+    #note .rs-next li { border: 1px solid var(--rule); padding: 14px 16px; background: var(--card); min-width: 0; }
+    #note .rs-next .t { font-family: var(--mono); font-size: 12px; color: var(--sub); letter-spacing: .08em; } #note .rs-next b { display: block; font-family: var(--font-title); font-size: 18px; margin: 2px 0 4px; }
+    #note .rs-next p { margin: 0; font-size: 15px; line-height: 1.65; }
+    #note .rs-ref { margin-top: 40px; font-size: 13px; color: var(--sub); border-top: 1px solid var(--rule); padding-top: 12px; } #note .rs-ref p { margin: 4px 0 0; }
+    @supports (animation-timeline: view()) { @media (prefers-reduced-motion: no-preference) {
+      #note .rs-chap, #note .rs-eras > div, #note .rs-flow li, #note .rs-vs3 > div, #note .rs-next li, #note .rs-pull, #note .rs-name, #note .rs-thesis, #note .rs-wall, #note .rs-ui, #note .rs-x2 .r { animation: rsRise linear both; animation-timeline: view(); animation-range: entry 0% entry 45%; }
+      #note .rs-eras .rs-ic *, #note .rs-wall .rs-ic * { stroke-dasharray: 240; animation: rsDraw linear both; animation-timeline: view(); animation-range: entry 10% cover 40%; }
+      #note .rs-x2 .gr { transform-origin: left; animation: rsGrow linear both; animation-timeline: view(); animation-range: entry 20% cover 45%; }
+    } }
+    @keyframes rsRise { from { opacity: .25; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes rsDraw { from { stroke-dashoffset: 240; } to { stroke-dashoffset: 0; } }
+    @keyframes rsGrow { from { transform: scaleX(.5); } to { transform: scaleX(1); } }
     #note .row2 .big { font-size: 16px; }
 
     /* ---------- [MuSE 7-2] 감각 프로필: 소리·진동 상태 ---------- */
@@ -916,7 +1034,6 @@
         <button data-mode="video" aria-label="영상 모드"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h9A1.5 1.5 0 0 1 15 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 3 16.5z M15 10.5l6-3.5v10l-6-3.5"/></svg>영상</button>
         <button data-mode="sound" aria-label="소리 모드"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13 M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z M20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>소리</button>
         <button data-mode="text" aria-label="글 모드"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M15 3v4h4 M9 12h7 M9 16h7"/></svg>글</button>
-        <button data-mode="qr" aria-label="QR 모드"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h2.5v2.5H14z M18 14h2v2 M14 19.5h2.5 M18 18h2v2h-2z"/></svg>QR</button>
       </div>
       <div class="cam-row">
         <div class="cam-side-wrap">
@@ -942,12 +1059,32 @@
     <input type="file" id="filePick" accept="image/*" hidden>
   </section>
 
+  <!-- ===================== [MuSE 7-15] 전시실 (부스 작품 고르기) ===================== -->
+  <section id="room" class="screen" hidden>
+    <div class="topbar"><button class="back" id="btnRoomHome">← 카메라로</button></div>
+    <div class="room-head"><p class="kicker">MuSE EXHIBITION</p><h1>전시실</h1><p id="roomLead">부스에 걸린 작품이에요. 눌러서 바로 느껴 보세요.</p></div>
+    <div class="room-grid" id="roomGrid"></div>
+    <div class="card" id="roomDev" hidden></div>
+  </section>
+
+  <!-- ===================== [MuSE 7-15] 튜토리얼 시작·끝 카드 ===================== -->
+  <section id="tour" class="screen" hidden>
+    <div class="tour-card" id="tourCard"></div>
+  </section>
+  <div class="coach-ring" id="coachRing" hidden></div>
+  <div class="coach" id="coach" hidden role="dialog" aria-live="polite">
+    <b id="coachH"></b><p id="coachP"></p>
+    <div class="coach-row"><span class="coach-dots" id="coachDots"></span><button class="coach-next" id="coachNext" hidden>다음</button><button class="coach-skip" id="coachSkip">그만하기</button></div>
+  </div>
+
   <!-- MuSE 메뉴 (어느 화면에서나 아래에서 올라옴) -->
   <div class="sheet-dim" id="menuDim" hidden></div>
   <div class="sheet" id="menuSheet" hidden>
     <p class="kicker">MENU</p>
     <h2>MuSE</h2>
     <div class="menu-list">
+      <button class="row-link" data-menu="room">전시실</button>
+      <button class="row-link" data-menu="tour">사용법 다시 보기</button>
       <button class="row-link" data-menu="note">우리의 탐구</button>
       <button class="row-link" data-menu="fresh">처음부터 다시 시작</button>
     </div>
@@ -1029,33 +1166,134 @@
   <!-- ===================== ⑨ 🔬 탐구 노트 ===================== -->
   <section id="note" class="screen" hidden>
     <div class="topbar"><button class="back" id="btnNoteHome">← 돌아가기</button></div>
-    <p class="kicker">OUR RESEARCH</p><h2>우리의 탐구: 감각 세기 법칙</h2>
-    <div class="card">
-      <b>질문</b>: "이만큼 느끼게 하고 싶다"면, 빛·소리·진동을 얼마나 내야 할까?<br>
-      ① <b>베버–페히너</b>: 느낌 = log(자극). 세 감각에 <b>같은 곡선</b> 하나.<br>
-      ② <b>스티븐스</b>: 느낌 = 자극<sup>n</sup>. 감각마다 <b>n이 달라요</b>.
+    <div class="rs">
+    <div class="rs-line" aria-hidden="true"><i style="background:var(--see)"></i><i style="background:var(--hear)"></i><i style="background:var(--feel)"></i></div>
+    <p class="rs-kick">OUR RESEARCH · 팀 BLACKS</p>
+    <h2 class="rs-h1">작품을 설명 없이도<br>느낄 수 있을까?</h2>
+    <p class="rs-lead"><span>미술관 해설부터 공연 안내문까지, 문화를 즐기려면 읽어야 할 글이 많습니다.</span><span>하지만 경계선 지능인, 고령층 등 누군가에게는 이 글이 높은 장벽이 됩니다.</span><span>우리는 작품의 분위기를 빛·소리·진동으로 바꿔, 글보다 먼저 느끼게 합니다.</span></p>
+    <nav class="rs-nav" aria-label="탐구 차례"><a href="#rs1"><b>1</b>울타리</a><a href="#rs2"><b>2</b>방법</a><a href="#rs3"><b>3</b>감각 세기</a><a href="#rs4"><b>4</b>검증</a><a href="#rs5"><b>5</b>남은 과제</a></nav>
+
+    <div class="rs-sec" id="rs1">
+      <div class="rs-chap"><span>1</span><h3>500년 전의 울타리가 다시 세워집니다</h3></div>
+      <p>옛 영국의 지주는 법을 앞세워 공유지에 울타리를 치고 양을 길렀습니다. 오늘날 AI 기업은 '공정 이용'을 앞세워 사람들의 창작물을 허락 없이 모아 AI를 학습시킵니다. 우리는 이를 <b>디지털 인클로저</b>라고 부릅니다.</p>
+      <p class="rs-pull">"양이 사람을 잡아먹는다"<small>토마스 모어, 《유토피아》(1516)</small></p>
+      <div class="rs-eras">
+        <div><svg class="rs-ic" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 54V18l4-6 4 6v36M28 54V18l4-6 4 6v36M46 54V18l4-6 4 6v36M6 26h52M6 42h52M4 56h56"/></g></svg>
+          <p class="e">18세기 인클로저<b>땅의 울타리</b></p><dl><dt>저항</dt><dd><b>Blacks</b>얼굴을 검게 칠한 저항자들</dd><dt>보복</dt><dd><b>Black Act</b>저항을 사형으로 처벌 (1723)</dd></dl></div>
+        <div><svg class="rs-ic" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="48" width="26" height="9" rx="2"/><path d="M13 48l4-18h8l4 18"/><circle cx="21" cy="28" r="5"/><path d="M24 24l14-12"/><circle cx="40" cy="11" r="4"/><path d="M43 14l8 12"/><rect x="48" y="27" width="7" height="6" rx="1"/><path d="M48 33l-4 7 3 5M55 33l4 7-3 5"/><path d="M38 57h18"/></g></svg>
+          <p class="e">19세기 산업혁명<b>기계의 울타리</b></p><dl><dt>저항</dt><dd><b>러다이트</b>기계를 부순 노동자들</dd><dt>보복</dt><dd><b>Frame Breaking Act</b>기계 파괴를 사형으로 (1812)</dd></dl></div>
+        <div class="now"><svg class="rs-ic" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="32" cy="14" rx="20" ry="6"/><path d="M12 14v36c0 3.3 9 6 20 6s20-2.7 20-6V14M12 26c0 3.3 9 6 20 6s20-2.7 20-6M12 38c0 3.3 9 6 20 6s20-2.7 20-6"/><path d="M20 23h0M20 35h0M20 47h0" stroke-width="5"/></g></svg>
+          <p class="e">지금 디지털 인클로저<b>데이터의 울타리</b></p><dl><dt>저항</dt><dd class="qq"><b>?</b>우리가 채울 칸</dd><dt>대안</dt><dd><b>기본소득 대신 데이터 존엄성</b>사람을 기대게 하지 않고, 주인으로 두기</dd></dl></div>
+      </div>
+      <p class="rs-pull">이익은 소수가 갖고, 고통은 모두가 나눠 졌습니다.<small>울타리가 세워질 때마다 되풀이된 구조입니다.</small></p>
+      <p>그러나 AI는 사람이 만든 데이터 없이는 무너집니다. 사람은 AI에 기대는 존재가 아니라 AI를 떠받치는 주인입니다. 우리는 돈과 권력보다 <b>사람의 가치</b>를 먼저 두는 쪽에 섰습니다.</p>
+      <p class="rs-sub">가장 먼저 밀려나는 사람</p>
+      <div class="rs-wall"><svg class="rs-ic" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6h26l12 12v40H14z"/><path d="M40 6v12h12M22 28h22M22 36h22M22 44h16"/></g></svg>
+        <div><span class="t">설명의 울타리</span><p>울타리 안의 문화는 긴 글과 빠른 화면으로 전해집니다. 그래서 글을 이해하기 어려운 <b>인지적 약자</b>가 가장 먼저 밀려납니다.</p></div></div>
+      <div class="rs-path">
+        <div class="row"><span class="who">지금까지</span><div class="chain"><i>작품</i><b>→</b><i class="wall">쉬운 글 해설</i><b>→</b><i>감상</i></div></div>
+        <div class="row"><span class="who">MuSE</span><div class="chain"><i>작품</i><b>→</b><i class="on">빛·소리·진동</i><b>→</b><i>감상</i></div></div>
+      </div>
+      <div class="rs-name">
+        <p class="mk"><b>Blacks</b><span>우리 팀 이름</span></p>
+        <ol>
+          <li><b>울타리에 맞선 사람들</b>18세기 울타리에 맞선 저항자 'Blacks'처럼, 디지털 울타리 앞에서 사람의 편에 섭니다.</li>
+          <li><b>블랙 스완, 우아함</b>백조처럼 우아하게. 누구나 문화를 우아하게 누리기를 바랍니다.</li>
+          <li><b>블랙 스완, 예상 밖의 사건</b>검은 백조는 없다고 여겨졌지만 실제로 있었습니다. 일어난 적 없다고 앞으로도 일어나지 않는 것은 아닙니다. 모두가 문화를 누리는 일도 그렇습니다.</li>
+        </ol>
+      </div>
+      <p class="rs-thesis">그래서 우리는 두 가지를 물었습니다.<br>① 작품의 분위기를 글보다 먼저 감각으로 전할 수 있을까?<br>② 그 감각의 세기를 사용자가 직접 정하게 할 수 있을까?</p>
     </div>
-    <p class="sense-name">앱에서 쓸 법칙</p>
-    <div class="presets" id="lawBtns">
-      <button data-law="fechner">① 베버–페히너</button>
-      <button data-law="stevens">② 스티븐스</button>
+
+    <div class="rs-sec" id="rs2">
+      <div class="rs-chap"><span>2</span><h3>작품이 감각이 되기까지</h3></div>
+      <p>①번 질문에 대한 우리의 답입니다. AI는 해석을 돕고, 느끼고 고르는 것은 사람이 합니다.</p>
+      <ol class="rs-flow">
+        <li><span class="n">1</span><div><b>넣기</b><span>사진·영상·글·소리 중 하나를 넣습니다.</span></div></li>
+        <li><span class="n">2</span><div><b>읽기</b><span>AI가 작품의 분위기를 숫자 4개와 색 4개로 정리합니다. 작품을 몇 부분으로 나누고, 부분마다 쉬운 해설을 붙입니다.</span></div></li>
+        <li><span class="n">3</span><div><b>바꾸기</b><span>부분마다 어울리는 빛·소리·진동을 짝지어 냅니다.</span>
+          <span class="rs-chips"><i style="background:var(--see)">빛 · 분위기 구슬</i><i style="background:var(--hear)">소리 · AI가 만든 음악</i><i style="background:var(--feel)">진동 · 박자에 맞춘 떨림</i></span>
+          <span class="rs-small">Cross-Attention 원리를 적용했습니다. 작품의 각 부분이 어떤 감각과 가장 관련이 깊은지 AI가 계산해 짝짓습니다. 별도의 모델을 직접 학습시키지는 않았습니다.</span></div></li>
+        <li><span class="n">4</span><div><b>맞추기</b><span>내가 고른 세기(1~5단계)에 맞춰 내보냅니다. 원래 작품도 늘 함께 보여 줍니다.</span></div></li>
+      </ol>
+      <p class="rs-sub">화면 설계</p>
+      <div class="rs-ui">
+        <div class="rs-orb"><canvas id="noteOrb" width="480" height="480" aria-label="분위기 구슬 예시"></canvas><span id="noteOrbLab">신나는 곡</span></div>
+        <ul>
+          <li><b>분위기 구슬</b><span>정해진 그림이 없습니다. AI가 읽은 숫자 4개와 색 4개로 작품마다 다른 모양을 만듭니다. 신나는 곡은 빠르게, 차분한 곡은 천천히 움직이고 박자에 맞춰 출렁입니다.</span></li>
+          <li><b>검은 배경</b><span>구슬 밖의 시각 자극을 줄여, 작품의 분위기에만 집중하게 합니다.</span></li>
+          <li><b>한 화면에 한 가지</b><span>큰 버튼에 할 일을 글로 적습니다. 아이콘만 보고 뜻을 짐작하지 않아도 됩니다.</span></li>
+          <li><b>내 감각부터</b><span>처음 시작할 때 보기·듣기·떨림 세기를 직접 고릅니다.</span></li>
+        </ul>
+      </div>
     </div>
-    <p class="sense-name" style="margin-top:16px">목표 느낌: <span id="noteSliderVal"></span></p>
-    <input type="range" id="noteSlider" min="0" max="100" value="50" class="slider" aria-label="목표 느낌">
-    <canvas id="lawGraph" width="640" height="420" class="graph"></canvas>
-    <p class="note" id="lawLegend"></p>
-    <div id="noteTable"></div>
-    <h3>세 감각 합계 상한</h3>
-    <div id="noteCap"></div>
-    <div class="note-demo"><div class="glow note-glow" id="noteGlow"></div></div>
-    <button class="big" id="btnNoteFeel">지금 법칙으로 느껴보기 (4초)</button>
-    <button class="big ghost" id="btnNoteStrong">가장 센 장면으로 느껴보기 (세 감각 모두 최대 → 합계 한계가 작동)</button>
-    <h3>미니 비교 실험 (블라인드)</h3>
-    <p class="note">A와 B에 두 법칙이 무작위로 들어가요. 참가자는 어느 쪽인지 몰라요.</p>
-    <div id="abBox"></div>
-    <div class="card result" id="abResult"></div>
-    <div class="row2"><button class="big ghost" id="btnAbCopy">기록 표 복사</button><button class="big ghost" id="btnAbClear">기록 지우기</button></div>
-    <div class="result" id="abMsg"></div>
+
+    <div class="rs-sec" id="rs3">
+      <div class="rs-chap"><span>3</span><h3>같은 3단계인데, 왜 느낌이 다를까</h3></div>
+      <p>②번 질문에 대한 답입니다. 빛·소리·진동을 똑같이 2배로 키워도, 사람이 느끼는 정도는 감각마다 다릅니다.</p>
+      <div class="rs-x2" role="img" aria-label="자극을 2배로 했을 때 느끼는 세기: 빛 1.26배, 소리 1.59배, 진동 1.52배">
+        <div class="r"><span>빛</span><div class="tr"><div class="base"></div><div class="gr" style="width:63%;background:var(--see)"></div></div><b>×1.26</b></div>
+        <div class="r"><span>소리</span><div class="tr"><div class="base"></div><div class="gr" style="width:79.5%;background:var(--hear)"></div></div><b>×1.59</b></div>
+        <div class="r"><span>진동</span><div class="tr"><div class="base"></div><div class="gr" style="width:76%;background:var(--feel)"></div></div><b>×1.52</b></div>
+      </div>
+      <p class="rs-small">세로선 = 원래 느낌, 막대 = 2배로 키웠을 때의 느낌 (스티븐스 법칙으로 계산)</p>
+      <div class="rs-vs3">
+        <div><span class="t">처음</span><b>베버–페히너 법칙</b><p>세 감각에 같은 곡선 하나를 썼습니다.</p></div>
+        <div class="bad"><span class="t">문제</span><b>감각마다 달랐다</b><p>같은 목표에도 한 감각만 세게 느껴졌습니다.</p></div>
+        <div><span class="t">개선</span><b>스티븐스 법칙</b><p>감각마다 다른 공식을 쓰고, 셋을 합친 느낌이 너무 세지 않게 막았습니다.</p></div>
+      </div>
+      <p class="sense-name" style="margin-top:22px">목표 세기: <span id="noteSliderVal"></span></p>
+      <input type="range" id="noteSlider" min="0" max="100" value="50" class="slider" aria-label="목표 세기">
+      <div id="noteTable"></div>
+      <details class="rs-more"><summary>그래프와 계산 자세히 보기</summary>
+        <p class="sense-name">그래프에서 진하게 볼 법칙</p>
+        <div class="presets" id="lawBtns"><button data-law="fechner">① 베버–페히너</button><button data-law="stevens">② 스티븐스</button></div>
+        <canvas id="lawGraph" width="640" height="420" class="graph"></canvas>
+        <p class="note" id="lawLegend"></p>
+        <div id="noteCalc"></div>
+        <p class="sense-name" style="margin-top:14px">세 감각 합계 상한</p>
+        <div id="noteCap"></div>
+      </details>
+      <div class="note-demo"><div class="glow note-glow" id="noteGlow"></div></div>
+      <button class="big" id="btnNoteFeel">직접 느껴보기 (4초)</button>
+      <button class="big ghost" id="btnNoteStrong">가장 센 장면으로 느껴보기</button>
+    </div>
+
+    <div class="rs-sec" id="rs4">
+      <div class="rs-chap"><span>4</span><h3>정말 더 고르게 느껴질까</h3></div>
+      <ul class="rs-chk">
+        <li><span class="tag">비교</span><div><b>블라인드 비교</b><span>어느 법칙인지 모르게 A·B를 느끼고, 더 고른 쪽을 고릅니다.</span></div></li>
+        <li><span class="tag">설문</span><div><b>부담 정도 비교</b><span>같은 작품을 글로 볼 때와 MuSE로 볼 때를 비교합니다.</span></div></li>
+      </ul>
+      <div id="abBox"></div>
+      <div class="card result" id="abResult"></div>
+      <div class="row2"><button class="big ghost" id="btnAbCopy">기록 표 복사</button><button class="big ghost" id="btnAbClear">기록 지우기</button></div>
+      <div class="result" id="abMsg"></div>
+    </div>
+
+    <div class="rs-sec" id="rs5">
+      <div class="rs-chap"><span>5</span><h3>한계와 후속 탐구</h3></div>
+      <ul class="rs-lim">
+        <li><b>당사자 검증 부족</b><span>이번 검증은 일반인을 대상으로 진행했습니다.</span></li>
+        <li><b>감각의 개인차</b><span>지수 n은 성인 평균값으로, 개인마다 다를 수 있습니다.</span></li>
+        <li><b>AI 해석의 오류 가능성</b><span>해설에 'AI가 느낀 분위기'임을 밝히고 원작을 함께 제시합니다.</span></li>
+      </ul>
+      <ol class="rs-next">
+        <li><span class="t">후속 1 · 검증</span><b>당사자 참여 사용성 평가</b><p>경계선 지능인 지원 기관과 협력하여 당사자를 대상으로 평가를 진행하고, 표준 인지 부하 척도(NASA-TLX)로 효과를 측정합니다.</p></li>
+        <li><span class="t">후속 2 · 모델</span><b>개인별 감각 지수 추정</b><p>사용자의 세기 조정 기록을 바탕으로 개인별 지수 n을 추정하고, 출력을 자동으로 보정하는 모델을 설계합니다.</p></li>
+        <li class="wide"><span class="t">후속 3 · 공간</span><b>디지컬(Digical) 유니버설 벽화</b><p>지역 벽화 봉사와 연계하여 벽화마다 QR 코드를 설치합니다. 누구나 휴대폰으로 벽화를 빛·소리·진동으로 감상하는 배리어프리 공공 공간을 조성합니다.</p></li>
+      </ol>
+    </div>
+
+    <div class="rs-ref"><b>참고 문헌</b>
+      <p>More, T. (1516). Utopia.</p>
+      <p>Thompson, E. P. (1975). Whigs and Hunters: The Origin of the Black Act.</p>
+      <p>Lanier, J. (2013). Who Owns the Future?</p>
+      <p>Taleb, N. N. (2007). The Black Swan.</p>
+      <p>Shumailov, I. et al. (2024). AI models collapse when trained on recursively generated data. Nature.</p>
+      <p>Stevens, S. S. (1957). On the psychophysical law. Psychological Review.</p>
+    </div>
+    </div>
   </section>
 
   <section id="soon" class="screen" hidden>
@@ -1074,7 +1312,7 @@
     // 0) 기본 도구
     // ==========================================================
     const $ = (id) => document.getElementById(id);
-    const APP_VER = "MuSE · 앱 7-12 — AI 음악이 기본 · 해설에 분위기 · 부분 버튼 · 메뉴 정리";
+    const APP_VER = "MuSE · 앱 7-15 — 전시실 · 튜토리얼 · QR 모드 뺌";
     const copy = (obj) => JSON.parse(JSON.stringify(obj));   // 사본 만들기
     let currentScreen = "home";
 
@@ -1095,7 +1333,7 @@
       { const tf = $("touchFloat"); if (tf) tf.hidden = true; }
       if (currentScreen === "camera" && id !== "camera") leaveCamera();
       if (currentScreen === "view" && id !== "view") { stopSense(); stopVoice(); clearTimeout(wholeTimer); analyzeSeq++; }
-      if (currentScreen === "note" && id !== "note") { stopSense(); abState = null; }
+      if (currentScreen === "note" && id !== "note") { stopSense(); abState = null; noteOrbStop(); }
       document.querySelectorAll(".screen").forEach((s) => { s.hidden = (s.id !== id); });
       document.body.dataset.screen = id;                            // [수정 6-15] 화면마다 배경을 다르게 (카메라 = 어두운 촬영실)
       const entering = (id === "camera" && currentScreen !== "camera");
@@ -1122,6 +1360,9 @@
     function goHome() {
       if (!profile) { renderHome(); go("home"); return; }
       if (!check) { startReady("camera"); return; }
+      let tv = null; try { tv = localStorage.getItem(KEY_TOUR); } catch (e) { tv = "x"; }
+      if (!tv && !tour) { tourOffer(); return; }                    // [MuSE 7-15] 처음 한 번: 튜토리얼 제안
+      if (wantRoom) { wantRoom = false; openRoom(); return; }        // 포스터 QR(?room)로 온 사람은 전시실로
       go("camera");
     }
 
@@ -1726,12 +1967,13 @@
     // 8) 카메라 화면: 모드 바 (📷 사진 · 🎬 영상 · 🎵 소리)
     // ==========================================================
     let mode = load(KEY_MODE) || "photo";   // 마지막에 쓴 모드를 기억
+    if (mode === "qr") mode = "photo";       // [MuSE 7-15] QR 모드는 뺌 (포스터 QR은 휴대폰 기본 카메라로)
     let camStateShown = false;
     let camStream = null;                   // 카메라 영상 흐름
     let camStarting = null;                 // 카메라를 켜는 중이면 기억 → 두 번 동시에 켜지 않게
     // 셔터 모양: 그림 + 아주 짧은 낱말 (● 시작 / ■ 멈춤)
     // [MuSE 7-1] 셔터 모양은 CSS가 모드마다 그림 (사진 = 흰 원, 영상 = 빨간 점, 소리 = 빨간 점 → 듣는 중엔 흰 네모, 글 = 종이색 원, QR = 흐린 원)
-    const MODE_ORDER = ["photo", "video", "sound", "text", "qr"];
+    const MODE_ORDER = ["photo", "video", "sound", "text"];   // [MuSE 7-15] QR 모드 뺌
     const MODE_INFO = {
       photo: { code: "PHOTO", hint: "작품을 화면 가운데에 두고 찍어요", label: "사진 찍기", recLabel: "", file: "사진", accept: "image/*" },
       video: { code: "VIDEO", hint: "공연이나 움직이는 작품을 찍어요 · 3초~30초", label: "녹화 시작", recLabel: "녹화 멈추기", file: "영상", accept: "video/*" },
@@ -2215,7 +2457,7 @@
         cv.width = Math.round(im.naturalWidth * s); cv.height = Math.round(im.naturalHeight * s);
         cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
         if (!profile) { profile = makeRecommendation({}); }         // QR로 처음 들어온 관람객: 기본 감각으로 바로 시작
-        showConfirm({ type: "photo", images: [cv.toDataURL("image/jpeg", 0.85)], source: "QR 작품: " + (w.title || id), work: w });
+        showConfirm({ type: "photo", images: [cv.toDataURL("image/jpeg", 0.85)], source: "전시실 작품: " + (w.title || id), work: w });
       } catch (e) {
         const msg = "QR 작품(" + String(id) + ")을 찾지 못했어요. 작품 목록(works.json)을 확인해 주세요.";
         goHome();
@@ -2384,11 +2626,13 @@
       if (m === "pass") openDetail();
       if (m === "gallery") openGallery();
       if (m === "note") openNote();
+      if (m === "room") { leaveCamera && currentScreen === "camera" && leaveCamera(); openRoom(); }
+      if (m === "tour") { tourStart(); }
       if (m === "ready") startReady("camera");
       if (m === "redo") { draft = null; startAsk(); }
       if (m === "fresh") {                           // [MuSE 7-5] 부스용: 다음 관람객이 소리·진동 확인과 감각 프로필부터 하도록 (갤러리는 그대로)
         profile = null; check = null; draft = null;
-        try { localStorage.removeItem(KEY_PROFILE); localStorage.removeItem(KEY_CHECK); } catch (e) {}
+        try { localStorage.removeItem(KEY_PROFILE); localStorage.removeItem(KEY_CHECK); localStorage.removeItem(KEY_TOUR); } catch (e) {}
         leaveCamera && leaveCamera(); goHome();
       }
     };
@@ -4715,7 +4959,7 @@
       // [수정 6-17] 제목 기준: ① QR 작품 안내판의 제목 → ② AI가 확실히 아는 작품 제목 → ③ AI가 지은 짧은 이름(12자) → ④ 해설 첫 문장
       const title = (d.work && d.work.title) || r.title_guess || r.short_name || String(r.summary || "작품").replace(/(이에요|예요|입니다)\.?$/, "").slice(0, 24);
       const item = {
-        id: Date.now(), t: new Date().toISOString(), type: d.type, title: title, artist: (d.work && d.work.artist) || "",
+        id: Date.now(), t: new Date().toISOString(), type: d.type, title: title, artist: (d.work && d.work.artist) || "", workId: d.work ? d.work.id : undefined,
         kind: r.kind || "", summary: r.summary || "", interpretation: r.interpretation || "", mood_line: r.mood_line || "",
         tags: (r.whole && r.whole.mood_tags) || [], genre: P.genreName, material: r.material || "",
         scenes: (r.scenes || []).map((s) => ({ name: s.name, text: s.text, sense: s.sense, from: s.from, to: s.to })), whole: r.whole, pixel: d.pixel || null, thumb: thumb, text: d.text || "",
@@ -4804,13 +5048,14 @@
       await busyOn("작품을 여는 중이에요…");
       try { await replayGallery2(it); } finally { busyOff(); }
     }
-    async function replayGallery2(it) {
-      const rec = it.type === "text" ? null : await idbGet(it.id);     // [수정 6-16] 처음 분석한 원본 사진 + 나누기·재질 결과 (7-3: 소리는 녹음)
+    async function replayGallery2(it, pre, label) {
+      const rec = pre ? pre.rec : it.type === "text" ? null : await idbGet(it.id);     // [수정 6-16] 처음 분석한 원본 사진 + 나누기·재질 결과 (7-3: 소리는 녹음)
       const img = rec && rec.image ? rec.image : it.thumb;
       const m = it.meta || {};
       lastData = { type: (it.type === "text" || it.type === "sound") ? it.type : "photo", images: [img], source: "내 갤러리" + (it.type === "sound" ? " (소리 — 소리 구슬 그림)" : it.type === "text" ? " (글)" : rec && rec.image ? " (원본 사진)" : " (작은 그림 — 6-15 이전에 저장된 작품)"),
                    pixel: it.pixel, text: it.text, fromGallery: true, cropInfo: "사진 전체 표시" };
-      if (rec && rec.seg) lastData.segMaterials = rec.seg;            // 같은 사진 → 같은 나누기 → 저장한 이름·재질을 그대로 붙임
+      if (rec && rec.seg) lastData.segMaterials = rec.seg;
+      if (label) lastData.source = label;            // 같은 사진 → 같은 나누기 → 저장한 이름·재질을 그대로 붙임
       if (it.type === "sound") {
         lastData.audio = it.audio || null;
         if (rec && rec.pcm16) {
@@ -4822,7 +5067,7 @@
         }
       }
       if (it.type === "photo" || it.type === "text") {                  // [MuSE 7-11] 저장해 둔 AI 음악
-        const mr = await idbGet(it.id + "-m");
+        const mr = pre ? pre.mr : await idbGet(it.id + "-m");
         if (mr && mr.pcm16) { const pcm = new Float32Array(mr.pcm16.length); for (let i = 0; i < pcm.length; i++) pcm[i] = mr.pcm16[i] / 32767; const F = soundFeatures(pcm, mr.sr); lastData.music = { pcm: pcm, sr: mr.sr, from: 0, dur: F.sec, full: F.sec, F: F }; }
       }
       lastResult = { summary: it.summary, interpretation: it.interpretation, mood_line: it.mood_line, kind: it.kind, material: it.material, heard: it.heard || null, think: it.think || null, short_name: it.title,
@@ -5038,7 +5283,7 @@
     //   지금: 탭은 늘 그대로 있고, 아래 내용만 바뀜. 쉬운 해설 첫 문장은 제목 아래에 늘 보임
     // ==========================================================
     let readyMode = false, viewTab = "feel", playedOnce = false;
-    const DEV = (() => { try { const q = new URLSearchParams(location.search).get("dev"); if (q !== null) localStorage.setItem("digical.dev.v1", q === "0" ? "0" : "1"); return localStorage.getItem("digical.dev.v1") === "1"; } catch (e) { return false; } })();
+    const DEV = (() => { try { localStorage.removeItem("digical.dev.v1"); return new URLSearchParams(location.search).get("dev") === "1"; } catch (e) { return false; } })();   // [MuSE 7-13] 개발용 정보는 주소에 ?dev=1을 붙였을 때만 (저장 안 함)
     function isPlaying() {
       return !!senseRun || (vf.el && !vf.el.paused && !vf.el.hidden) || !!(sndF && sndF.playing) || !!(kinRun && kinRun.on);
     }
@@ -7631,7 +7876,48 @@
     function openNote() {
       renderNote();
       go("note");
+      noteOrbStart();
     }
+    // [MuSE 7-14] 우리의 탐구 — 분위기 구슬 예시 (신나는 곡 ↔ 차분한 곡을 번갈아)
+    let noteOrbSt = null, noteOrbTimer = 0, noteOrbBeatT = 0;
+    const NOTE_ORB = [
+      { lab: "신나는 곡", V: { energy: 0.85, tension: 0.4, bright: 0.7, layers: 0.7 }, pal: ["#FF3D7F", "#FF9F1C", "#FFD23F", "#B04BFF"], seed: 11, beat: 470 },
+      { lab: "차분한 곡", V: { energy: 0.15, tension: 0.15, bright: 0.45, layers: 0.25 }, pal: ["#3F6BFF", "#6FA8DC", "#9AD0EC", "#5B5FD6"], seed: 23, beat: 0 }
+    ];
+    function noteOrbStart() {
+      noteOrbStop();
+      const cv = $("noteOrb"); if (!cv) return;
+      if (!noteOrbSt || noteOrbSt.cv !== cv) noteOrbSt = orbMake(cv, { seed: 11 });
+      if (!noteOrbSt) { cv.parentNode.hidden = true; return; }
+      noteOrbSt.alive = true; noteOrbSt.always = false;
+      // 구슬이 화면에 보일 때만 그림 (배터리 아끼기)
+      if (!noteOrbStart.io && "IntersectionObserver" in window) {
+        noteOrbStart.io = new IntersectionObserver((es) => { if (noteOrbSt) noteOrbSt.always = es[0].isIntersecting; });
+        noteOrbStart.io.observe(cv);
+      } else if (!("IntersectionObserver" in window)) noteOrbSt.always = true;
+      else { const r = cv.getBoundingClientRect(); noteOrbSt.always = r.bottom > 0 && r.top < innerHeight; }
+      let i = 0;
+      const show = () => {
+        const p = NOTE_ORB[i % NOTE_ORB.length]; i++;
+        orbSet(noteOrbSt, Object.assign({}, p.V), orbHarmony(p.pal), p.seed);
+        $("noteOrbLab").textContent = p.lab;
+        clearInterval(noteOrbBeatT);
+        if (p.beat) noteOrbBeatT = setInterval(() => { if (currentScreen === "note") orbBeat(noteOrbSt, 0.8); }, p.beat);
+      };
+      show();
+      noteOrbTimer = setInterval(() => { if (currentScreen !== "note") { noteOrbStop(); return; } show(); }, 6000);
+      orbRun(noteOrbSt);
+    }
+    function noteOrbStop() {
+      clearInterval(noteOrbTimer); clearInterval(noteOrbBeatT);
+      if (noteOrbSt) orbStop(noteOrbSt);
+    }
+    // 차례(1~5) 누르면 그 칸으로 부드럽게 (주소는 바꾸지 않음)
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest && e.target.closest("#note .rs-nav a"); if (!a) return;
+      e.preventDefault();
+      const t = document.querySelector(a.getAttribute("href")); if (t) t.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
+    });
     function renderNote() {
       $("lawBtns").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.law === law)));
       const P = Number($("noteSlider").value) / 100;
@@ -7644,6 +7930,7 @@
              Math.round(stimOf(k, P, "stevens") * 100) + "% <span class='note'>(n=" + STEVENS_N[k] + ")</span></td></tr>";
       });
       h += "</table><p class='note'>목표 느낌 " + Math.round(P * 100) + "%를 내려면 필요한 자극 (최대 자극 대비)</p>";
+      if ($("noteCalc")) { $("noteCalc").innerHTML = h; h = ""; }          // [MuSE 7-14] 계산표는 '자세히 보기' 안으로
       // [새로 5-2] 같은 목표 느낌을 줬을 때, 실제로 느껴지는 세기 (스티븐스로 잼)
       //   베버–페히너: 세 감각에 같은 자극 → 감각마다 느낌이 들쭉날쭉 (한 감각만 튐)
       //   스티븐스: 감각마다 자극을 다르게 → 세 감각 느낌이 고르게
@@ -7654,7 +7941,7 @@
         Math.round(arr[i] * 100) + "%</b></div>").join("");
       const ff = felt("fechner"), fs = felt("stevens");
       const spread = (a) => Math.round((Math.max(...a) - Math.min(...a)) * 100);
-      h += "<h3>같은 목표 느낌을 줬을 때 실제로 느껴지는 세기</h3>" +
+      h += "<p class='sense-name' style='margin-top:14px'>같은 목표를 줬을 때 실제로 느끼는 세기</p>" +
         bars("① 베버–페히너 → 감각 사이 차이 " + spread(ff) + "%p", ff) +
         bars("② 스티븐스 → 감각 사이 차이 " + spread(fs) + "%p", fs) +
         "<p class='note'>빨간 선 = 목표 느낌. '실제 느낌'은 스티븐스 지수로 계산한 값이에요 (사람에게서 잰 값이 아니에요).</p>";
@@ -7807,6 +8094,170 @@
       try { localStorage.setItem(KEY_THEME, t); } catch (e) {}
     }
     try { applyTheme(new URLSearchParams(location.search).get("theme") || localStorage.getItem(KEY_THEME) || "muse"); } catch (e) {}
+
+    // ==========================================================
+    // [MuSE 7-15] 전시실 — 부스 작품을 골라 바로 느끼기 (포스터 QR: 주소 ?room)
+    //   works/works.json = 작품 목록, works/cache-번호.json = 미리 만들어 둔 해설·음악 (있으면 기다림 없이 바로)
+    // ==========================================================
+    let roomWorks = null, wantRoom = false;
+    try { wantRoom = new URLSearchParams(location.search).has("room"); } catch (e) {}
+    async function loadRoomWorks() {
+      if (roomWorks) return roomWorks;
+      try { roomWorks = ((await (await fetch("works/works.json", { cache: "no-cache" })).json()).works) || []; } catch (e) { roomWorks = []; }
+      return roomWorks;
+    }
+    async function openRoom() {
+      go("room");
+      const list = await loadRoomWorks();
+      $("roomGrid").innerHTML = list.length ? list.map((w, i) =>
+        '<button class="room-card" data-i="' + i + '" aria-label="' + esc((w.title || "작품") + ", " + (w.artist || "") + ", 느껴보기") + '">' +
+        '<img class="rimg" alt="" loading="lazy" src="works/' + esc(w.file) + '" onerror="this.style.visibility=\'hidden\'">' +
+        '<span class="rtxt"><b>' + esc(w.title || "작품") + "</b><span>" + esc([w.artist, w.year].filter(Boolean).join(" · ")) + '</span><span class="rready" data-ready="' + esc(w.id) + '"></span></span></button>').join("")
+        : '<p class="note">작품 목록(works/works.json)을 불러오지 못했어요.</p>';
+      list.forEach(async (w) => {                       // 미리 만든 결과가 있는지 표시
+        const ok = await roomCache(w.id, true);
+        const el = document.querySelector('[data-ready="' + w.id + '"]'); if (el) el.textContent = ok ? "바로 시작" : "AI가 읽어요 · 약 20초";
+      });
+      renderRoomDev();
+    }
+    $("roomGrid").onclick = (e) => {
+      const b = e.target.closest(".room-card"); if (!b || !roomWorks) return;
+      openRoomWork(roomWorks[Number(b.dataset.i)]);
+    };
+    $("btnRoomHome").onclick = () => go("camera");
+    const roomCacheMem = {};
+    async function roomCache(id, headOnly) {
+      if (roomCacheMem[id] !== undefined && (!headOnly || roomCacheMem[id] !== null)) return roomCacheMem[id];
+      try {
+        const r = await fetch("works/cache-" + encodeURIComponent(id) + ".json", { cache: "no-cache" });
+        if (!r.ok) { roomCacheMem[id] = false; return false; }
+        const c = await r.json(); roomCacheMem[id] = c && c.item ? c : false; return roomCacheMem[id];
+      } catch (e) { roomCacheMem[id] = false; return false; }
+    }
+    async function openRoomWork(w) {
+      if (!w) return;
+      if (!profile) profile = makeRecommendation({});
+      await busyOn("작품을 여는 중이에요…");
+      let c = null;
+      try { c = await roomCache(w.id); } catch (e) {}
+      if (c) {
+        try {
+          const b64ToI16 = (s) => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Int16Array(u.buffer); };
+          const pre = { rec: { image: c.image || null, seg: c.seg || null }, mr: c.music ? { pcm16: b64ToI16(c.music.b64), sr: c.music.sr } : null };
+          await replayGallery2(Object.assign({}, c.item, { title: w.title || c.item.title, artist: w.artist || c.item.artist }), pre, "전시실 · 미리 만든 해설과 음악");
+          lastData.work = w;
+          busyOff(); return;
+        } catch (e) { console.warn("room cache", e); }
+      }
+      busyOff();
+      openWork(w.id);                                    // 미리 만든 결과가 없으면 지금 AI가 읽음
+    }
+    // 개발용(?dev=1): 이 폰에서 분석한 부스 작품 결과를 파일로 내려받기 → works 폴더에 cache-번호.json 으로 올리면 모두가 바로 봄
+    function renderRoomDev() {
+      const box = $("roomDev"); if (!DEV) { box.hidden = true; return; }
+      const list = roomWorks || [], gal = galleryList();
+      box.hidden = false;
+      box.innerHTML = "<b>부스 작품 미리 만들기 (개발용)</b><p class='note'>① 작품을 눌러 AI 분석과 음악이 끝날 때까지 기다려요 → ② 여기로 돌아와 '내려받기' → ③ 받은 파일을 works 폴더에 올려요.</p>" +
+        list.map((w) => { const it = gal.find((g) => String(g.workId) === String(w.id));
+          return '<div class="room-dev-row"><span>' + esc(w.id + ". " + (w.title || "")) + "</span>" + (it ? '<button class="big ghost" style="min-height:44px;width:auto;padding:0 14px" data-dl="' + esc(w.id) + '">cache-' + esc(w.id) + ".json 내려받기</button>" : '<span class="note">아직 분석 안 함</span>') + "</div>"; }).join("");
+    }
+    $("roomDev").onclick = async (e) => {
+      const b = e.target.closest("[data-dl]"); if (!b) return;
+      const id = b.dataset.dl, it = galleryList().find((g) => String(g.workId) === String(id)); if (!it) return;
+      const rec = await idbGet(it.id), mr = await idbGet(it.id + "-m");
+      const i16ToB64 = (q) => { const u = new Uint8Array(q.buffer, q.byteOffset, q.byteLength); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+      const out = { made: new Date().toISOString(), app: APP_VER, item: it, image: rec && rec.image ? rec.image : it.thumb, seg: rec && rec.seg ? rec.seg : null,
+                    music: mr && mr.pcm16 ? { sr: mr.sr, b64: i16ToB64(mr.pcm16) } : null };
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(out)], { type: "application/json" }));
+      a.download = "cache-" + id + ".json"; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+      b.textContent = "내려받았어요 · works 폴더에 올려 주세요";
+    };
+
+    // ==========================================================
+    // [MuSE 7-15] 튜토리얼 — 예시 작품(전시실 1번)으로 직접 해 보기
+    // ==========================================================
+    const KEY_TOUR = "digical.tour.v1";
+    let tour = null;                     // { step, t, partClicked }
+    const TOUR_N = 4;
+    function tourOffer() {
+      try { localStorage.setItem(KEY_TOUR, "offered"); } catch (e) {}
+      $("tourCard").innerHTML = '<p class="kicker">HOW TO</p><h1>감각 설정이 끝났어요</h1><p>예시 작품 하나로 MuSE를 어떻게 쓰는지 30초만 같이 해 볼까요?</p>' +
+        '<div class="orb" data-orb style="--size:140px;--blur:8px"></div>' +
+        '<button class="big primary" data-t="go">같이 해 보기</button><button class="big ghost" data-t="skip">건너뛰기</button>';
+      try { setOrb($("tourCard").querySelector(".orb"), profile); } catch (e) {}
+      go("tour");
+    }
+    function tourEndCard() {
+      tourStop();
+      $("tourCard").innerHTML = '<p class="kicker">HOW TO · 끝</p><h1>이제 직접 해 볼 차례예요</h1><p>부스 작품을 고르거나, 내 주변의 작품을 찍어 보세요. 사용법은 메뉴의 \'사용법 다시 보기\'에서 언제든 볼 수 있어요.</p>' +
+        '<button class="big primary" data-t="room" style="margin-top:28px">전시실에서 작품 고르기</button><button class="big ghost" data-t="cam">카메라로 찍기</button>';
+      go("tour");
+    }
+    $("tourCard").onclick = async (e) => {
+      const b = e.target.closest("[data-t]"); if (!b) return;
+      const t = b.dataset.t;
+      if (t === "go") tourStart();
+      if (t === "skip" || t === "cam") { if (wantRoom) { wantRoom = false; openRoom(); } else go("camera"); }
+      if (t === "room") { wantRoom = false; openRoom(); }
+    };
+    async function tourStart() {
+      const list = await loadRoomWorks();
+      const w = list[0];
+      if (!w) { tourEndCard(); return; }
+      tour = { step: 1, t: performance.now(), partClicked: 0 };
+      document.body.classList.add("touring");
+      clearInterval(tourStart.iv); tourStart.iv = setInterval(tourTick, 250);
+      await openRoomWork(w);
+      tourTick();
+    }
+    function tourStop() {
+      clearInterval(tourStart.iv); tour = null;
+      document.body.classList.remove("touring");
+      $("coach").hidden = true; $("coachRing").hidden = true;
+    }
+    function coachSay(h, p, step, next) {
+      $("coach").hidden = false;
+      if ($("coachH").textContent !== h) $("coachH").textContent = h;
+      if ($("coachP").textContent !== p) $("coachP").textContent = p;
+      $("coachDots").innerHTML = Array.from({ length: TOUR_N }, (_, i) => '<i class="' + (i + 1 === step ? "on" : "") + '"></i>').join("");
+      $("coachNext").hidden = !next;
+    }
+    function ringOn(el) {
+      const R = $("coachRing");
+      if (!el || !el.getClientRects().length) { R.hidden = true; return; }
+      const r = el.getBoundingClientRect();
+      if (r.bottom > innerHeight - 170 || r.top < 0) { if (!el.dataset.tourScrolled) { el.dataset.tourScrolled = "1"; el.scrollIntoView({ block: "center", behavior: reduceMotion() ? "auto" : "smooth" }); } }
+      R.hidden = false;
+      Object.assign(R.style, { left: (r.left - 6) + "px", top: (r.top - 6) + "px", width: (r.width + 12) + "px", height: (r.height + 12) + "px" });
+    }
+    function tourTick() {
+      if (!tour) return;
+      if (currentScreen !== "view") { if (performance.now() - tour.t > 1500 && currentScreen !== "tour") tourStop(); return; }
+      const main = !$("viewMain").hidden;
+      if (!main) { coachSay("작품을 읽는 중이에요", "AI가 작품의 분위기를 읽고, 이 작품만의 음악을 만들고 있어요. 잠깐만 기다려 주세요.", 1, false); ringOn(null); return; }
+      if (tour.step === 1) {
+        if (isPlaying()) { tour.step = 2; tour.t = performance.now(); }
+        else { if (viewTab !== "feel") { viewTab = "feel"; renderButtons(); } coachSay("여기를 눌러 보세요", "작품의 분위기가 빛·소리·떨림으로 바뀌어요.", 1, false); ringOn(document.querySelector('#viewBtns [data-v="again"]')); return; }
+      }
+      if (tour.step === 2) {
+        coachSay("지금 느껴지나요?", "구슬과 빛은 분위기, 음악은 AI가 이 작품만을 위해 만든 곡, 떨림은 박자예요. 다 들었으면 '다음'을 눌러요.", 2, true);
+        ringOn(null); return;
+      }
+      if (tour.step === 3) {
+        if (viewTab !== "read") { coachSay("해설을 눌러 보세요", "작품을 쉬운 말로 풀어 줘요.", 3, false); ringOn(document.querySelector('#vtabs [data-tab="read"]')); return; }
+        if (!tour.partClicked) { coachSay("부분을 골라 느껴 보세요", "'작품에서 느끼기'를 누르면 그 부분만 빛·소리·떨림으로 느낄 수 있어요.", 3, false); ringOn(document.querySelector("#textBody [data-feel]")); return; }
+        if (performance.now() - tour.partClicked > 5000) { tour.step = 4; }
+        else { coachSay("좋아요!", "이렇게 작품을 부분부분 느껴 볼 수 있어요.", 3, false); ringOn(null); return; }
+      }
+      if (tour.step === 4) { stopSense && stopSense(); tourEndCard(); }
+    }
+    $("coachNext").onclick = () => { if (!tour) return; if (tour.step === 2) { try { stopSense(); } catch (e) {} tour.step = 3; tour.t = performance.now(); tourTick(); } };
+    $("coachSkip").onclick = () => { try { stopSense(); } catch (e) {} tourStop(); go("camera"); };
+    document.addEventListener("click", (e) => { if (tour && tour.step === 3 && e.target.closest && e.target.closest("#textBody [data-feel]")) tour.partClicked = performance.now(); }, true);
+    addEventListener("scroll", () => { if (tour) tourTick(); }, { passive: true });
+    addEventListener("resize", () => { if (tour) tourTick(); });
 
     // 시작! — 처음 온 사람은 처음 화면, 다시 온 사람은 바로 카메라
     renderBanner();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>미니 벽화 QR 만들기</title>
+  <title>MuSE 전시실 QR</title>
   <!-- QR 그리는 도구: qrcodejs (MIT 라이선스) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -14,7 +14,7 @@
     .tools button { font-size: 16px; font-weight: 800; padding: 8px 14px; border: 2px solid #1A1A1A; border-radius: 8px; background: #FFD23F; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
     .card { border: 3px solid #1A1A1A; border-radius: 16px; padding: 16px; text-align: center; break-inside: avoid; }
-    .card .qr { display: flex; justify-content: center; margin: 8px 0; }
+    .card .qr { display: flex; justify-content: center; margin: 8px 0; } .card .qr img, .card .qr canvas { max-width: 100%; height: auto; }
     .card .t { font-size: 20px; font-weight: 800; }
     .card .s { font-size: 14px; color: #555; }
     .card .how { font-size: 15px; margin-top: 6px; }
@@ -23,8 +23,14 @@
   </style>
 </head>
 <body>
-  <h1>🔳 미니 벽화 QR 만들기</h1>
-  <p class="note">works 폴더의 works.json 목록으로 작품마다 QR을 만들어요. 인쇄해서 작품 옆에 붙이세요. (인쇄할 때는 이 안내와 버튼은 나오지 않아요)</p>
+  <h1>MuSE 전시실 QR (포스터용)</h1>
+  <p class="note">휴대폰 기본 카메라로 찍으면 MuSE가 '전시실'로 열려요. 아래 'PNG 내려받기'로 받아 포스터에 넣으세요.</p>
+  <div class="card" style="max-width:420px;margin:0 auto 24px">
+    <div class="t">MuSE 전시실</div><div class="s" id="roomUrl"></div>
+    <div class="qr" id="roomQr"></div>
+    <a id="roomDl" download="MuSE_전시실_QR.png" style="display:inline-block;margin-top:8px;font-weight:800">PNG 내려받기</a>
+  </div>
+  <p class="note">아래는 작품마다 따로 쓰는 QR이에요 (지금은 쓰지 않아도 돼요).</p>
   <div class="tools">
     <input id="base" aria-label="앱 주소">
     <button id="btnMake">QR 다시 만들기</button>
@@ -35,7 +41,16 @@
     // 앱 주소: 이 페이지와 같은 사이트의 첫 화면 (다르면 위 칸에서 고치기)
     const baseInput = document.getElementById("base");
     baseInput.value = location.origin + location.pathname.replace(/qr\.html$/, "");
+    function makeRoom() {
+      const url = baseInput.value.replace(/\/?$/, "/") + "?room";
+      document.getElementById("roomUrl").textContent = url;
+      const box = document.getElementById("roomQr"); box.innerHTML = "";
+      new QRCode(box, { text: url, width: 600, height: 600, correctLevel: QRCode.CorrectLevel.M });
+      setTimeout(() => { const c = box.querySelector("canvas"); if (c) document.getElementById("roomDl").href = c.toDataURL("image/png"); }, 300);
+      box.querySelector("canvas") && (box.style.maxWidth = "100%");
+    }
     async function make() {
+      makeRoom();
       const grid = document.getElementById("grid");
       grid.innerHTML = "";
       let list;

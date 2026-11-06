@@ -1,0 +1,29 @@
+{
+  "설명": "전시실 작품 목록. 순서대로 전시실에 나오고, 첫 번째 작품이 튜토리얼 예시예요. id = 번호, file = works 폴더 안의 그림 파일 이름. 저작권이 끝난(퍼블릭 도메인) 작품이나 직접 만든 작품만 쓰세요.",
+  "works": [
+    {
+      "id": "1",
+      "title": "키스",
+      "artist": "구스타프 클림트",
+      "year": "1907–1908",
+      "file": "1.jpg",
+      "note": "원제: The Kiss / Gustav Klimt"
+    },
+    {
+      "id": "2",
+      "title": "튤립과 아이오나가 있는 정물",
+      "artist": "프랜시스 캠벨 보일로 카델",
+      "year": "1920년대",
+      "file": "2.jpg",
+      "note": "원제: Still Life with Tulips and Iona / Francis Campbell Boileau Cadell"
+    },
+    {
+      "id": "3",
+      "title": "Proven Absence",
+      "artist": "Blacks",
+      "year": "2026",
+      "file": "3.jpg",
+      "note": "일산대진고 Blacks 팀의 창작 작품"
+    }
+  ]
+}
